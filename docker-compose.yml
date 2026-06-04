@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: lopest_db
+    restart: always
+    environment:
+      POSTGRES_USER: lopest_admin
+      POSTGRES_PASSWORD: lopest_local_password
+      POSTGRES_DB: lopest_core
+      TZ: America/Bogota
+    ports:
+      - "5432:5432"
+    volumes:
+      - lopest_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lopest_admin -d lopest_core"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: lopest_n8n
+    restart: always
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_data
+      - DB_POSTGRESDB_USER=lopest_admin
+      - DB_POSTGRESDB_PASSWORD=lopest_local_password
+      - GENERIC_TIMEZONE=America/Bogota
+      - TZ=America/Bogota
+    ports:
+      - "5678:5678"
+    volumes:
+      - lopest_n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  lopest_db_data:
+  lopest_n8n_data:
