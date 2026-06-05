@@ -1,8 +1,8 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18.4-alpine
     container_name: lopest_db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: lopest_admin
       POSTGRES_PASSWORD: lopest_local_password
@@ -11,7 +11,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - lopest_db_data:/var/lib/postgresql/data
+      - lopest_db_data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lopest_admin -d lopest_core"]
       interval: 5s
@@ -19,9 +20,9 @@ services:
       retries: 5
 
   n8n:
-    image: n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.23.2
     container_name: lopest_n8n
-    restart: always
+    restart: unless-stopped
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
@@ -31,6 +32,7 @@ services:
       - DB_POSTGRESDB_PASSWORD=lopest_local_password
       - GENERIC_TIMEZONE=America/Bogota
       - TZ=America/Bogota
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
     ports:
       - "5678:5678"
     volumes:
