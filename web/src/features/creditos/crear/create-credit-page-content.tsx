@@ -8,22 +8,38 @@ import { SimulatorSchedule } from "@/features/simulador-creditos/components/simu
 import { SimulatorSummary } from "@/features/simulador-creditos/components/simulator-summary";
 import { useCreditSimulation } from "@/features/simulador-creditos/hooks/use-credit-simulation";
 
+import type { ClienteSelectorOption } from "@/features/clientes/types";
+
+import { ClientStep } from "./components/client-step";
 import { CreateCreditStepper } from "./components/create-credit-stepper";
+
+interface CreateCreditPageContentProps {
+  initialClientes: ClienteSelectorOption[];
+}
 
 /**
  * Flujo formal de creación de crédito.
  *
- * Este flujo NO es el simulador libre.
+ * /simulador:
+ * - simula libremente;
+ * - no exige cliente;
+ * - no guarda.
  *
- * Diferencia:
- * - /simulador permite simular sin cliente y sin guardar.
- * - /creditos/nuevo exige flujo formal: cliente, condiciones, vista previa,
- *   confirmación y, más adelante, guardado transaccional.
- *
- * En esta primera versión, el guardado sigue deshabilitado deliberadamente.
+ * /creditos/nuevo:
+ * - exige cliente;
+ * - usa condiciones financieras;
+ * - muestra vista previa;
+ * - más adelante guardará en transacción Prisma.
  */
-export function CreateCreditPageContent() {
+export function CreateCreditPageContent({
+  initialClientes,
+}: CreateCreditPageContentProps) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [clientes, setClientes] =
+    useState<ClienteSelectorOption[]>(initialClientes);
+  const [selectedCliente, setSelectedCliente] =
+    useState<ClienteSelectorOption | null>(null);
+
   const { form, resultado, updateField, resetForm } = useCreditSimulation();
 
   const canGoToPreview = resultado.estado === "success";
@@ -42,7 +58,20 @@ export function CreateCreditPageContent() {
 
   function resetWizard() {
     resetForm();
+    setSelectedCliente(null);
     setCurrentStep(1);
+  }
+
+  function handleClienteCreado(cliente: ClienteSelectorOption) {
+    setClientes((current) => {
+      const exists = current.some((item) => item.id === cliente.id);
+
+      if (exists) {
+        return current;
+      }
+
+      return [cliente, ...current];
+    });
   }
 
   return (
@@ -58,9 +87,9 @@ export function CreateCreditPageContent() {
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Flujo controlado para crear un crédito real. Esta versión prepara la
-            estructura del wizard y reutiliza el simulador financiero, pero aún
-            no persiste datos en PostgreSQL.
+            Flujo controlado para crear un crédito real. Esta versión ya permite
+            seleccionar o crear cliente y reutiliza el simulador financiero para
+            vista previa.
           </p>
         </div>
 
@@ -86,24 +115,12 @@ export function CreateCreditPageContent() {
         <CreateCreditStepper currentStep={currentStep} />
 
         {currentStep === 1 ? (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="max-w-3xl">
-              <h3 className="text-lg font-semibold text-slate-950">
-                Paso 1: Cliente
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Aquí irá la selección de cliente existente o la creación mínima
-                de cliente. No se implementa todavía porque requiere diseño de
-                búsqueda, validación de cédula y persistencia.
-              </p>
-
-              <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-sm leading-6 text-violet-900">
-                Decisión de arquitectura: el simulador libre no exige cliente,
-                pero este flujo sí lo exigirá antes de guardar un crédito real.
-              </div>
-            </div>
-          </section>
+          <ClientStep
+            clientes={clientes}
+            selectedCliente={selectedCliente}
+            onSelectCliente={setSelectedCliente}
+            onClienteCreado={handleClienteCreado}
+          />
         ) : null}
 
         {currentStep === 2 ? (
@@ -111,6 +128,17 @@ export function CreateCreditPageContent() {
             <SimulatorForm form={form} onChange={updateField} />
 
             <section className="min-w-0 space-y-6">
+              <div className="rounded-3xl border border-violet-200 bg-violet-50 p-5">
+                <p className="text-sm font-semibold text-violet-950">
+                  Cliente seleccionado
+                </p>
+                <p className="mt-1 text-sm text-violet-800">
+                  {selectedCliente
+                    ? `${selectedCliente.nombre} — C.C. ${selectedCliente.cedula}`
+                    : "Ningún cliente seleccionado"}
+                </p>
+              </div>
+
               {resultado.estado === "empty" ? (
                 <section className="rounded-3xl border border-dashed border-violet-200 bg-white p-8 text-center shadow-sm">
                   <h3 className="text-lg font-semibold text-slate-950">
@@ -170,11 +198,29 @@ export function CreateCreditPageContent() {
               Paso 4: Confirmación
             </h3>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              En esta fase se revisará cliente, condiciones financieras y
-              cronograma antes de guardar. El botón de guardado seguirá
-              deshabilitado hasta implementar server action, transacción Prisma
-              y generación segura del código LP.
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Cliente</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {selectedCliente
+                    ? `${selectedCliente.nombre} — C.C. ${selectedCliente.cedula}`
+                    : "Sin cliente"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  Cronograma
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {resultado.cronograma.length} cuota(s) generadas
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">
+              El guardado seguirá deshabilitado hasta implementar server action,
+              transacción Prisma y generación segura del código LP.
             </p>
 
             <button
@@ -202,6 +248,7 @@ export function CreateCreditPageContent() {
             onClick={goNext}
             disabled={
               currentStep === 4 ||
+              (currentStep === 1 && !selectedCliente) ||
               (currentStep === 2 && !canGoToPreview) ||
               (currentStep === 3 && !canConfirm)
             }

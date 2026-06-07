@@ -55,7 +55,10 @@ export function ModulePlaceholder({
 
           <ul className="mt-4 space-y-3">
             {currentScope.map((item) => (
-              <li key={item} className="flex gap-3 text-sm leading-6 text-slate-600">
+              <li
+                key={item}
+                className="flex gap-3 text-sm leading-6 text-slate-600"
+              >
                 <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-violet-500" />
                 <span>{item}</span>
               </li>
@@ -90,7 +93,10 @@ export function ModulePlaceholder({
 
           <ol className="mt-4 space-y-3">
             {nextSteps.map((item, index) => (
-              <li key={item} className="flex gap-3 text-sm leading-6 text-violet-900">
+              <li
+                key={item}
+                className="flex gap-3 text-sm leading-6 text-violet-900"
+              >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-violet-700 ring-1 ring-violet-200">
                   {index + 1}
                 </span>

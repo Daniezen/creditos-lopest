@@ -2,7 +2,7 @@
  * Configuración central de navegación del dashboard.
  *
  * Regla:
- * - El sidebar solo debe contener módulos principales.
+ * - El sidebar solo contiene módulos principales.
  * - Acciones como "Crear nuevo crédito" viven dentro del módulo Créditos.
  */
 
