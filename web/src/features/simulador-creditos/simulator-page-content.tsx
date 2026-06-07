@@ -7,10 +7,21 @@ import { SimulatorSummary } from "./components/simulator-summary";
 import { useCreditSimulation } from "./hooks/use-credit-simulation";
 
 /**
- * Contenido principal de la página del simulador.
+ * Contenido principal de la página del simulador libre.
  *
- * Esta capa orquesta componentes de la feature, pero no contiene cálculo
- * financiero directo ni persistencia.
+ * Decisión de producto:
+ * - Esta vista NO crea créditos.
+ * - Esta vista NO selecciona clientes.
+ * - Esta vista NO persiste datos.
+ *
+ * Flujo permitido aquí:
+ *   Entrada financiera → Vista previa → Cronograma
+ *
+ * Flujo NO permitido aquí:
+ *   Cliente → Confirmar → Guardar crédito
+ *
+ * Ese flujo vivirá en /creditos/nuevo y reutilizará el motor financiero y
+ * componentes de resumen/cronograma, pero con persistencia transaccional.
  */
 export function SimulatorPageContent() {
   const { form, resultado, updateField, resetForm } = useCreditSimulation();
@@ -28,9 +39,9 @@ export function SimulatorPageContent() {
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Genera cronogramas proyectados sin persistir datos. Esta pantalla
-            usa el motor financiero puro migrado desde Apps Script y validado
-            con pruebas automatizadas.
+            Genera cronogramas proyectados sin cliente obligatorio y sin guardar
+            datos. Esta herramienta sirve para validar condiciones financieras
+            antes de iniciar un flujo formal de creación.
           </p>
         </div>
 
@@ -41,15 +52,6 @@ export function SimulatorPageContent() {
             className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
           >
             Limpiar simulación
-          </button>
-
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400"
-            title="Pendiente: requiere flujo transaccional con Prisma"
-          >
-            Guardar como crédito próximamente
           </button>
         </div>
       </header>

@@ -18,6 +18,14 @@ import type {
 
 import type { SimulationResult, SimulatorFormState } from "../types";
 
+/**
+ * Estado inicial deliberadamente vacío.
+ *
+ * Decisión de producto:
+ * - El simulador libre no debe arrancar con datos inventados.
+ * - El usuario debe ingresar las condiciones financieras.
+ * - Si faltan datos, se muestra un estado vacío neutral, no un error.
+ */
 export const initialSimulatorFormState: SimulatorFormState = {
   fechaPrestamo: "",
   monto: "",
@@ -31,7 +39,7 @@ export const initialSimulatorFormState: SimulatorFormState = {
  * El formulario permite "" para representar campos no seleccionados.
  * El dominio financiero NO permite "".
  *
- * Estos guards convierten valores visuales del formulario en valores válidos
+ * Este guard convierte el valor visual del formulario en una frecuencia válida
  * del dominio antes de invocar el motor financiero.
  */
 function isFrecuenciaPago(
@@ -45,6 +53,10 @@ function isFrecuenciaPago(
   );
 }
 
+/**
+ * El formulario permite "" para representar el placeholder vacío.
+ * El dominio financiero solo acepta tipos reales de amortización.
+ */
 function isTipoAmortizacion(
   value: SimulatorFormState["tipoAmortizacion"],
 ): value is TipoAmortizacion {
@@ -52,7 +64,7 @@ function isTipoAmortizacion(
 }
 
 /**
- * Hook principal del simulador.
+ * Hook principal del simulador libre.
  *
  * Responsabilidad:
  * - Manejar estado del formulario.
@@ -64,7 +76,12 @@ function isTipoAmortizacion(
  * No debe:
  * - Persistir en base de datos.
  * - Llamar Prisma.
+ * - Crear clientes.
+ * - Crear créditos.
  * - Conocer rutas de Next.
+ *
+ * El flujo de creación real vivirá después en /creditos/nuevo y reutilizará
+ * el motor financiero y componentes visuales, pero con cliente y persistencia.
  */
 export function useCreditSimulation() {
   const [form, setForm] = useState<SimulatorFormState>(
@@ -88,9 +105,11 @@ export function useCreditSimulation() {
     }
 
     /**
-     * Guard directo. No lo escondas en booleanos intermedios.
-     * Así TypeScript entiende que, después de estos returns,
-     * los valores ya no pueden ser "".
+     * Guard directo.
+     *
+     * No se debe esconder esta validación en booleanos intermedios si luego se
+     * necesita que TypeScript estreche el tipo. Después de este return,
+     * TypeScript entiende que form.frecuencia ya no puede ser "".
      */
     if (!isFrecuenciaPago(form.frecuencia)) {
       return {
@@ -101,6 +120,10 @@ export function useCreditSimulation() {
       };
     }
 
+    /**
+     * Después de este return, TypeScript entiende que form.tipoAmortizacion
+     * ya no puede ser "".
+     */
     if (!isTipoAmortizacion(form.tipoAmortizacion)) {
       return {
         estado: "empty",
@@ -110,11 +133,6 @@ export function useCreditSimulation() {
       };
     }
 
-    /**
-     * En este punto TypeScript ya entiende:
-     * - form.frecuencia: FrecuenciaPago
-     * - form.tipoAmortizacion: TipoAmortizacion
-     */
     const frecuencia: FrecuenciaPago = form.frecuencia;
     const tipoAmortizacion: TipoAmortizacion = form.tipoAmortizacion;
 
@@ -134,7 +152,9 @@ export function useCreditSimulation() {
 
         /**
          * Fecha explícita para que el motor no dependa de tiempo oculto.
-         * Más adelante puede exponerse como campo "fecha de evaluación".
+         *
+         * Más adelante puede exponerse como campo "fecha de evaluación" si se
+         * necesita simular mora proyectada contra una fecha específica.
          */
         fechaReferencia: new Date(),
       });
@@ -167,7 +187,13 @@ export function useCreditSimulation() {
 
       /**
        * CRÍTICO:
-       * Debe ser [field]: value.
+       * Esto debe ser una propiedad computada.
+       *
+       * Correcto:
+       *   [field]: value
+       *
+       * Incorrecto:
+       *   value
        *
        * Si se escribe solo "value", React agrega una propiedad literal llamada
        * "value" y NO actualiza "monto", "plazoMeses", "frecuencia", etc.
