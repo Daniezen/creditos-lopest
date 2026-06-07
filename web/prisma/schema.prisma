@@ -1,0 +1,288 @@
+// ============================================================================
+// Prisma Schema - Créditos Lopest
+// ============================================================================
+//
+// Decisiones arquitectónicas:
+//
+// 1. Las llaves primarias técnicas son CUID.
+//    No se usa cédula ni código LP como PK real.
+//
+// 2. La cédula es única, pero mutable bajo control.
+//    Por eso NO se usa como FK entre Cliente -> Crédito -> Cuota.
+//
+// 3. El código de crédito LP-YY-0001 se conserva como identificador humano,
+//    pero la identidad interna real es `id`.
+//
+// 4. Las cuotas y abonos viven en la misma tabla `EventoFinanciero`.
+//    Esto evita partir artificialmente el historial financiero.
+//    Una cuota programada, un abono a capital o una cancelación por abono
+//    son eventos financieros asociados a un crédito.
+//
+// 5. Los textos tipo:
+//      "💰 Pagado: 2/6 | Saldo: $500.000 | 🟢 Al día"
+//    NO se guardan como fuente de verdad.
+//    Eso debe calcularse desde cuotas/eventos.
+//
+// 6. Los Decimal son obligatorios para dinero y tasas.
+//    No uses Float para dinero.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// CLIENTES
+// ============================================================================
+
+model Cliente {
+  id String @id @default(cuid())
+
+  // Documento único del cliente.
+  // Es dato de negocio, no PK técnica.
+  cedula String @unique
+
+  nombre String
+
+  direccion  String?
+  empresa    String?
+  telefono   String?
+  recomienda String?
+  contacto   String?
+  contacto2  String?
+
+  // Estado documental migrado desde carpeta_adjuntos / estado_documentos.
+  carpetaAdjuntosUrl String?
+  estadoDocumentos   EstadoDocumentos @default(FALTAN_DOCUMENTOS)
+
+  // Auditoría mínima.
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  creditos   Credito[]
+  documentos DocumentoCliente[]
+
+  @@index([nombre])
+  @@index([telefono])
+  @@map("clientes")
+}
+
+// ============================================================================
+// CRÉDITOS
+// ============================================================================
+
+model Credito {
+  id String @id @default(cuid())
+
+  // Código humano visible: LP-26-0001.
+  // Debe generarse transaccionalmente desde la aplicación o con tabla de secuencia.
+  codigo String @unique
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+
+  fechaPrestamo DateTime
+
+  monto       Decimal @db.Decimal(18, 2)
+  plazoMeses  Int
+  tasaMensual Decimal @db.Decimal(10, 6)
+
+  frecuencia       FrecuenciaPago
+  tipoAmortizacion TipoAmortizacion @default(AMORTIZACION_FIJA)
+
+  estado EstadoCredito @default(ACTIVO)
+
+  // Campos libres migrados desde Sheets.
+  // Observaciones no debe ser fuente de verdad del estado financiero.
+  observaciones String?
+  nota          String?
+
+  fechaCancelacion DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  eventos EventoFinanciero[]
+
+  @@index([clienteId])
+  @@index([codigo])
+  @@index([estado])
+  @@index([fechaPrestamo])
+  @@map("creditos")
+}
+
+// ============================================================================
+// EVENTOS FINANCIEROS
+// ============================================================================
+//
+// Esta tabla reemplaza a "Cuotas" de Sheets, pero con nombre más correcto.
+// Aquí pueden vivir:
+//
+// - CUOTA_PROGRAMADA
+// - ABONO_CAPITAL
+//
+// Los eventos "Cancelado por Abono" siguen siendo cuotas programadas cuyo estado
+// cambia a CANCELADO_POR_ABONO.
+// ============================================================================
+
+model EventoFinanciero {
+  id String @id @default(cuid())
+
+  // Código humano opcional:
+  // - LP-26-0001-C1
+  // - LP-26-0001-ABX-123456
+  codigo String @unique
+
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Cascade)
+
+  // Para abonos extraordinarios puede ser null.
+  numeroCuota Int?
+
+  tipo TipoEventoFinanciero @default(CUOTA_PROGRAMADA)
+
+  fechaProgramada DateTime
+  fechaPago       DateTime?
+
+  valorProgramado   Decimal @db.Decimal(18, 2)
+  capitalProgramado Decimal @db.Decimal(18, 2)
+  interesProgramado Decimal @db.Decimal(18, 2)
+
+  montoPagado   Decimal @default(0) @db.Decimal(18, 2)
+  capitalPagado Decimal @default(0) @db.Decimal(18, 2)
+  interesPagado Decimal @default(0) @db.Decimal(18, 2)
+
+  // Saldo proyectado después de la cuota/evento.
+  // En Sheets existía como saldo_capital_post.
+  saldoCapitalPost Decimal? @db.Decimal(18, 2)
+
+  estado EstadoEventoFinanciero @default(PENDIENTE)
+
+  diasAtraso Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@index([creditoId])
+  @@index([tipo])
+  @@index([estado])
+  @@index([fechaProgramada])
+  @@index([fechaPago])
+  @@index([creditoId, numeroCuota])
+  @@map("eventos_financieros")
+}
+
+// ============================================================================
+// SECUENCIA DE CÓDIGOS DE CRÉDITO
+// ============================================================================
+//
+// Reemplaza la lógica frágil de Apps Script:
+// leer toda la hoja -> buscar máximo LP-YY-NNNN -> sumar 1.
+//
+// En PostgreSQL esto debe ser transaccional.
+// Esta tabla permite reservar secuencias por año.
+// ============================================================================
+
+model SecuenciaCredito {
+  id String @id @default(cuid())
+
+  anio Int @unique
+
+  ultimoNumero Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("secuencias_credito")
+}
+
+// ============================================================================
+// ARCHIVOS / DOCUMENTOS
+// ============================================================================
+//
+// No guardes solo una URL general de carpeta si luego necesitas trazabilidad.
+// Esta tabla permite migrar gradualmente desde "carpeta_adjuntos" hacia archivos
+// individuales, aunque al inicio puedes seguir usando carpetaAdjuntosUrl en Cliente.
+// ============================================================================
+
+model DocumentoCliente {
+  id String @id @default(cuid())
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  nombreArchivo String
+  mimeType      String?
+  tamanoBytes   Int?
+
+  url String
+
+  // Identificadores técnicos de Google Drive.
+  // La URL sirve para humanos; el ID sirve para integraciones.
+  driveFileId   String?
+  driveFolderId String?
+
+  proveedor ProveedorArchivo @default(GOOGLE_DRIVE)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@index([clienteId])
+  @@index([driveFileId])
+  @@index([driveFolderId])
+  @@map("documentos_cliente")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum EstadoDocumentos {
+  FALTAN_DOCUMENTOS
+  DOCUMENTOS_CARGADOS
+}
+
+enum EstadoCredito {
+  ACTIVO
+  CANCELADO
+}
+
+enum FrecuenciaPago {
+  MENSUAL
+  QUINCENAL_5_20
+  QUINCENAL_10_25
+  QUINCENAL_15_30
+}
+
+enum TipoAmortizacion {
+  AMORTIZACION_FIJA
+  SOLO_INTERES
+}
+
+enum TipoEventoFinanciero {
+  CUOTA_PROGRAMADA
+  ABONO_CAPITAL
+}
+
+enum EstadoEventoFinanciero {
+  PENDIENTE
+  ATRASADO
+  MORA
+  PAGADO
+  CANCELADO_POR_ABONO
+}
+
+enum ProveedorArchivo {
+  GOOGLE_DRIVE
+  LOCAL
+  S3
+  OTRO
+}
