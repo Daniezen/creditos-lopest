@@ -22,24 +22,20 @@ export const dashboardNavigation: DashboardNavItem[] = [
     label: "Créditos",
     href: "/creditos",
     description: "Biblioteca y gestión de créditos.",
-    disabled: true,
+  },
+  {
+    label: "Nuevo crédito",
+    href: "/creditos/nuevo",
+    description: "Flujo formal de creación con vista previa.",
   },
   {
     label: "Clientes",
     href: "/clientes",
     description: "Perfiles, contacto y documentos.",
-    disabled: true,
   },
   {
-    label: "Documentos",
-    href: "/documentos",
-    description: "Adjuntos y trazabilidad documental.",
-    disabled: true,
-  },
-  {
-    label: "Data Studio",
+    label: "Analytics",
     href: "/analytics",
     description: "Panel analítico embebido más adelante.",
-    disabled: true,
   },
 ];
