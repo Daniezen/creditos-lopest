@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+/*
+  ============================================================================
+  Global CSS - Créditos Lopest
+  ============================================================================
+
+  Decisiones:
+  - Interfaz clara por defecto.
+  - Sin cambio automático a modo oscuro por prefers-color-scheme.
+  - Sin imágenes ni fondos globales contaminantes.
+  - Base visual sobria para dashboard financiero.
+  - Tailwind sigue siendo la fuente principal de estilos.
+  ============================================================================
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -12,27 +26,55 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
-@layer components {
-  .input-base {
-    @apply w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20;
-  }
-
-  .input-base option {
-    @apply bg-slate-950 text-slate-100;
-  }
+html {
+  min-height: 100%;
+  background: var(--background);
 }
 
 body {
+  min-height: 100%;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/*
+  Evita que controles de formulario hereden estilos inconsistentes del navegador.
+*/
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
 
+/*
+  Estilos base reutilizables.
+
+  Nota:
+  Actualmente el simulador usa varios estilos inline con clases Tailwind directas.
+  Esta clase queda disponible para formularios futuros si decidimos estandarizar
+  inputs en componentes compartidos.
+*/
+@layer components {
+  .input-base {
+    @apply w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20;
+  }
+
+  .input-base option {
+    @apply bg-white text-slate-950;
+  }
+
+  .dashboard-card {
+    @apply rounded-3xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .dashboard-muted-card {
+    @apply rounded-3xl border border-slate-200 bg-slate-50;
+  }
+}
