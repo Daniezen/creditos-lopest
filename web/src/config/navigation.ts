@@ -1,8 +1,9 @@
 /**
  * Configuración central de navegación del dashboard.
  *
- * No se deben hardcodear enlaces en cada sidebar o layout.
- * Si mañana cambia una ruta, se cambia aquí.
+ * Regla:
+ * - El sidebar solo debe contener módulos principales.
+ * - Acciones como "Crear nuevo crédito" viven dentro del módulo Créditos.
  */
 
 export interface DashboardNavItem {
@@ -22,11 +23,6 @@ export const dashboardNavigation: DashboardNavItem[] = [
     label: "Créditos",
     href: "/creditos",
     description: "Biblioteca y gestión de créditos.",
-  },
-  {
-    label: "Nuevo crédito",
-    href: "/creditos/nuevo",
-    description: "Flujo formal de creación con vista previa.",
   },
   {
     label: "Clientes",
