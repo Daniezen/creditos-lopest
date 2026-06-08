@@ -1,14 +1,28 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 /**
- * Prisma singleton.
+ * Prisma singleton para Next.js.
  *
- * En desarrollo, Next.js puede recargar módulos varias veces por HMR.
- * Si se instancia PrismaClient en cada recarga, se abren conexiones innecesarias.
+ * Prisma 7 con engine "client" requiere un driver adapter en runtime.
+ * Para PostgreSQL local usamos @prisma/adapter-pg.
  *
- * Este patrón conserva una instancia global durante desarrollo y evita
- * saturar PostgreSQL.
+ * prisma.config.ts configura Prisma CLI / Migrate.
+ * Este archivo configura Prisma Client dentro de la aplicación Next.js.
  */
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL no está definida. Revisa el archivo .env en la raíz de web.",
+  );
+}
+
+const adapter = new PrismaPg({
+  connectionString,
+});
+
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
@@ -16,6 +30,7 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    adapter,
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
