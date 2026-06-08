@@ -35,6 +35,17 @@ interface SimulatorFormProps {
     field: K,
     value: SimulatorFormState[K],
   ) => void;
+
+  /**
+   * panel:
+   * - usado en /simulador
+   * - formulario vertical compacto
+   *
+   * grid:
+   * - usado en /creditos/nuevo
+   * - formulario en 2/3 columnas para evitar el riel estrecho visto en captura
+   */
+  variant?: "panel" | "grid";
 }
 
 /**
@@ -42,7 +53,13 @@ interface SimulatorFormProps {
  *
  * No calcula cuotas. Solo captura valores y muestra entrada normalizada.
  */
-export function SimulatorForm({ form, onChange }: SimulatorFormProps) {
+export function SimulatorForm({
+  form,
+  onChange,
+  variant = "panel",
+}: SimulatorFormProps) {
+  const isGrid = variant === "grid";
+
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-5">
@@ -51,11 +68,16 @@ export function SimulatorForm({ form, onChange }: SimulatorFormProps) {
         </h3>
 
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          Completa los campos para generar el cronograma proyectado.
+          Completa las condiciones financieras para generar el cronograma.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div
+        className={[
+          "grid gap-4",
+          isGrid ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1",
+        ].join(" ")}
+      >
         <Field label="Fecha del préstamo">
           <Input
             type="date"
@@ -119,7 +141,7 @@ export function SimulatorForm({ form, onChange }: SimulatorFormProps) {
           Entrada normalizada
         </h4>
 
-        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <MetricLabel label="Monto">
             {form.monto.trim()
               ? formatCurrencyCOP(parseNumericInput(form.monto))
