@@ -1,6 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  CalendarDays,
+  CreditCard,
+  Hash,
+  Percent,
+  Repeat,
+  SlidersHorizontal,
+  WalletCards,
+} from "lucide-react";
 
 import type {
   FrecuenciaPago,
@@ -35,16 +44,6 @@ interface SimulatorFormProps {
     field: K,
     value: SimulatorFormState[K],
   ) => void;
-
-  /**
-   * panel:
-   * - usado en /simulador
-   * - formulario vertical compacto
-   *
-   * grid:
-   * - usado en /creditos/nuevo
-   * - formulario en 2/3 columnas para evitar el riel estrecho visto en captura
-   */
   variant?: "panel" | "grid";
 }
 
@@ -62,14 +61,20 @@ export function SimulatorForm({
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-slate-950">
-          Condiciones del crédito
-        </h3>
+      <div className="mb-5 flex gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+          <SlidersHorizontal className="h-5 w-5" />
+        </div>
 
-        <p className="mt-1 text-sm leading-6 text-slate-500">
-          Completa las condiciones financieras para generar el cronograma.
-        </p>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-950">
+            Condiciones del crédito
+          </h3>
+
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Completa las condiciones financieras para generar el cronograma.
+          </p>
+        </div>
       </div>
 
       <div
@@ -78,7 +83,7 @@ export function SimulatorForm({
           isGrid ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1",
         ].join(" ")}
       >
-        <Field label="Fecha del préstamo">
+        <Field icon={CalendarDays} label="Fecha del préstamo">
           <Input
             type="date"
             value={form.fechaPrestamo}
@@ -86,7 +91,7 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field label="Valor del préstamo">
+        <Field icon={WalletCards} label="Valor del préstamo">
           <Input
             inputMode="decimal"
             value={form.monto}
@@ -95,7 +100,7 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field label="Plazo en meses">
+        <Field icon={Hash} label="Plazo en meses">
           <Input
             inputMode="decimal"
             value={form.plazoMeses}
@@ -104,7 +109,7 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field label="Tasa mensual">
+        <Field icon={Percent} label="Tasa mensual">
           <Input
             inputMode="decimal"
             value={form.tasaMensual}
@@ -113,7 +118,7 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field label="Frecuencia">
+        <Field icon={Repeat} label="Frecuencia">
           <Select
             value={form.frecuencia}
             placeholder="Selecciona frecuencia"
@@ -124,7 +129,7 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field label="Tipo de crédito">
+        <Field icon={CreditCard} label="Tipo de crédito">
           <Select
             value={form.tipoAmortizacion}
             placeholder="Selecciona tipo"
@@ -137,30 +142,33 @@ export function SimulatorForm({
       </div>
 
       <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
-        <h4 className="text-sm font-semibold text-violet-950">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-violet-950">
+          <SlidersHorizontal className="h-4 w-4" />
           Entrada normalizada
         </h4>
 
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-          <MetricLabel label="Monto">
+          <MetricLabel icon={WalletCards} label="Monto">
             {form.monto.trim()
               ? formatCurrencyCOP(parseNumericInput(form.monto))
               : "-"}
           </MetricLabel>
 
-          <MetricLabel label="Tasa">
+          <MetricLabel icon={Percent} label="Tasa">
             {form.tasaMensual.trim()
               ? formatPercent(parseTasaMensualInput(form.tasaMensual))
               : "-"}
           </MetricLabel>
 
-          <MetricLabel label="Plazo">
+          <MetricLabel icon={Hash} label="Plazo">
             {form.plazoMeses.trim()
               ? `${formatNumberCO(parseNumericInput(form.plazoMeses))} meses`
               : "-"}
           </MetricLabel>
 
-          <MetricLabel label="Frecuencia">{form.frecuencia || "-"}</MetricLabel>
+          <MetricLabel icon={Repeat} label="Frecuencia">
+            {form.frecuencia || "-"}
+          </MetricLabel>
         </dl>
       </div>
     </section>
@@ -168,14 +176,16 @@ export function SimulatorForm({
 }
 
 interface FieldProps {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   children: ReactNode;
 }
 
-function Field({ label, children }: FieldProps) {
+function Field({ icon: Icon, label, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-700">
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+        <Icon className="h-4 w-4 text-violet-600" />
         {label}
       </span>
       {children}
@@ -238,14 +248,16 @@ function Select({ value, placeholder, options, onChange }: SelectProps) {
 }
 
 interface MetricLabelProps {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   children: ReactNode;
 }
 
-function MetricLabel({ label, children }: MetricLabelProps) {
+function MetricLabel({ icon: Icon, label, children }: MetricLabelProps) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-violet-400">
+      <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-violet-400">
+        <Icon className="h-3.5 w-3.5" />
         {label}
       </dt>
       <dd className="mt-1 font-semibold text-slate-900">{children}</dd>

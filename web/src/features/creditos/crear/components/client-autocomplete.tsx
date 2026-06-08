@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { Building2, Phone, Search, UserRound } from "lucide-react";
 
 import type { ClienteSelectorOption } from "@/features/clientes/types";
 
@@ -61,10 +62,6 @@ export function ClientAutocomplete({
   }
 
   function handleBlur() {
-    /**
-     * Se usa pequeño delay para permitir click en una opción del dropdown
-     * antes de cerrar la lista por pérdida de foco del input.
-     */
     blurTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
     }, 150);
@@ -88,19 +85,24 @@ export function ClientAutocomplete({
   return (
     <div className="relative">
       <label className="block">
-        <span className="mb-2 block text-sm font-medium text-slate-700">
+        <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Search className="h-4 w-4 text-violet-600" />
           Buscar cliente
         </span>
 
-        <input
-          type="text"
-          value={query}
-          placeholder="Buscar por cédula, nombre, teléfono, empresa o contacto"
-          onChange={(event) => handleChange(event.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-        />
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+          <input
+            type="text"
+            value={query}
+            placeholder="Buscar por cédula, nombre, teléfono, empresa o contacto"
+            onChange={(event) => handleChange(event.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            className="w-full rounded-2xl border border-slate-300 bg-white px-11 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+          />
+        </div>
       </label>
 
       {isOpen ? (
@@ -115,10 +117,6 @@ export function ClientAutocomplete({
                     <button
                       type="button"
                       onMouseDown={(event) => {
-                        /**
-                         * Evita que el input pierda foco antes de ejecutar
-                         * la selección del cliente.
-                         */
                         event.preventDefault();
                         handleSelect(cliente);
                       }}
@@ -129,17 +127,32 @@ export function ClientAutocomplete({
                           : "hover:bg-violet-50/70",
                       ].join(" ")}
                     >
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm font-semibold text-slate-950">
-                          {cliente.nombre}
-                        </p>
+                      <div className="flex gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                          <UserRound className="h-5 w-5" />
+                        </div>
 
-                        <p className="text-xs leading-5 text-slate-500">
-                          C.C. {cliente.cedula}
-                          {" · "}
-                          Tel. {cliente.telefono || "-"}
-                          {cliente.empresa ? ` · ${cliente.empresa}` : ""}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-950">
+                            {cliente.nombre}
+                          </p>
+
+                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-500">
+                            <span>C.C. {cliente.cedula}</span>
+
+                            <span className="inline-flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {cliente.telefono || "-"}
+                            </span>
+
+                            {cliente.empresa ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {cliente.empresa}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
                     </button>
                   </li>
@@ -147,7 +160,8 @@ export function ClientAutocomplete({
               })}
             </ul>
           ) : (
-            <div className="px-4 py-4 text-sm text-slate-500">
+            <div className="flex items-center gap-3 px-4 py-4 text-sm text-slate-500">
+              <Search className="h-4 w-4 text-slate-400" />
               No se encontraron clientes con ese criterio.
             </div>
           )}
