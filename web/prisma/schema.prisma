@@ -83,13 +83,16 @@ model Credito {
   // Debe generarse transaccionalmente desde la aplicación o con tabla de secuencia.
   codigo String @unique
 
+  // Evita duplicados por doble submit, reintentos de red o recargas.
+  idempotencyKey String? @unique
+
   clienteId String
   cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
 
   fechaPrestamo DateTime
 
   monto       Decimal @db.Decimal(18, 2)
-  plazoMeses  Int
+  plazoMeses  Decimal @db.Decimal(10, 2)
   tasaMensual Decimal @db.Decimal(10, 6)
 
   frecuencia       FrecuenciaPago

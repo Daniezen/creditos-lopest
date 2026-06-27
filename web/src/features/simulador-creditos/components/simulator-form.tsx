@@ -70,9 +70,9 @@ export function SimulatorForm({
       : null;
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+    <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
           <SlidersHorizontal className="h-5 w-5" />
         </div>
 
@@ -83,7 +83,7 @@ export function SimulatorForm({
 
       <div
         className={[
-          "grid gap-4",
+          "grid gap-3",
           isGrid ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1",
         ].join(" ")}
       >
@@ -162,7 +162,7 @@ interface FieldProps {
 function Field({ icon: Icon, label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
+      <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
         <span className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-violet-600" />
           {label}
@@ -200,7 +200,7 @@ function Input({
       placeholder={placeholder}
       inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+      className="w-full rounded-2xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
     />
   );
 }
@@ -217,7 +217,7 @@ function Select({ value, placeholder, options, onChange }: SelectProps) {
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+      className="w-full rounded-2xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
     >
       <option value="" disabled>
         {placeholder}

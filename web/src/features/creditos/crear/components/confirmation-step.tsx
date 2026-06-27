@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   ClipboardCheck,
@@ -25,27 +27,67 @@ import {
   parseTasaMensualInput,
 } from "@/lib/formatters";
 
+import { crearCreditoDesdeWizard } from "../actions";
+
 interface ConfirmationStepProps {
   cliente: ClienteSelectorOption | null;
   form: SimulatorFormState;
   resultado: SimulationResult;
+  idempotencyKey: string;
 }
 
 /**
- * Paso 3 del wizard.
+ * Paso final de creación.
  *
- * Revisión final antes de guardar.
+ * El botón guarda el crédito mediante server action transaccional.
+ * El servidor recalcula el cronograma; no confía en el resultado del navegador.
  */
 export function ConfirmationStep({
   cliente,
   form,
   resultado,
+  idempotencyKey,
 }: ConfirmationStepProps) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
   const monto = parseNumericInput(form.monto);
   const tasaMensual = parseTasaMensualInput(form.tasaMensual);
   const fechaPrestamo = form.fechaPrestamo
     ? parseDateInputValue(form.fechaPrestamo)
     : null;
+
+  const canSave = cliente !== null && resultado.estado === "success";
+
+  function handleGuardarCredito() {
+    if (!cliente) {
+      setError("Selecciona un cliente antes de guardar.");
+      return;
+    }
+
+    if (resultado.estado !== "success") {
+      setError("Completa las condiciones del crédito antes de guardar.");
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const response = await crearCreditoDesdeWizard({
+        clienteId: cliente.id,
+        form,
+        idempotencyKey,
+      });
+
+      if (!response.ok) {
+        setError(response.error);
+        return;
+      }
+
+      router.push(`/creditos/${response.creditoId}`);
+    });
+  }
 
   return (
     <section className="space-y-6">
@@ -59,10 +101,6 @@ export function ConfirmationStep({
             <h3 className="text-lg font-semibold text-slate-950">
               Confirmación del crédito
             </h3>
-
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Revisa cliente, condiciones y totales antes de guardar.
-            </p>
           </div>
         </div>
 
@@ -126,13 +164,20 @@ export function ConfirmationStep({
           </ReviewCard>
         </div>
 
+        {error ? (
+          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
         <button
           type="button"
-          disabled
-          className="mt-6 inline-flex cursor-not-allowed items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-400"
+          onClick={handleGuardarCredito}
+          disabled={!canSave || isPending}
+          className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           <ClipboardCheck className="h-4 w-4" />
-          Guardar crédito próximamente
+          {isPending ? "Guardando..." : "Guardar crédito"}
         </button>
       </div>
     </section>

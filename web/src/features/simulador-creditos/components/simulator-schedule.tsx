@@ -6,6 +6,12 @@ import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 interface SimulatorScheduleProps {
   cronograma: CuotaSimulada[];
+
+  /**
+   * Permite ocultar el estado proyectado en pantallas donde no aporta valor.
+   * En creación de crédito, antes de guardar, todas las cuotas son solo vista previa.
+   */
+  showEstado?: boolean;
 }
 
 /**
@@ -17,19 +23,17 @@ interface SimulatorScheduleProps {
  * Móvil/tablet:
  * - Cards por cuota para evitar scroll horizontal destructivo.
  */
-export function SimulatorSchedule({ cronograma }: SimulatorScheduleProps) {
+export function SimulatorSchedule({
+  cronograma,
+  showEstado = true,
+}: SimulatorScheduleProps) {
   return (
     <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-lg font-semibold text-slate-950">
-            Cronograma simulado
+            Cronograma
           </h3>
-
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Esta tabla no representa pagos reales, abonos ni mora persistida. Es
-            una proyección financiera.
-          </p>
         </div>
 
         <div className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-sm font-medium text-violet-800">
@@ -38,7 +42,12 @@ export function SimulatorSchedule({ cronograma }: SimulatorScheduleProps) {
       </div>
 
       <div className="hidden min-w-0 overflow-x-auto lg:block">
-        <table className="min-w-[920px] divide-y divide-slate-200 text-sm">
+        <table
+          className={[
+            showEstado ? "min-w-[920px]" : "min-w-[760px]",
+            "divide-y divide-slate-200 text-sm",
+          ].join(" ")}
+        >
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <TableHead>N°</TableHead>
@@ -47,7 +56,7 @@ export function SimulatorSchedule({ cronograma }: SimulatorScheduleProps) {
               <TableHead className="text-right">Interés</TableHead>
               <TableHead className="text-right">Valor cuota</TableHead>
               <TableHead className="text-right">Saldo capital</TableHead>
-              <TableHead>Estado proyectado</TableHead>
+              {showEstado ? <TableHead>Estado proyectado</TableHead> : null}
             </tr>
           </thead>
 
@@ -77,9 +86,11 @@ export function SimulatorSchedule({ cronograma }: SimulatorScheduleProps) {
                   {formatCurrencyCOP(cuota.saldoCapitalPost)}
                 </TableCell>
 
-                <TableCell>
-                  <EstadoBadge estado={cuota.estado} />
-                </TableCell>
+                {showEstado ? (
+                  <TableCell>
+                    {showEstado ? <EstadoBadge estado={cuota.estado} /> : null}
+                  </TableCell>
+                ) : null}
               </tr>
             ))}
           </tbody>

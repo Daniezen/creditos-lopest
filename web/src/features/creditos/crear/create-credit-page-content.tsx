@@ -17,6 +17,10 @@ interface CreateCreditPageContentProps {
 
 type CreateCreditStep = 1 | 2 | 3;
 
+function createIdempotencyKey() {
+  return `credito-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+}
+
 /**
  * Flujo formal de creación de crédito.
  *
@@ -35,6 +39,7 @@ export function CreateCreditPageContent({
     useState<ClienteSelectorOption[]>(initialClientes);
   const [selectedCliente, setSelectedCliente] =
     useState<ClienteSelectorOption | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
 
   const { form, resultado, updateField, resetForm } = useCreditSimulation();
 
@@ -81,6 +86,7 @@ export function CreateCreditPageContent({
   function resetWizard() {
     resetForm();
     setSelectedCliente(null);
+    setIdempotencyKey(createIdempotencyKey());
     setCurrentStep(1);
   }
 
@@ -99,20 +105,10 @@ export function CreateCreditPageContent({
   return (
     <main className="min-w-0 pb-28">
       <div className="px-4 py-6 sm:px-6 lg:px-10">
-        <header className="mb-8 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-sm font-semibold text-violet-700">
-              Creación formal
-            </p>
-
-            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-              Nuevo crédito
-            </h2>
-
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Selecciona el cliente, define las condiciones del crédito y revisa el cronograma antes de guardar.
-            </p>
-          </div>
+        <header className="mb-8 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 xl:flex-row xl:items-center">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-950">
+            Nuevo crédito
+          </h2>
 
           <div className="flex flex-wrap gap-3">
             <Link
@@ -127,7 +123,7 @@ export function CreateCreditPageContent({
               onClick={resetWizard}
               className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
             >
-              Reiniciar flujo
+              Reiniciar
             </button>
           </div>
         </header>
@@ -161,6 +157,7 @@ export function CreateCreditPageContent({
               cliente={selectedCliente}
               form={form}
               resultado={resultado}
+              idempotencyKey={idempotencyKey}
             />
           ) : null}
         </div>
