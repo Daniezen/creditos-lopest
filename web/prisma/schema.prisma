@@ -255,14 +255,17 @@ model User {
   email String @unique
   nombre String
 
-  passwordHash String
+  passwordHash String?
+  photoUrl String?
+  lastLoginAt DateTime?
+
   activo Boolean @default(true)
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  sessions Session[]
   roles    UserRole[]
+  oauthAccounts OauthAccount[]
   auditLogs AuditLog[] @relation("AuditActor")
 
   @@index([email])
@@ -298,25 +301,30 @@ model UserRole {
   @@map("user_roles")
 }
 
-model Session {
+model OauthAccount {
   id String @id @default(cuid())
 
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  tokenHash String @unique
-  expiresAt DateTime
+  provider String
+  providerAccountId String
+
+  email String
+  emailVerified Boolean @default(false)
+
+  pictureUrl String?
 
   creadoEn DateTime @default(now())
-  ultimoUsoEn DateTime?
+  actualizadoEn DateTime @updatedAt
 
-  userAgent String?
-  ipAddress String?
-
+  @@unique([provider, providerAccountId])
+  @@unique([provider, email])
   @@index([userId])
-  @@index([expiresAt])
-  @@map("sessions")
+  @@index([email])
+  @@map("oauth_accounts")
 }
+
 
 model AuditLog {
   id String @id @default(cuid())

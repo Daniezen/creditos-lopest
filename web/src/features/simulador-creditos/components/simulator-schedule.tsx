@@ -1,53 +1,96 @@
 import type { ReactNode } from "react";
-
-import type { CuotaSimulada } from "@/domain/creditos/simulador/tipos";
+import { CalendarDays, RotateCcw } from "lucide-react";
 
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
+interface SimulatorScheduleRow {
+  numeroCuota: number;
+  fechaProgramada: Date;
+  capitalProgramado: number;
+  interesProgramado: number;
+  valorCuota: number;
+  saldoCapitalPost: number;
+}
+
 interface SimulatorScheduleProps {
-  cronograma: CuotaSimulada[];
+  cronograma: SimulatorScheduleRow[];
 
   /**
-   * Permite ocultar el estado proyectado en pantallas donde no aporta valor.
-   * En creación de crédito, antes de guardar, todas las cuotas son solo vista previa.
+   * Compatibilidad con consumidores existentes.
+   *
+   * Algunas vistas todavía pasan showEstado={false}. En esta versión no se
+   * renderiza "Estado proyectado" porque, en una simulación nueva, todas las
+   * cuotas son proyecciones naturales y esa columna no aporta información real.
    */
   showEstado?: boolean;
+
+  /**
+   * Acción opcional para reiniciar la simulación.
+   *
+   * Solo debe enviarse cuando ya existe una simulación generada.
+   */
+  onReset?: () => void;
 }
 
 /**
- * Cronograma visual.
+ * Cuotas proyectadas del simulador.
  *
- * Desktop:
- * - Tabla tradicional.
+ * Decisión responsive:
+ * - En móvil se usan tarjetas compactas para evitar scroll horizontal.
+ * - En escritorio se mantiene tabla porque permite comparar cuotas de forma
+ *   más eficiente.
  *
- * Móvil/tablet:
- * - Cards por cuota para evitar scroll horizontal destructivo.
+ * Restricción:
+ * - Este componente no persiste datos.
+ * - Solo renderiza cuotas calculadas en memoria.
  */
 export function SimulatorSchedule({
   cronograma,
-  showEstado = true,
+  onReset,
 }: SimulatorScheduleProps) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+    <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-xl font-bold tracking-tight text-slate-950">
-            Cronograma
+            Cuotas
           </h3>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Proyección de pagos según las condiciones ingresadas.
+          </p>
         </div>
 
-        <div className="rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
-          {cronograma.length} cuota(s)
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
+            <CalendarDays className="h-4 w-4" />
+            {cronograma.length} cuota(s)
+          </span>
+
+          {onReset ? (
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reiniciar
+            </button>
+          ) : null}
         </div>
       </div>
 
-      <div className="hidden min-w-0 overflow-x-auto lg:block">
-        <table
-          className={[
-            showEstado ? "min-w-[920px]" : "min-w-[760px]",
-            "divide-y divide-slate-200 text-sm",
-          ].join(" ")}
-        >
+      <div className="grid gap-2 p-3 md:hidden">
+        {cronograma.map((cuota) => (
+          <QuotaCard
+            key={`${cuota.numeroCuota}-${cuota.fechaProgramada.toISOString()}`}
+            cuota={cuota}
+          />
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-[720px] w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <TableHead>N°</TableHead>
@@ -56,17 +99,18 @@ export function SimulatorSchedule({
               <TableHead className="text-right">Interés</TableHead>
               <TableHead className="text-right">Valor cuota</TableHead>
               <TableHead className="text-right">Saldo capital</TableHead>
-              {showEstado ? <TableHead>Estado proyectado</TableHead> : null}
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100">
             {cronograma.map((cuota) => (
               <tr
-                key={cuota.numeroCuota}
+                key={`${cuota.numeroCuota}-${cuota.fechaProgramada.toISOString()}`}
                 className="transition hover:bg-violet-50/45"
               >
-                <TableCell>{cuota.numeroCuota}</TableCell>
+                <TableCell className="font-semibold text-slate-950">
+                  {cuota.numeroCuota}
+                </TableCell>
 
                 <TableCell>{formatDateCO(cuota.fechaProgramada)}</TableCell>
 
@@ -78,69 +122,93 @@ export function SimulatorSchedule({
                   {formatCurrencyCOP(cuota.interesProgramado)}
                 </TableCell>
 
-                <TableCell className="text-right font-semibold text-slate-950">
+                <TableCell className="text-right font-bold text-slate-950">
                   {formatCurrencyCOP(cuota.valorCuota)}
                 </TableCell>
 
                 <TableCell className="text-right">
                   {formatCurrencyCOP(cuota.saldoCapitalPost)}
                 </TableCell>
-
-                {showEstado ? (
-                  <TableCell>
-                    {showEstado ? <EstadoBadge estado={cuota.estado} /> : null}
-                  </TableCell>
-                ) : null}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <div className="grid gap-3 p-4 lg:hidden">
-        {cronograma.map((cuota) => (
-          <article
-            key={cuota.numeroCuota}
-            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Cuota
-                </p>
-                <p className="mt-1 text-lg font-bold text-slate-950">
-                  #{cuota.numeroCuota}
-                </p>
-              </div>
-
-              <EstadoBadge estado={cuota.estado} />
-            </div>
-
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <MobileMetric label="Fecha">
-                {formatDateCO(cuota.fechaProgramada)}
-              </MobileMetric>
-
-              <MobileMetric label="Valor cuota">
-                {formatCurrencyCOP(cuota.valorCuota)}
-              </MobileMetric>
-
-              <MobileMetric label="Capital">
-                {formatCurrencyCOP(cuota.capitalProgramado)}
-              </MobileMetric>
-
-              <MobileMetric label="Interés">
-                {formatCurrencyCOP(cuota.interesProgramado)}
-              </MobileMetric>
-
-              <MobileMetric label="Saldo capital">
-                {formatCurrencyCOP(cuota.saldoCapitalPost)}
-              </MobileMetric>
-            </dl>
-          </article>
-        ))}
-      </div>
     </section>
+  );
+}
+
+interface QuotaCardProps {
+  cuota: SimulatorScheduleRow;
+}
+
+/**
+ * Tarjeta compacta de cuota para móvil.
+ *
+ * Prioridad visual:
+ * 1. número de cuota y fecha;
+ * 2. valor de la cuota;
+ * 3. capital, interés y saldo como detalles compactos.
+ */
+function QuotaCard({ cuota }: QuotaCardProps) {
+  return (
+    <article className="rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm shadow-violet-100/30">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+            Cuota {cuota.numeroCuota}
+          </p>
+
+          <p className="mt-1 text-sm font-semibold text-slate-600">
+            {formatDateCO(cuota.fechaProgramada)}
+          </p>
+        </div>
+
+        <div className="text-right">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            Valor
+          </p>
+
+          <p className="mt-1 text-lg font-black tracking-tight text-slate-950">
+            {formatCurrencyCOP(cuota.valorCuota)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-violet-50 pt-3">
+        <MiniMetric
+          label="Capital"
+          value={formatCurrencyCOP(cuota.capitalProgramado)}
+        />
+        <MiniMetric
+          label="Interés"
+          value={formatCurrencyCOP(cuota.interesProgramado)}
+        />
+        <MiniMetric
+          label="Saldo"
+          value={formatCurrencyCOP(cuota.saldoCapitalPost)}
+        />
+      </div>
+    </article>
+  );
+}
+
+interface MiniMetricProps {
+  label: string;
+  value: string;
+}
+
+function MiniMetric({ label, value }: MiniMetricProps) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-xs font-bold text-slate-700">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -169,36 +237,5 @@ function TableHead({ className = "", children }: TableHeadProps) {
     >
       {children}
     </th>
-  );
-}
-
-interface MobileMetricProps {
-  label: string;
-  children: ReactNode;
-}
-
-function MobileMetric({ label, children }: MobileMetricProps) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-slate-400">
-        {label}
-      </dt>
-      <dd className="mt-1 font-semibold text-slate-900">{children}</dd>
-    </div>
-  );
-}
-
-function EstadoBadge({ estado }: { estado: string }) {
-  return (
-    <span
-      className={[
-        "rounded-full px-2 py-1 text-xs font-semibold",
-        estado === "Atrasado"
-          ? "bg-red-100 text-red-700"
-          : "bg-violet-100 text-violet-700",
-      ].join(" ")}
-    >
-      {estado}
-    </span>
   );
 }

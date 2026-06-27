@@ -79,6 +79,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
+COPY scripts ./scripts
+
+# Prisma Client también debe existir en la imagen migrator porque esta imagen
+# ejecuta scripts operativos como create-user, no solo prisma migrate deploy.
+ARG PRISMA_GENERATE_DATABASE_URL="postgresql://lopest_app_user:dummy_password@localhost:5432/lopest_core?schema=public"
+RUN DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm exec prisma generate
 
 CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
 

@@ -1,24 +1,33 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentSession } from "./session";
+import { auth } from "@/auth";
 
 export type AppRole = "ADMIN" | "OPERADOR" | "LECTURA";
 
+/**
+ * Obtiene el usuario autenticado desde NextAuth y normaliza el contrato interno.
+ *
+ * Esta función autentica identidad, pero no valida acceso a entidades
+ * específicas. Para eso se necesitan guards de negocio por cliente/crédito.
+ */
 export async function getCurrentUser() {
-  const session = await getCurrentSession();
+  const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return null;
   }
 
   return {
     id: session.user.id,
-    email: session.user.email,
-    nombre: session.user.nombre,
-    roles: session.user.roles.map((item) => item.role.code as AppRole),
+    email: session.user.email ?? "",
+    nombre: session.user.name ?? "",
+    roles: session.user.roles as AppRole[],
   };
 }
 
+/**
+ * Exige usuario autenticado.
+ */
 export async function requireUser() {
   const user = await getCurrentUser();
 
@@ -29,6 +38,9 @@ export async function requireUser() {
   return user;
 }
 
+/**
+ * Exige un rol específico.
+ */
 export async function requireRole(role: AppRole) {
   const user = await requireUser();
 
@@ -39,6 +51,9 @@ export async function requireRole(role: AppRole) {
   return user;
 }
 
+/**
+ * Exige al menos uno de los roles indicados.
+ */
 export async function requireAnyRole(roles: AppRole[]) {
   const user = await requireUser();
 

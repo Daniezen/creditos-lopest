@@ -1,9 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { SESSION_COOKIE_NAME } from "@/server/auth/constants";
+import { AUTH_COOKIE_NAMES } from "@/server/auth/constants";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/api/auth"];
 
+/**
+ * Middleware de protección superficial.
+ *
+ * Responsabilidad:
+ * - Evitar que usuarios sin cookie de sesión entren a rutas privadas.
+ *
+ * Restricción importante:
+ * - Este middleware NO sustituye autorización real.
+ * - El control fuerte debe vivir en server components, queries y server actions
+ *   mediante requireUser(), roles y filtros por cliente.
+ *
+ * Motivo:
+ * - Una cookie puede existir pero el usuario puede estar desactivado.
+ * - Un usuario puede tener sesión válida pero no tener permiso sobre un cliente.
+ * - Por eso el middleware solo es una primera barrera de navegación.
+ */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -15,9 +31,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+  const hasAuthCookie = AUTH_COOKIE_NAMES.some((cookieName) =>
+    request.cookies.has(cookieName),
+  );
 
-  if (!sessionCookie) {
+  if (!hasAuthCookie) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
@@ -26,5 +44,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image).*)"],
+  matcher: ["/((?!api/auth|_next/static|_next/image).*)"],
 };

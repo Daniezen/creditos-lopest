@@ -1,30 +1,46 @@
-import type { ReactNode } from "react";
-
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
+import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav";
+import { requireUser } from "@/server/auth/guards";
+
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
 
 /**
- * Layout raíz del dashboard.
+ * Layout privado del dashboard.
  *
- * El grupo "(dashboard)" no aparece en la URL.
- * src/app/(dashboard)/simulador/page.tsx => /simulador
+ * Responsabilidades:
+ * - exige autenticación antes de renderizar vistas internas;
+ * - mantiene una sidebar fija en desktop;
+ * - mantiene una topbar sticky sobre el área de contenido;
+ * - agrega navegación inferior en pantallas pequeñas.
+ *
+ * Decisión visual:
+ * - la sidebar usa h-screen + sticky para no depender del largo del contenido;
+ * - el área central controla su propio scroll natural.
+ *
+ * Seguridad:
+ * - este layout autentica usuario;
+ * - no autoriza acceso a entidades concretas;
+ * - los permisos por cliente/crédito deben vivir en queries, guards y actions.
  */
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
+  const user = await requireUser();
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="flex min-h-screen">
-        <DashboardSidebar />
+    <div className="min-h-screen bg-[#f7f3ff] lg:flex">
+      <DashboardSidebar />
 
-        <div className="min-w-0 flex-1">
-          <div className="border-b border-slate-200 bg-white px-4 py-4 shadow-sm lg:hidden">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-700">
-              Créditos Lopest
-            </p>
-            <p className="mt-1 text-lg font-bold text-slate-950">Dashboard</p>
-          </div>
+      <div className="min-w-0 flex-1">
+        <DashboardTopbar user={user} />
 
-          {children}
-        </div>
+        <main className="min-w-0 pb-28 lg:pb-0">{children}</main>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }

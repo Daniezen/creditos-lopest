@@ -1,17 +1,21 @@
 /**
- * Constantes de autenticación compartibles entre Node runtime y Edge runtime.
+ * Constantes edge-safe de autenticación.
  *
- * Regla crítica:
- * este archivo debe ser seguro para Edge Runtime.
+ * Intención:
+ * - Compartir nombres de cookies entre middleware Edge y código server.
  *
- * Por eso NO debe importar:
- * - Prisma;
- * - node:crypto;
- * - cookies();
- * - headers();
- * - módulos que dependan de runtime Node.
+ * Restricción crítica:
+ * - Este archivo NO debe importar Prisma, node:crypto, cookies(), headers()
+ *   ni ningún módulo dependiente de Node Runtime.
  *
- * El middleware puede importar este archivo sin arrastrar dependencias
- * incompatibles con Edge.
+ * Motivo:
+ * - middleware.ts corre en Edge Runtime.
+ * - Si middleware importa indirectamente módulos Node, Next puede compilar
+ *   con advertencias o fallos por runtime incompatible.
  */
-export const SESSION_COOKIE_NAME = "lopest_session";
+export const AUTH_COOKIE_NAMES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
+  "next-auth.session-token",
+  "__Secure-next-auth.session-token",
+];

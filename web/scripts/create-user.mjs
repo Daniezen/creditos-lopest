@@ -1,7 +1,32 @@
 import "dotenv/config";
-import { randomBytes, scryptSync } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+const { PrismaClient } = require("@prisma/client");
+const { PrismaPg } = require("@prisma/adapter-pg");
+
+/**
+ * Script operativo para preautorizar usuarios OAuth.
+ *
+ * Intención:
+ * - Google autentica identidad.
+ * - Esta tabla interna decide si ese email puede entrar y con qué rol.
+ *
+ * Restricción:
+ * - No crea cuentas Google.
+ * - No guarda contraseñas.
+ * - Solo registra usuarios autorizados dentro de la app.
+ *
+ * Variables requeridas:
+ * - DATABASE_URL
+ * - USER_EMAIL
+ * - USER_NAME
+ * - USER_ROLE: ADMIN | OPERADOR | LECTURA
+ *
+ * Variable opcional:
+ * - USER_PHOTO_URL
+ */
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -12,11 +37,11 @@ if (!connectionString) {
 
 const email = process.env.USER_EMAIL?.trim().toLowerCase();
 const nombre = process.env.USER_NAME?.trim();
-const password = process.env.USER_PASSWORD;
 const roleCode = process.env.USER_ROLE?.trim().toUpperCase() ?? "OPERADOR";
+const photoUrl = process.env.USER_PHOTO_URL?.trim() || null;
 
-if (!email || !nombre || !password) {
-  console.error("Faltan USER_EMAIL, USER_NAME o USER_PASSWORD.");
+if (!email || !nombre) {
+  console.error("Faltan USER_EMAIL o USER_NAME.");
   process.exit(1);
 }
 
@@ -27,15 +52,13 @@ if (!allowedRoles.has(roleCode)) {
   process.exit(1);
 }
 
-function hashPassword(rawPassword) {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(rawPassword, salt, 64).toString("hex");
+const adapter = new PrismaPg({
+  connectionString,
+});
 
-  return `scrypt$${salt}$${hash}`;
-}
-
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({
+  adapter,
+});
 
 try {
   await prisma.role.upsert({
@@ -65,13 +88,15 @@ try {
     create: {
       email,
       nombre,
-      passwordHash: hashPassword(password),
+      passwordHash: null,
+      photoUrl,
       activo: true,
     },
     update: {
       nombre,
+      photoUrl,
       activo: true,
-      passwordHash: hashPassword(password),
+      passwordHash: null,
     },
   });
 
@@ -89,7 +114,7 @@ try {
     update: {},
   });
 
-  console.log(`OK: usuario ${email} creado/actualizado con rol ${roleCode}.`);
+  console.log(`OK: usuario OAuth ${email} creado/actualizado con rol ${roleCode}.`);
 } finally {
   await prisma.$disconnect();
 }

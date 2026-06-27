@@ -1,23 +1,84 @@
 "use client";
 
-import { useActionState } from "react";
-import { Landmark, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { signIn } from "next-auth/react";
+import { Landmark } from "lucide-react";
 
-import { loginAction, type LoginState } from "@/features/auth/actions";
+interface LoginProfile {
+  key: string;
+  label: string;
+  loginHint?: string;
+  imageSrc?: string;
+  initials: string;
+}
 
-const initialState: LoginState = {
-  error: null,
-};
+interface LoginFormProps {
+  profiles: LoginProfile[];
+}
 
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(
-    loginAction,
-    initialState,
-  );
+/**
+ * Login visual personalizado.
+ *
+ * La foto/tarjeta es el botón de entrada. No se muestra rol operativo porque
+ * para el usuario final no aporta valor y añade ruido visual.
+ *
+ * Seguridad real:
+ * - La tarjeta no autentica.
+ * - La tarjeta solo inicia Google OAuth.
+ * - Google confirma identidad.
+ * - src/auth.ts valida que el correo autenticado exista en users,
+ *   esté activo y tenga al menos un rol.
+ *
+ * Caso de borde cubierto:
+ * - Si el usuario abre Google OAuth y luego vuelve atrás/cancela,
+ *   el navegador puede restaurar la página con el estado React anterior.
+ *   Por eso reseteamos loadingKey al recuperar foco/visibilidad/pageshow.
+ */
+export function LoginForm({ profiles }: LoginFormProps) {
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    function resetLoadingState() {
+      setLoadingKey(null);
+    }
+
+    window.addEventListener("focus", resetLoadingState);
+    window.addEventListener("pageshow", resetLoadingState);
+    document.addEventListener("visibilitychange", resetLoadingState);
+
+    return () => {
+      window.removeEventListener("focus", resetLoadingState);
+      window.removeEventListener("pageshow", resetLoadingState);
+      document.removeEventListener("visibilitychange", resetLoadingState);
+    };
+  }, []);
+
+  function handleLogin(profile: LoginProfile) {
+    setLoadingKey(profile.key);
+
+    signIn(
+      "google",
+      {
+        callbackUrl: "/creditos",
+      },
+      {
+        prompt: "select_account",
+        ...(profile.loginHint ? { login_hint: profile.loginHint } : {}),
+      },
+    ).catch(() => {
+      /**
+       * Fallback defensivo:
+       * si NextAuth no logra navegar por error de red/cancelación, la UI
+       * no debe quedar bloqueada.
+       */
+      setLoadingKey(null);
+    });
+  }
 
   return (
-    <section className="mx-auto w-full max-w-md rounded-[2rem] border border-violet-100 bg-white/90 p-6 shadow-[0_18px_45px_rgba(109,40,217,0.12)] backdrop-blur">
-      <div className="mb-6 flex items-center gap-4">
+    <section className="mx-auto w-full max-w-5xl rounded-[2rem] border border-violet-100 bg-white/90 p-6 shadow-[0_18px_45px_rgba(109,40,217,0.12)] backdrop-blur">
+      <div className="mb-8 flex items-center gap-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-violet-600 text-white shadow-lg shadow-violet-200">
           <Landmark className="h-7 w-7" />
         </div>
@@ -28,53 +89,54 @@ export function LoginForm() {
           </p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
-            Iniciar sesión
+            Selecciona tu acceso
           </h1>
         </div>
       </div>
 
-      <form action={formAction} className="space-y-4">
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Correo
-          </span>
+      <div className="grid gap-4 md:grid-cols-3">
+        {profiles.map((profile) => {
+          const isLoading = loadingKey === profile.key;
 
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
-          />
-        </label>
+          return (
+            <button
+              key={profile.key}
+              type="button"
+              onClick={() => handleLogin(profile)}
+              disabled={loadingKey !== null}
+              className="group block w-full overflow-hidden rounded-[2rem] border border-violet-100 bg-gradient-to-br from-white via-violet-50/60 to-orange-50/40 p-4 text-left shadow-sm shadow-violet-100/40 transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100 disabled:cursor-wait disabled:opacity-70"
+              aria-label={`Iniciar sesión como ${profile.label}`}
+            >
+              <div className="relative aspect-square overflow-hidden rounded-[1.6rem] border border-white bg-white shadow-inner">
+                {profile.imageSrc ? (
+                  <Image
+                    src={profile.imageSrc}
+                    alt={profile.label}
+                    fill
+                    sizes="(min-width: 768px) 30vw, 90vw"
+                    className="object-cover"
+                    priority={profile.key === "daniel"}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,#ddd6fe_0%,#f5d0fe_45%,#ffedd5_100%)] text-5xl font-black text-violet-700">
+                    {profile.initials}
+                  </div>
+                )}
+              </div>
 
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Contraseña
-          </span>
+              <div className="mt-4">
+                <p className="text-xl font-black tracking-tight text-slate-950">
+                  {profile.label}
+                </p>
 
-          <input
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
-          />
-        </label>
-
-        {state.error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {state.error}
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          <LogIn className="h-4 w-4" />
-          {isPending ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
+                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-violet-700 opacity-80 transition group-hover:text-fuchsia-700">
+                  {isLoading ? "Abriendo Google..." : "Cuenta Google"}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </section>
   );
 }
