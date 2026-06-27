@@ -7,32 +7,35 @@ import { Landmark } from "lucide-react";
 import { dashboardNavigation } from "@/config/navigation";
 
 /**
- * Sidebar principal del dashboard.
+ * Sidebar principal de Créditos Lopest.
  *
- * Solo contiene navegación de producto.
- * No debe mostrar roadmap interno, notas técnicas ni mensajes de construcción.
+ * Decisión visual:
+ * - navegación clara, no oscura;
+ * - sin descripciones largas;
+ * - ancho suficiente para respirar;
+ * - acento lila/violeta consistente con la marca.
  */
 export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-slate-200 bg-white px-5 py-6 shadow-sm lg:block">
-      <div className="mb-10">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm">
-          <Landmark className="h-6 w-6" />
+    <aside className="hidden min-h-screen w-80 shrink-0 border-r border-violet-100 bg-gradient-to-b from-white via-[#fbf8ff] to-[#f4efff] px-6 py-6 shadow-sm lg:block">
+      <div className="mb-8 rounded-[2rem] border border-violet-100 bg-white/80 p-5 shadow-sm backdrop-blur">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-200">
+            <Landmark className="h-7 w-7" />
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">
+              Lopest
+            </p>
+
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+              Cartera
+            </h1>
+          </div>
         </div>
-
-        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.3em] text-violet-700">
-          Créditos Lopest
-        </p>
-
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
-          Plataforma
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Gestión, simulación y seguimiento de créditos.
-        </p>
       </div>
 
       <nav className="space-y-2">
@@ -46,39 +49,24 @@ export function DashboardSidebar() {
               key={item.href}
               href={item.href}
               className={[
-                "block rounded-2xl px-4 py-3 text-sm transition",
+                "group flex items-center gap-3 rounded-3xl px-4 py-3 text-sm font-bold transition",
                 isActive
-                  ? "bg-violet-600 text-white shadow-sm shadow-violet-500/20"
-                  : "text-slate-600 hover:bg-violet-50 hover:text-violet-900",
+                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-200"
+                  : "text-slate-700 hover:bg-white hover:text-violet-800 hover:shadow-sm",
               ].join(" ")}
             >
-              <div className="flex gap-3">
-                <div
-                  className={[
-                    "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                    isActive
-                      ? "bg-white/15 text-white"
-                      : "bg-violet-50 text-violet-700",
-                  ].join(" ")}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
+              <span
+                className={[
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition",
+                  isActive
+                    ? "bg-white/18 text-white"
+                    : "bg-violet-50 text-violet-700 group-hover:bg-violet-100",
+                ].join(" ")}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
 
-                <div>
-                  <p className="font-semibold">{item.label}</p>
-
-                  {item.description ? (
-                    <p
-                      className={[
-                        "mt-1 text-xs leading-5",
-                        isActive ? "text-violet-100" : "text-slate-400",
-                      ].join(" ")}
-                    >
-                      {item.description}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+              <span>{item.label}</span>
             </Link>
           );
         })}

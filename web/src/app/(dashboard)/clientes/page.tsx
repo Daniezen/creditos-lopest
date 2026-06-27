@@ -1,22 +1,32 @@
-import { Users } from "lucide-react";
+import { ClientesList } from "@/features/clientes/components/clientes-list";
+import { obtenerClientesParaListado } from "@/features/clientes/queries";
 
-import { ModulePlaceholder } from "@/components/dashboard/module-placeholder";
+interface ClientesPageProps {
+  searchParams: Promise<{
+    q?: string;
+    estadoDocumentos?: string;
+  }>;
+}
 
-export default function ClientesPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ClientesPage({ searchParams }: ClientesPageProps) {
+  const params = await searchParams;
+
+  const query = params.q?.trim() ?? "";
+  const estadoDocumentos = params.estadoDocumentos?.trim() ?? "";
+
+  const clientes = await obtenerClientesParaListado({
+    query,
+    estadoDocumentos,
+  });
+
   return (
-    <ModulePlaceholder
-      eyebrow="Clientes"
-      title="Clientes"
-      description="Consulta y administra la información de los clientes."
-      icon={Users}
-      primaryAction={{
-        label: "Crear crédito",
-        href: "/creditos/nuevo",
-      }}
-      secondaryAction={{
-        label: "Ver créditos",
-        href: "/creditos",
-      }}
+    <ClientesList
+      clientes={clientes}
+      query={query}
+      estadoDocumentos={estadoDocumentos}
     />
   );
 }

@@ -4,8 +4,7 @@ import {
   Coins,
   CreditCard,
   Hash,
-  Landmark,
-} from "lucide-react";
+  Landmark } from "lucide-react";
 
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
@@ -69,10 +68,10 @@ function SummaryCard({ icon: Icon, label, value, featured }: SummaryCardProps) {
   return (
     <div
       className={[
-        "rounded-3xl border p-5 shadow-sm",
+        "rounded-[1.75rem] border p-5 shadow-sm shadow-violet-100/40",
         featured
-          ? "border-violet-200 bg-violet-50"
-          : "border-slate-200 bg-white",
+          ? "border-violet-100 bg-gradient-to-br from-white to-violet-50"
+          : "border-violet-100 bg-white",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
@@ -82,8 +81,8 @@ function SummaryCard({ icon: Icon, label, value, featured }: SummaryCardProps) {
           className={[
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
             featured
-              ? "bg-white text-violet-700 ring-1 ring-violet-200"
-              : "bg-violet-50 text-violet-700",
+              ? "bg-white text-violet-700 ring-1 ring-violet-100"
+              : "bg-violet-100 text-violet-700",
           ].join(" ")}
         >
           <Icon className="h-5 w-5" />
@@ -93,7 +92,7 @@ function SummaryCard({ icon: Icon, label, value, featured }: SummaryCardProps) {
       <p
         className={[
           "mt-2 text-2xl font-bold tracking-tight",
-          featured ? "text-violet-950" : "text-slate-950",
+          featured ? "text-slate-950" : "text-slate-950",
         ].join(" ")}
       >
         {value}

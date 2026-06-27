@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate": "node scripts/validate.mjs"
+    "validate": "node scripts/validate.mjs",
+    "create-user": "node scripts/create-user.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

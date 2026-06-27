@@ -1,22 +1,32 @@
-import { CreditCard } from "lucide-react";
+import { CreditosList } from "@/features/creditos/components/creditos-list";
+import { obtenerCreditosParaListado } from "@/features/creditos/queries";
 
-import { ModulePlaceholder } from "@/components/dashboard/module-placeholder";
+interface CreditosPageProps {
+  searchParams: Promise<{
+    q?: string;
+    estado?: string;
+  }>;
+}
 
-export default function CreditosPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function CreditosPage({ searchParams }: CreditosPageProps) {
+  const params = await searchParams;
+
+  const query = params.q?.trim() ?? "";
+  const estado = params.estado?.trim() ?? "";
+
+  const creditos = await obtenerCreditosParaListado({
+    query,
+    estado,
+  });
+
   return (
-    <ModulePlaceholder
-      eyebrow="Gestión de cartera"
-      title="Créditos"
-      description="Consulta y administra los créditos registrados en la plataforma."
-      icon={CreditCard}
-      primaryAction={{
-        label: "Crear nuevo crédito",
-        href: "/creditos/nuevo",
-      }}
-      secondaryAction={{
-        label: "Ir al simulador",
-        href: "/simulador",
-      }}
+    <CreditosList
+      creditos={creditos}
+      query={query}
+      estado={estado}
     />
   );
 }

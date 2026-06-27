@@ -28,15 +28,15 @@ export function SimulatorSchedule({
   showEstado = true,
 }: SimulatorScheduleProps) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center">
+    <section className="min-w-0 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
         <div>
-          <h3 className="text-lg font-semibold text-slate-950">
+          <h3 className="text-xl font-bold tracking-tight text-slate-950">
             Cronograma
           </h3>
         </div>
 
-        <div className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-sm font-medium text-violet-800">
+        <div className="rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
           {cronograma.length} cuota(s)
         </div>
       </div>
@@ -48,7 +48,7 @@ export function SimulatorSchedule({
             "divide-y divide-slate-200 text-sm",
           ].join(" ")}
         >
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <TableHead>N°</TableHead>
               <TableHead>Fecha programada</TableHead>
@@ -64,7 +64,7 @@ export function SimulatorSchedule({
             {cronograma.map((cuota) => (
               <tr
                 key={cuota.numeroCuota}
-                className="transition hover:bg-violet-50/40"
+                className="transition hover:bg-violet-50/45"
               >
                 <TableCell>{cuota.numeroCuota}</TableCell>
 
@@ -151,7 +151,7 @@ interface TableCellProps {
 
 function TableCell({ className = "", children }: TableCellProps) {
   return (
-    <td className={`whitespace-nowrap px-4 py-3 text-slate-700 ${className}`}>
+    <td className={`whitespace-nowrap px-5 py-3.5 text-slate-700 ${className}`}>
       {children}
     </td>
   );
@@ -165,7 +165,7 @@ interface TableHeadProps {
 function TableHead({ className = "", children }: TableHeadProps) {
   return (
     <th
-      className={`whitespace-nowrap px-4 py-3 text-left font-semibold ${className}`}
+      className={`whitespace-nowrap px-5 py-3 text-left font-black ${className}`}
     >
       {children}
     </th>
