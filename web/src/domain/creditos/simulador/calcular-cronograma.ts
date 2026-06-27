@@ -220,21 +220,12 @@ function calcularCuotasQuincenales(
  * - La última cuota paga interés + capital.
  * - Si es quincenal, tasa aplicada = tasa mensual / 2.
  */
-/**
- * Calcula cronograma de solo interés.
- *
- * Regla heredada:
- * - El capital permanece congelado hasta la última cuota.
- * - Todas las cuotas pagan interés.
- * - La última cuota paga interés + capital.
- * - Si es quincenal, tasa aplicada = tasa mensual / 2.
- */
 function calcularCuotasSoloInteres(
   credito: EntradaSimuladorCredito,
 ): CuotaSimulada[] {
   const cuotas: CuotaSimulada[] = [];
 
-  let capitalRestante = credito.monto;
+  const capitalRestante = credito.monto;
   const fechaPrestamo = normalizarFechaSinHora(credito.fechaPrestamo);
 
   /**

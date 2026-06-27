@@ -61,9 +61,7 @@ export function ConfirmationStep({
             </h3>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Revisa cliente, condiciones y totales antes de guardar. El botón
-              de guardado se habilitará cuando exista la acción transaccional en
-              servidor.
+              Revisa cliente, condiciones y totales antes de guardar.
             </p>
           </div>
         </div>

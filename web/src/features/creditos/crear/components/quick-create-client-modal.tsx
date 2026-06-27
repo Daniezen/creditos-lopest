@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { AlertTriangle, Phone, UserRound } from "lucide-react";
 
 import { crearClienteMinimo } from "@/features/clientes/actions";
 import type { ClienteSelectorOption } from "@/features/clientes/types";
@@ -14,13 +15,8 @@ interface QuickCreateClientModalProps {
 /**
  * Modal de cliente rápido.
  *
- * Este modal NO reemplaza /clientes/nuevo.
- * Solo evita bloquear el flujo de creación de crédito cuando el cliente no existe.
- *
- * Campos permitidos:
- * - cedula
- * - nombre
- * - telefono opcional
+ * No reemplaza la ficha completa de cliente.
+ * Solo captura lo mínimo para continuar con el crédito.
  */
 export function QuickCreateClientModal({
   open,
@@ -75,22 +71,28 @@ export function QuickCreateClientModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm">
       <section className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
         <header className="border-b border-slate-200 pb-4">
-          <p className="text-sm font-semibold text-violet-700">
-            Cliente rápido
-          </p>
-
-          <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
-            Crear cliente mínimo
+          <h3 className="text-xl font-bold tracking-tight text-slate-950">
+            Crear cliente rápido
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Captura únicamente lo necesario para continuar. La ficha completa se
-            editará después desde el módulo Clientes.
+            Registra solo los datos necesarios para continuar.
           </p>
         </header>
 
+        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          <div className="flex gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              La información completa del cliente deberá completarse después en
+              el módulo Clientes.
+            </p>
+          </div>
+        </div>
+
         <div className="mt-5 space-y-4">
           <ModalInput
+            icon={UserRound}
             label="Cédula"
             value={cedula}
             placeholder="Ej: 1000000000"
@@ -98,6 +100,7 @@ export function QuickCreateClientModal({
           />
 
           <ModalInput
+            icon={UserRound}
             label="Nombre"
             value={nombre}
             placeholder="Nombre del cliente"
@@ -105,6 +108,7 @@ export function QuickCreateClientModal({
           />
 
           <ModalInput
+            icon={Phone}
             label="Teléfono opcional"
             value={telefono}
             placeholder="Opcional"
@@ -142,16 +146,24 @@ export function QuickCreateClientModal({
 }
 
 interface ModalInputProps {
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
 }
 
-function ModalInput({ label, value, placeholder, onChange }: ModalInputProps) {
+function ModalInput({
+  icon: Icon,
+  label,
+  value,
+  placeholder,
+  onChange,
+}: ModalInputProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-700">
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+        <Icon className="h-4 w-4 text-violet-600" />
         {label}
       </span>
 

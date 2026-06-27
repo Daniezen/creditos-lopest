@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 
 interface ModulePlaceholderAction {
   label: string;
@@ -9,27 +10,21 @@ interface ModulePlaceholderProps {
   eyebrow: string;
   title: string;
   description: string;
-  currentScope: string[];
-  nextSteps: string[];
+  icon: LucideIcon;
   primaryAction?: ModulePlaceholderAction;
   secondaryAction?: ModulePlaceholderAction;
 }
 
 /**
- * Placeholder profesional para módulos del dashboard.
+ * Estado vacío profesional para módulos todavía sin datos operativos.
  *
- * No es una pantalla vacía. Documenta:
- * - propósito del módulo;
- * - alcance inicial;
- * - próximos pasos técnicos;
- * - acción principal si aplica.
+ * No muestra roadmap técnico ni notas internas.
  */
 export function ModulePlaceholder({
   eyebrow,
   title,
   description,
-  currentScope,
-  nextSteps,
+  icon: Icon,
   primaryAction,
   secondaryAction,
 }: ModulePlaceholderProps) {
@@ -47,25 +42,21 @@ export function ModulePlaceholder({
         </p>
       </header>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-950">
-            Alcance inicial
+      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-50 text-violet-700">
+            <Icon className="h-8 w-8" />
+          </div>
+
+          <h3 className="mt-5 text-xl font-bold tracking-tight text-slate-950">
+            {title}
           </h3>
 
-          <ul className="mt-4 space-y-3">
-            {currentScope.map((item) => (
-              <li
-                key={item}
-                className="flex gap-3 text-sm leading-6 text-slate-600"
-              >
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-violet-500" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            {description}
+          </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             {primaryAction ? (
               <Link
                 href={primaryAction.href}
@@ -85,26 +76,6 @@ export function ModulePlaceholder({
             ) : null}
           </div>
         </div>
-
-        <aside className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
-          <h3 className="text-lg font-semibold text-violet-950">
-            Próximos pasos
-          </h3>
-
-          <ol className="mt-4 space-y-3">
-            {nextSteps.map((item, index) => (
-              <li
-                key={item}
-                className="flex gap-3 text-sm leading-6 text-violet-900"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-violet-700 ring-1 ring-violet-200">
-                  {index + 1}
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ol>
-        </aside>
       </section>
     </main>
   );

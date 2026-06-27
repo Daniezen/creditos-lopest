@@ -1,4 +1,6 @@
+import type { ComponentType } from "react";
 import {
+  AlertTriangle,
   Building2,
   CheckCircle2,
   Contact,
@@ -18,6 +20,9 @@ interface SelectedClientCardProps {
 
 /**
  * Tarjeta única de cliente seleccionado.
+ *
+ * Si el perfil está incompleto, muestra una alerta de negocio.
+ * No bloquea el flujo todavía.
  */
 export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
   if (!cliente) {
@@ -32,12 +37,13 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
         </h3>
 
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-          Busca y selecciona un cliente existente, o crea un cliente rápido para
-          continuar con el crédito.
+          Selecciona un cliente para continuar.
         </p>
       </section>
     );
   }
+
+  const perfilIncompleto = isClienteProfileIncomplete(cliente);
 
   return (
     <section className="rounded-3xl border border-violet-200 bg-violet-50/70 p-6 shadow-sm">
@@ -66,6 +72,16 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
         </span>
       </div>
 
+      {perfilIncompleto ? (
+        <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Perfil pendiente de completar. El crédito puede continuar, pero la
+            información del cliente deberá completarse después desde Clientes.
+          </p>
+        </div>
+      ) : null}
+
       <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
         <ClientField icon={Phone} label="Teléfono" value={cliente.telefono} />
         <ClientField icon={Home} label="Dirección" value={cliente.direccion} />
@@ -84,6 +100,7 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
             <FolderOpen className="h-3.5 w-3.5" />
             Adjuntos
           </dt>
+
           <dd className="mt-1 font-semibold text-slate-900">
             {cliente.carpetaAdjuntosUrl ? (
               <a
@@ -106,7 +123,7 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
 }
 
 interface ClientFieldProps {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   value: string | null;
 }
@@ -133,4 +150,14 @@ function formatEstadoDocumentos(value: string): string {
   }
 
   return value;
+}
+
+function isClienteProfileIncomplete(cliente: ClienteSelectorOption): boolean {
+  return (
+    !cliente.telefono ||
+    !cliente.direccion ||
+    !cliente.empresa ||
+    !cliente.contacto ||
+    cliente.estadoDocumentos === "FALTAN_DOCUMENTOS"
+  );
 }

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
@@ -27,6 +26,23 @@ type CrearClienteMinimoResult =
       ok: false;
       error: string;
     };
+
+/**
+ * Determina si un error desconocido corresponde a una violación de restricción
+ * única de Prisma.
+ *
+ * No importamos el namespace Prisma porque el cliente generado puede variar
+ * según versión/configuración del generator. Para este action solo necesitamos
+ * identificar el código estable de Prisma: P2002.
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
 
 /**
  * Crea un cliente mínimo/ampliado para el flujo de creación de crédito.
@@ -77,7 +93,13 @@ export async function crearClienteMinimo(
         recomienda,
         contacto,
         contacto2,
-        accionPor: "local-dev",
+
+        /**
+         * Temporal mientras no exista autenticación real.
+         * Cuando implementemos usuarios/sesiones, este valor debe venir del
+         * usuario autenticado.
+         */
+        accionPor: "sistema",
       },
       select: {
         id: true,
@@ -102,15 +124,14 @@ export async function crearClienteMinimo(
       cliente,
     };
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (isUniqueConstraintError(error)) {
       return {
         ok: false,
         error: "Ya existe un cliente con esa cédula.",
       };
     }
+
+    console.error("Error al crear cliente mínimo:", error);
 
     return {
       ok: false,

@@ -17,10 +17,7 @@ import type {
 } from "@/domain/creditos/simulador/tipos";
 
 import {
-  formatCurrencyCOP,
-  formatNumberCO,
   formatPercent,
-  parseNumericInput,
   parseTasaMensualInput,
 } from "@/lib/formatters";
 
@@ -48,9 +45,13 @@ interface SimulatorFormProps {
 }
 
 /**
- * Formulario financiero del simulador.
+ * Formulario financiero.
  *
- * No calcula cuotas. Solo captura valores y muestra entrada normalizada.
+ * Responsabilidad:
+ * - Capturar condiciones del crédito.
+ * - Mostrar únicamente la normalización útil para el usuario: tasa aplicada.
+ *
+ * No debe repetir monto, plazo ni frecuencia en una sección adicional.
  */
 export function SimulatorForm({
   form,
@@ -59,22 +60,25 @@ export function SimulatorForm({
 }: SimulatorFormProps) {
   const isGrid = variant === "grid";
 
+  const tasaNormalizada = form.tasaMensual.trim()
+    ? parseTasaMensualInput(form.tasaMensual)
+    : null;
+
+  const tasaAplicada =
+    tasaNormalizada !== null && Number.isFinite(tasaNormalizada)
+      ? formatPercent(tasaNormalizada)
+      : null;
+
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 flex gap-3">
+      <div className="mb-5 flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
           <SlidersHorizontal className="h-5 w-5" />
         </div>
 
-        <div>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Condiciones del crédito
-          </h3>
-
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Completa las condiciones financieras para generar el cronograma.
-          </p>
-        </div>
+        <h3 className="text-lg font-semibold text-slate-950">
+          Condiciones del crédito
+        </h3>
       </div>
 
       <div
@@ -109,7 +113,11 @@ export function SimulatorForm({
           />
         </Field>
 
-        <Field icon={Percent} label="Tasa mensual">
+        <Field
+          icon={Percent}
+          label="Tasa mensual"
+          hint={tasaAplicada ? `Tasa aplicada: ${tasaAplicada}` : undefined}
+        >
           <Input
             inputMode="decimal"
             value={form.tasaMensual}
@@ -140,37 +148,6 @@ export function SimulatorForm({
           />
         </Field>
       </div>
-
-      <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-violet-950">
-          <SlidersHorizontal className="h-4 w-4" />
-          Entrada normalizada
-        </h4>
-
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-          <MetricLabel icon={WalletCards} label="Monto">
-            {form.monto.trim()
-              ? formatCurrencyCOP(parseNumericInput(form.monto))
-              : "-"}
-          </MetricLabel>
-
-          <MetricLabel icon={Percent} label="Tasa">
-            {form.tasaMensual.trim()
-              ? formatPercent(parseTasaMensualInput(form.tasaMensual))
-              : "-"}
-          </MetricLabel>
-
-          <MetricLabel icon={Hash} label="Plazo">
-            {form.plazoMeses.trim()
-              ? `${formatNumberCO(parseNumericInput(form.plazoMeses))} meses`
-              : "-"}
-          </MetricLabel>
-
-          <MetricLabel icon={Repeat} label="Frecuencia">
-            {form.frecuencia || "-"}
-          </MetricLabel>
-        </dl>
-      </div>
     </section>
   );
 }
@@ -178,16 +155,24 @@ export function SimulatorForm({
 interface FieldProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  hint?: string;
   children: ReactNode;
 }
 
-function Field({ icon: Icon, label, children }: FieldProps) {
+function Field({ icon: Icon, label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-        <Icon className="h-4 w-4 text-violet-600" />
-        {label}
+      <span className="mb-2 flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
+        <span className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-violet-600" />
+          {label}
+        </span>
+
+        {hint ? (
+          <span className="text-xs font-semibold text-violet-700">{hint}</span>
+        ) : null}
       </span>
+
       {children}
     </label>
   );
@@ -244,23 +229,5 @@ function Select({ value, placeholder, options, onChange }: SelectProps) {
         </option>
       ))}
     </select>
-  );
-}
-
-interface MetricLabelProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  children: ReactNode;
-}
-
-function MetricLabel({ icon: Icon, label, children }: MetricLabelProps) {
-  return (
-    <div>
-      <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-violet-400">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </dt>
-      <dd className="mt-1 font-semibold text-slate-900">{children}</dd>
-    </div>
   );
 }

@@ -18,10 +18,10 @@ interface ClientStepProps {
 /**
  * Paso 1 del wizard.
  *
- * UX final:
- * - Buscador con autocompletado.
- * - Modal de cliente rápido.
- * - Tarjeta única con todos los datos del cliente seleccionado.
+ * UX:
+ * - buscador con autocompletado;
+ * - modal de cliente rápido;
+ * - tarjeta única con detalle del cliente seleccionado.
  */
 export function ClientStep({
   clientes,
@@ -40,17 +40,10 @@ export function ClientStep({
     <>
       <section className="space-y-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">
-                Seleccionar cliente
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Busca por cédula, nombre, teléfono, empresa o contacto. El
-                crédito real no podrá guardarse sin cliente seleccionado.
-              </p>
-            </div>
+          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center">
+            <h3 className="text-lg font-semibold text-slate-950">
+              Seleccionar cliente
+            </h3>
 
             <button
               type="button"

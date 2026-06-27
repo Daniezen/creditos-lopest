@@ -1,0 +1,7 @@
+app.13-140-148-38.sslip.io {
+  basic_auth {
+    lopest $2a$14$EAFloitCjI6sTlVrkyXcOOf3uwTAiQI1.1pKXd17/CG1T67Wz/XFa
+  }
+
+  reverse_proxy web:3000
+}

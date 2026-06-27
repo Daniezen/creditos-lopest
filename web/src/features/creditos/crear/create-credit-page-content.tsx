@@ -110,9 +110,7 @@ export function CreateCreditPageContent({
             </h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Flujo controlado para crear un crédito real. Primero selecciona
-              cliente, luego define condiciones y revisa el cronograma antes de
-              guardar.
+              Selecciona el cliente, define las condiciones del crédito y revisa el cronograma antes de guardar.
             </p>
           </div>
 

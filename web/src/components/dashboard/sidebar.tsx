@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Landmark, Rocket, ShieldCheck } from "lucide-react";
+import { Landmark } from "lucide-react";
 
 import { dashboardNavigation } from "@/config/navigation";
 
 /**
  * Sidebar principal del dashboard.
  *
- * Usa acento lila/violeta para conservar continuidad visual con el sistema
- * anterior, pero con una estructura de dashboard más limpia.
+ * Solo contiene navegación de producto.
+ * No debe mostrar roadmap interno, notas técnicas ni mensajes de construcción.
  */
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -27,12 +27,11 @@ export function DashboardSidebar() {
         </p>
 
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950">
-          Dashboard
+          Plataforma
         </h1>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Plataforma financiera para simulación, gestión y seguimiento de
-          créditos.
+          Gestión, simulación y seguimiento de créditos.
         </p>
       </div>
 
@@ -42,42 +41,14 @@ export function DashboardSidebar() {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-          if (item.disabled) {
-            return (
-              <div
-                key={item.href}
-                className="cursor-not-allowed rounded-2xl px-4 py-3 opacity-50"
-                title="Módulo pendiente"
-              >
-                <div className="flex gap-3">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                    <Icon className="h-4 w-4" />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">
-                      {item.label}
-                    </p>
-
-                    {item.description ? (
-                      <p className="mt-1 text-xs leading-5 text-slate-400">
-                        {item.description}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
           return (
             <Link
               key={item.href}
               href={item.href}
               className={[
-                "block rounded-2xl px-4 py-3 transition",
+                "block rounded-2xl px-4 py-3 text-sm transition",
                 isActive
-                  ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                  ? "bg-violet-600 text-white shadow-sm shadow-violet-500/20"
                   : "text-slate-600 hover:bg-violet-50 hover:text-violet-900",
               ].join(" ")}
             >
@@ -94,7 +65,7 @@ export function DashboardSidebar() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold">{item.label}</p>
+                  <p className="font-semibold">{item.label}</p>
 
                   {item.description ? (
                     <p
@@ -112,38 +83,6 @@ export function DashboardSidebar() {
           );
         })}
       </nav>
-
-      <div className="mt-10 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm">
-        <div className="flex gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-violet-700 ring-1 ring-violet-200">
-            <Rocket className="h-4 w-4" />
-          </div>
-
-          <div>
-            <p className="font-semibold text-violet-900">Fase actual</p>
-
-            <p className="mt-2 leading-6 text-violet-800">
-              Simulador, wizard de creación y despliegue VPS antes de
-              persistencia definitiva.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
-        <div className="flex gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-
-          <div>
-            <p className="font-semibold text-slate-900">Modo protegido</p>
-            <p className="mt-2 leading-6 text-slate-500">
-              No exponeremos datos reales sin control de acceso.
-            </p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
