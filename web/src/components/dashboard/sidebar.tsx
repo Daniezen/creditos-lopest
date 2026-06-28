@@ -86,7 +86,7 @@ export function DashboardSidebar() {
                 key={item.href}
                 href={item.href}
                 className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition",
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition",
                   isActive
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-100"
                     : "text-violet-950 hover:bg-violet-50 hover:text-violet-700",
@@ -131,7 +131,7 @@ function QuickAction({ href, label, icon: Icon, active }: QuickActionProps) {
     <Link
       href={href}
       className={[
-        "flex min-h-20 flex-col justify-between rounded-2xl border p-3 text-sm font-black transition",
+        "flex min-h-20 flex-col justify-between rounded-2xl border p-3 text-sm font-semibold transition",
         active
           ? "border-violet-200 bg-violet-600 text-white shadow-lg shadow-violet-100"
           : "border-violet-100 bg-violet-50/70 text-violet-950 hover:border-violet-200 hover:bg-violet-100",
