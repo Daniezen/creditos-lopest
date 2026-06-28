@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { RotateCcw } from "lucide-react";
 
 import type { ClienteSelectorOption } from "@/features/clientes/types";
 import { useCreditSimulation } from "@/features/simulador-creditos/hooks/use-credit-simulation";
@@ -105,15 +106,21 @@ export function CreateCreditPageContent({
   return (
     <main className="min-w-0 pb-28">
       <div className="px-4 py-6 sm:px-6 lg:px-10">
-        <header className="mb-8 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 xl:flex-row xl:items-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-950">
-            Nuevo crédito
-          </h2>
+        <section className="mb-5 flex flex-col justify-between gap-3 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+              Flujo de creación
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Paso {currentStep} de 3
+              {selectedCliente ? ` · ${selectedCliente.nombre}` : ""}
+            </p>
+          </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <Link
               href="/creditos"
-              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
+              className="rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
             >
               Volver a créditos
             </Link>
@@ -121,12 +128,13 @@ export function CreateCreditPageContent({
             <button
               type="button"
               onClick={resetWizard}
-              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
+              className="inline-flex items-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
             >
+              <RotateCcw className="h-4 w-4" />
               Reiniciar
             </button>
           </div>
-        </header>
+        </section>
 
         <div className="space-y-6">
           <CreateCreditStepper
@@ -163,7 +171,7 @@ export function CreateCreditPageContent({
         </div>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 lg:left-72 lg:px-10">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 lg:left-[330px] lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-slate-500">
             Paso {currentStep} de 3

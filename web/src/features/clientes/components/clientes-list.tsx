@@ -3,8 +3,10 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
+  CreditCard,
   Eye,
   FileText,
+  Plus,
   Search,
   UserRound,
   Users,
@@ -21,6 +23,17 @@ interface ClientesListProps {
   estadoDocumentos: string;
 }
 
+/**
+ * Vista principal de clientes.
+ *
+ * La topbar global ya identifica el módulo Clientes. Esta vista evita repetir
+ * un hero interno y concentra el espacio en métricas, filtros y directorio.
+ *
+ * Seguridad:
+ * - Este componente solo renderiza datos recibidos.
+ * - La futura restricción "operador ve solo sus clientes" debe implementarse
+ *   en queries/guards, no ocultando filas en la UI.
+ */
 export function ClientesList({
   clientes,
   query,
@@ -46,58 +59,53 @@ export function ClientesList({
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <header className="mb-6 overflow-hidden rounded-[2rem] border border-violet-100 bg-[radial-gradient(circle_at_top_left,#ede9fe_0%,#faf5ff_38%,#fff7ed_100%)] shadow-[0_18px_45px_rgba(109,40,217,0.10)]">
-        <div className="flex flex-col justify-between gap-5 px-6 py-6 sm:px-7 xl:flex-row xl:items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-white/80 text-violet-700 shadow-sm shadow-violet-100 ring-1 ring-violet-100">
-              <Users className="h-7 w-7" />
-            </div>
+      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
+        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+          <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <PortfolioMetric
+              icon={Users}
+              label="Clientes"
+              value={String(clientes.length)}
+            />
 
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">
-                Clientes
-              </p>
+            <PortfolioMetric
+              icon={AlertTriangle}
+              label="Perfiles pendientes"
+              value={String(perfilesPendientes.length)}
+            />
 
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                Gestión de clientes
-              </h2>
-            </div>
+            <PortfolioMetric
+              icon={FileText}
+              label="Documentos pendientes"
+              value={String(documentosPendientes.length)}
+            />
+
+            <PortfolioMetric
+              icon={WalletCards}
+              label="Saldo cartera"
+              value={formatCurrencyCOP(saldoTotal)}
+              helper={`${creditosActivos} crédito(s) activo(s)`}
+            />
           </div>
 
-          <Link
-            href="/creditos/nuevo"
-            className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white/85 px-5 py-3 text-sm font-bold text-violet-700 shadow-sm shadow-violet-100/50 transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-          >
-            Crear crédito
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/clientes/nuevo"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo cliente
+            </Link>
+
+            <Link
+              href="/creditos/nuevo"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white px-5 py-3 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+            >
+              <CreditCard className="h-4 w-4" />
+              Crear crédito
+            </Link>
+          </div>
         </div>
-      </header>
-
-      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <PortfolioMetric
-          icon={Users}
-          label="Clientes"
-          value={String(clientes.length)}
-        />
-
-        <PortfolioMetric
-          icon={AlertTriangle}
-          label="Perfiles pendientes"
-          value={String(perfilesPendientes.length)}
-        />
-
-        <PortfolioMetric
-          icon={FileText}
-          label="Documentos pendientes"
-          value={String(documentosPendientes.length)}
-        />
-
-        <PortfolioMetric
-          icon={WalletCards}
-          label="Saldo cartera"
-          value={formatCurrencyCOP(saldoTotal)}
-          helper={`${creditosActivos} crédito(s) activo(s)`}
-        />
       </section>
 
       <section className="mb-5 rounded-[1.75rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
@@ -157,7 +165,7 @@ export function ClientesList({
         <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
           <div>
             <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Directorio de clientes
+              Clientes
             </h3>
 
             <p className="mt-1 text-sm text-slate-500">
@@ -171,9 +179,8 @@ export function ClientesList({
             <p className="text-sm font-semibold text-slate-950">
               No hay clientes para los filtros seleccionados.
             </p>
-
             <p className="mt-2 text-sm text-slate-500">
-              Ajusta la búsqueda o crea un cliente desde el flujo de crédito.
+              Ajusta la búsqueda o crea un nuevo cliente.
             </p>
           </div>
         ) : (
@@ -194,10 +201,7 @@ export function ClientesList({
 
               <tbody className="divide-y divide-slate-100">
                 {clientes.map((cliente) => (
-                  <tr
-                    key={cliente.id}
-                    className="transition hover:bg-violet-50/45"
-                  >
+                  <tr key={cliente.id} className="transition hover:bg-violet-50/45">
                     <TableCell>
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
@@ -261,23 +265,16 @@ interface PortfolioMetricProps {
   helper?: string;
 }
 
-function PortfolioMetric({
-  icon: Icon,
-  label,
-  value,
-  helper,
-}: PortfolioMetricProps) {
+function PortfolioMetric({ icon: Icon, label, value, helper }: PortfolioMetricProps) {
   return (
     <div className="rounded-2xl border border-violet-100 bg-white/85 p-4 shadow-sm shadow-violet-100/40">
       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
         <Icon className="h-3.5 w-3.5 text-violet-600" />
         {label}
       </p>
-
       <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
         {value}
       </p>
-
       {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
     </div>
   );

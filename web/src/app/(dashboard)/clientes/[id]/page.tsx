@@ -7,10 +7,15 @@ import {
   Building2,
   CheckCircle2,
   Contact,
+  CreditCard,
+  Edit3,
+  Eye,
   FileText,
   Home,
   Phone,
   UserRound,
+  Users,
+  WalletCards,
 } from "lucide-react";
 
 import { obtenerClienteDetalle } from "@/features/clientes/queries";
@@ -25,6 +30,21 @@ interface ClienteDetallePageProps {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/**
+ * Detalle de cliente.
+ *
+ * Decisión visual:
+ * - La topbar global ya identifica el módulo Clientes.
+ * - Esta vista elimina el hero redundante y usa un encabezado compacto propio
+ *   del registro: nombre, cédula, teléfono, empresa y acciones.
+ * - Las métricas financieras y la información de contacto quedan separadas por
+ *   función para reducir repetición visual.
+ *
+ * Restricción:
+ * - Esta vista no decide permisos.
+ * - La futura regla de acceso por cliente debe implementarse en queries/guards,
+ *   no ocultando contenido en UI.
+ */
 export default async function ClienteDetallePage({
   params,
 }: ClienteDetallePageProps) {
@@ -61,57 +81,76 @@ export default async function ClienteDetallePage({
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <header className="mb-6 overflow-hidden rounded-[2rem] border border-violet-100 bg-[radial-gradient(circle_at_top_left,#ede9fe_0%,#faf5ff_38%,#fff7ed_100%)] shadow-[0_18px_45px_rgba(109,40,217,0.10)]">
-        <div className="flex flex-col justify-between gap-5 px-6 py-6 sm:px-7 xl:flex-row xl:items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-white/80 text-violet-700 shadow-sm shadow-violet-100 ring-1 ring-violet-100">
-              <UserRound className="h-7 w-7" />
-            </div>
+      <section className="mb-5 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-col justify-between gap-4 border-b border-violet-100 bg-[radial-gradient(circle_at_top_left,#ede9fe_0%,#faf5ff_42%,#fff7ed_100%)] px-6 py-5 sm:px-7 xl:flex-row xl:items-center">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+              Cliente
+            </p>
 
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">
-                Cliente
-              </p>
+            <h2 className="mt-2 truncate text-3xl font-black tracking-tight text-slate-950">
+              {cliente.nombre}
+            </h2>
 
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                {cliente.nombre}
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                C.C. {cliente.cedula}
-              </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+              <span>C.C. {cliente.cedula}</span>
+              <span className="inline-flex items-center gap-1">
+                <Phone className="h-3.5 w-3.5" />
+                {cliente.telefono || "Sin teléfono"}
+              </span>
+              {cliente.empresa ? <span>{cliente.empresa}</span> : null}
             </div>
           </div>
 
-          <Link
-            href="/clientes"
-            className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white/85 px-5 py-3 text-sm font-bold text-violet-700 shadow-sm shadow-violet-100/50 transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver a clientes
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/clientes"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </Link>
+
+            <Link
+              href={`/clientes/${cliente.id}/editar`}
+              className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700"
+            >
+              <Edit3 className="h-4 w-4" />
+              Editar
+            </Link>
+          </div>
         </div>
-      </header>
+      </section>
 
       {perfilIncompleto ? (
-        <section className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900 shadow-sm">
+        <section className="mb-5 rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-amber-900 shadow-sm">
           <div className="flex gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <h3 className="font-semibold">Perfil pendiente de completar</h3>
               <p className="mt-1 text-sm leading-6 text-amber-800">
-                Completa teléfono, dirección, empresa, contacto y documentos
-                cuando esté disponible la edición de clientes.
+                Completa teléfono, dirección, empresa, contacto y estado
+                documental cuando la información esté disponible.
               </p>
             </div>
           </div>
         </section>
       ) : null}
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Créditos activos" value={String(creditosActivos.length)} />
-        <MetricCard label="Saldo cartera" value={formatCurrencyCOP(saldoTotal)} />
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
+          icon={CreditCard}
+          label="Créditos activos"
+          value={String(creditosActivos.length)}
+        />
+        <MetricCard
+          icon={WalletCards}
+          label="Saldo cartera"
+          value={formatCurrencyCOP(saldoTotal)}
+          featured
+        />
+        <MetricCard
+          icon={FileText}
           label="Documentos"
           value={
             cliente.estadoDocumentos === "DOCUMENTOS_CARGADOS"
@@ -119,13 +158,25 @@ export default async function ClienteDetallePage({
               : "Pendientes"
           }
         />
-        <MetricCard label="Créditos total" value={String(cliente.creditos.length)} />
+        <MetricCard
+          icon={Users}
+          label="Créditos total"
+          value={String(cliente.creditos.length)}
+        />
       </section>
 
-      <section className="mb-6 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-        <h3 className="text-xl font-bold tracking-tight text-slate-950">
-          Información del cliente
-        </h3>
+      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
+        <div className="flex flex-col justify-between gap-3 border-b border-violet-100 pb-4 sm:flex-row sm:items-center">
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-950">
+              Información del cliente
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Contacto, referencia y documentación.
+            </p>
+          </div>
+          <EstadoDocumentosBadge estado={cliente.estadoDocumentos} />
+        </div>
 
         <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
           <InfoItem icon={Phone} label="Teléfono" value={cliente.telefono || "-"} />
@@ -136,28 +187,31 @@ export default async function ClienteDetallePage({
           <InfoItem icon={UserRound} label="Recomienda" value={cliente.recomienda || "-"} />
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          <EstadoDocumentosBadge estado={cliente.estadoDocumentos} />
-
-          {cliente.carpetaAdjuntosUrl ? (
+        {cliente.carpetaAdjuntosUrl ? (
+          <div className="mt-5 border-t border-violet-100 pt-4">
             <a
               href={cliente.carpetaAdjuntosUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
             >
               <FileText className="h-3.5 w-3.5" />
               Ver carpeta
             </a>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5">
-          <h3 className="text-xl font-bold tracking-tight text-slate-950">
-            Créditos del cliente
-          </h3>
+        <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-950">
+              Créditos
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {cliente.creditos.length} registro(s)
+            </p>
+          </div>
         </div>
 
         {cliente.creditos.length === 0 ? (
@@ -189,10 +243,7 @@ export default async function ClienteDetallePage({
                     : Number(credito.monto);
 
                   return (
-                    <tr
-                      key={credito.id}
-                      className="transition hover:bg-violet-50/45"
-                    >
+                    <tr key={credito.id} className="transition hover:bg-violet-50/45">
                       <TableCell>
                         <Link
                           href={`/creditos/${credito.id}`}
@@ -221,6 +272,7 @@ export default async function ClienteDetallePage({
                           href={`/creditos/${credito.id}`}
                           className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
                         >
+                          <Eye className="h-3.5 w-3.5" />
                           Ver
                         </Link>
                       </TableCell>
@@ -237,14 +289,24 @@ export default async function ClienteDetallePage({
 }
 
 interface MetricCardProps {
+  icon: ComponentType<{ className?: string }>;
   label: string;
   value: string;
+  featured?: boolean;
 }
 
-function MetricCard({ label, value }: MetricCardProps) {
+function MetricCard({ icon: Icon, label, value, featured }: MetricCardProps) {
   return (
-    <div className="rounded-2xl border border-violet-100 bg-white/85 p-4 shadow-sm shadow-violet-100/40">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div
+      className={[
+        "rounded-2xl border p-4 shadow-sm shadow-violet-100/40",
+        featured
+          ? "border-violet-200 bg-violet-50"
+          : "border-violet-100 bg-white/85",
+      ].join(" ")}
+    >
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <Icon className="h-3.5 w-3.5 text-violet-600" />
         {label}
       </p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950">

@@ -9,7 +9,6 @@ import {
   Hash,
   Landmark,
   Percent,
-  UserRound,
   WalletCards,
 } from "lucide-react";
 
@@ -71,7 +70,7 @@ export default async function CreditoDetallePage({
               </h2>
 
               <p className="mt-2 text-sm text-slate-500">
-                Crédito creado el {formatDateCO(credito.creadoEn)}
+                C.C. {credito.cliente.cedula} · Tel. {credito.cliente.telefono || "-"} · Crédito creado el {formatDateCO(credito.creadoEn)}
               </p>
             </div>
 
@@ -80,7 +79,7 @@ export default async function CreditoDetallePage({
               className="inline-flex w-fit items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
             >
               <ArrowLeft className="h-4 w-4" />
-              Volver a créditos
+              Volver
             </Link>
           </div>
         </div>
@@ -136,31 +135,15 @@ export default async function CreditoDetallePage({
         </section>
       </header>
 
-      <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-            <UserRound className="h-5 w-5" />
-          </div>
-
-          <h3 className="text-lg font-semibold text-slate-950">Cliente</h3>
-        </div>
-
-        <div className="mt-5 grid gap-4 text-sm sm:grid-cols-3">
-          <InfoItem label="Nombre" value={credito.cliente.nombre} />
-          <InfoItem label="Cédula" value={credito.cliente.cedula} />
-          <InfoItem label="Teléfono" value={credito.cliente.telefono || "-"} />
-        </div>
-      </section>
-
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200 bg-white p-5 sm:flex-row sm:items-center">
           <div>
             <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Cronograma
+              Cuotas
             </h3>
 
             <p className="mt-1 text-sm text-slate-500">
-              Cuotas programadas del crédito.
+              Pagos programados del crédito.
             </p>
           </div>
 
@@ -270,22 +253,6 @@ function MetricCard({
         {value}
       </p>
     </article>
-  );
-}
-
-interface InfoItemProps {
-  label: string;
-  value: string;
-}
-
-function InfoItem({ label, value }: InfoItemProps) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 font-semibold text-slate-950">{value}</p>
-    </div>
   );
 }
 

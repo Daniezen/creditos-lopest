@@ -125,7 +125,7 @@ function getSectionMetadata(pathname: string): SectionMetadata {
 
   if (pathname.startsWith("/creditos")) {
     return {
-      title: "Cartera",
+      title: "Créditos",
       description: "Consulta, seguimiento y administración de créditos.",
       icon: CreditCard,
     };

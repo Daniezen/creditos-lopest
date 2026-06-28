@@ -106,7 +106,7 @@ export function CreditSearchCombobox({
       <label className="block">
         <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700">
           <Search className="h-4 w-4 text-violet-600" />
-          Buscar cartera
+          Buscar cliente
         </span>
 
         <input

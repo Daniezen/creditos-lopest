@@ -57,62 +57,42 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <header className="mb-6 overflow-hidden rounded-[2rem] border border-violet-100 bg-[radial-gradient(circle_at_top_left,#ede9fe_0%,#faf5ff_34%,#fff7ed_100%)] shadow-[0_18px_45px_rgba(109,40,217,0.12)]">
-        <div className="px-6 py-6 sm:px-7">
-          <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-start">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-white/80 text-violet-700 shadow-sm shadow-violet-100 ring-1 ring-violet-100">
-                  <CreditCard className="h-7 w-7" />
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">
-                    Cartera
-                  </p>
-
-                  <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                    Créditos Lopest
-                  </h2>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-                <PortfolioMetric
-                  label="Saldo vigente"
-                  value={formatCurrencyCOP(saldoTotal)}
-                  strong
-                />
-                <PortfolioMetric
-                  label="Créditos activos"
-                  value={String(creditosActivos.length)}
-                />
-                <PortfolioMetric
-                  label="Próxima cuota"
-                  value={
-                    proximaCuota
-                      ? formatCurrencyCOP(proximaCuota.valorProgramado)
-                      : "-"
-                  }
-                  helper={
-                    proximaCuota
-                      ? formatDateCO(proximaCuota.fechaProgramada)
-                      : undefined
-                  }
-                />
-              </div>
-            </div>
-
-            <Link
-              href="/creditos/nuevo"
-              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white/85 px-5 py-3 text-sm font-bold text-violet-700 shadow-sm shadow-violet-100/50 transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo crédito
-            </Link>
+      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
+        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+          <div className="grid flex-1 gap-3 sm:grid-cols-3">
+            <PortfolioMetric
+              label="Saldo vigente"
+              value={formatCurrencyCOP(saldoTotal)}
+              strong
+            />
+            <PortfolioMetric
+              label="Créditos activos"
+              value={String(creditosActivos.length)}
+            />
+            <PortfolioMetric
+              label="Próxima cuota"
+              value={
+                proximaCuota
+                  ? formatCurrencyCOP(proximaCuota.valorProgramado)
+                  : "-"
+              }
+              helper={
+                proximaCuota
+                  ? formatDateCO(proximaCuota.fechaProgramada)
+                  : undefined
+              }
+            />
           </div>
+
+          <Link
+            href="/creditos/nuevo"
+            className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo crédito
+          </Link>
         </div>
-      </header>
+      </section>
 
       <section className="mb-5 rounded-[1.75rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
         <form
@@ -163,7 +143,7 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
         <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
           <div>
             <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Ledger de créditos
+              Créditos
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               {creditos.length} registro(s)
