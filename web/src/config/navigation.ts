@@ -11,9 +11,9 @@ import {
  *
  * Regla:
  * - El sidebar solo contiene módulos principales.
- * - Acciones como "Crear nuevo crédito" viven dentro del módulo Créditos.
+ * - Acciones como crear cliente o crear crédito viven en accesos rápidos
+ *   o dentro del módulo correspondiente.
  */
-
 export interface DashboardNavItem {
   label: string;
   href: string;
@@ -30,21 +30,21 @@ export const dashboardNavigation: DashboardNavItem[] = [
     icon: Calculator,
   },
   {
-    label: "Créditos",
-    href: "/creditos",
-    description: "Biblioteca y gestión de créditos.",
-    icon: CreditCard,
-  },
-  {
     label: "Clientes",
     href: "/clientes",
     description: "Perfiles, contacto y documentos.",
     icon: Users,
   },
   {
-    label: "Analytics",
+    label: "Créditos",
+    href: "/creditos",
+    description: "Biblioteca y gestión de créditos.",
+    icon: CreditCard,
+  },
+  {
+    label: "Reportes",
     href: "/analytics",
-    description: "Panel analítico embebido más adelante.",
+    description: "Panel de reportes e indicadores financieros.",
     icon: BarChart3,
   },
 ];

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { AUTH_COOKIE_NAMES } from "@/server/auth/constants";
 
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/cron"];
 
 /**
  * Middleware de protección superficial.
@@ -44,5 +44,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image).*)"],
+  matcher: ["/((?!api/auth|api/cron|_next/static|_next/image).*)"],
 };

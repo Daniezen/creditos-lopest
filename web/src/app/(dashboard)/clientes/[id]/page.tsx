@@ -379,3 +379,4 @@ function EstadoDocumentosBadge({ estado }: { estado: string }) {
     </span>
   );
 }
+  

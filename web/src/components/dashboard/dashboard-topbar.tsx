@@ -149,8 +149,8 @@ function getSectionMetadata(pathname: string): SectionMetadata {
 
   if (pathname.startsWith("/analytics")) {
     return {
-      title: "Analytics",
-      description: "Indicadores operativos y financieros de la cartera.",
+      title: "Reportes",
+      description: "Panel de reportes e indicadores financieros.",
       icon: BarChart3,
     };
   }

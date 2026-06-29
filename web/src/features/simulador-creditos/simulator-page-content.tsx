@@ -30,8 +30,8 @@ export function SimulatorPageContent() {
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <section className="grid min-w-0 gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="min-w-0 xl:sticky xl:top-[118px] xl:h-fit">
+      <section className="grid min-w-0 gap-6 min-[1180px]:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="mx-auto w-full max-w-[460px] min-w-0 min-[1180px]:mx-0 min-[1180px]:max-w-none min-[1180px]:sticky min-[1180px]:top-[118px] min-[1180px]:h-fit">
           <SimulatorForm form={form} onChange={updateField} variant="panel" />
         </div>
 
