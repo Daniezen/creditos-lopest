@@ -147,7 +147,7 @@ function getSectionMetadata(pathname: string): SectionMetadata {
     };
   }
 
-  if (pathname.startsWith("/analytics")) {
+  if (pathname.startsWith("/reportes")) {
     return {
       title: "Reportes",
       description: "Panel de reportes e indicadores financieros.",

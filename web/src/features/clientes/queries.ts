@@ -271,15 +271,11 @@ function isEstadoProximaCuota(estado: EstadoEventoFinanciero): boolean {
 function isPerfilClienteIncompleto(cliente: {
   telefono: string | null;
   direccion: string | null;
-  empresa: string | null;
-  contacto: string | null;
   estadoDocumentos: EstadoDocumentos;
 }): boolean {
   return (
     !cliente.telefono ||
     !cliente.direccion ||
-    !cliente.empresa ||
-    !cliente.contacto ||
     cliente.estadoDocumentos === EstadoDocumentos.FALTAN_DOCUMENTOS
   );
 }

@@ -43,7 +43,7 @@ export const dashboardNavigation: DashboardNavItem[] = [
   },
   {
     label: "Reportes",
-    href: "/analytics",
+    href: "/reportes",
     description: "Panel de reportes e indicadores financieros.",
     icon: BarChart3,
   },

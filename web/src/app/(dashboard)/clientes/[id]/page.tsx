@@ -55,12 +55,12 @@ export default async function ClienteDetallePage({
     notFound();
   }
 
+
   const perfilIncompleto =
     !cliente.telefono ||
     !cliente.direccion ||
-    !cliente.empresa ||
-    !cliente.contacto ||
     cliente.estadoDocumentos === "FALTAN_DOCUMENTOS";
+
 
   const creditosActivos = cliente.creditos.filter(
     (credito) => credito.estado === "ACTIVO",
@@ -379,4 +379,3 @@ function EstadoDocumentosBadge({ estado }: { estado: string }) {
     </span>
   );
 }
-  
