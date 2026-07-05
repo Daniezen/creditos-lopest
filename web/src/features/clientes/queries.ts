@@ -5,6 +5,8 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/server/auth/guards";
+import { buildClienteVisibilityWhere } from "@/server/auth/scope";
 
 import type { ClienteSelectorOption } from "./types";
 
@@ -41,13 +43,20 @@ export interface ClienteListadoItem {
 /**
  * Obtiene clientes para selectores de UI.
  *
+ * Regla de seguridad:
+ * - ADMIN ve todos.
+ * - OPERADOR/LECTURA solo ven clientes propios via ownerUserId.
+ *
  * Se mantiene separado del listado principal porque el autocomplete necesita
- * un contrato más liviano que la vista completa de cartera por cliente.
+ * un contrato mas liviano que la vista completa de cartera por cliente.
  */
 export async function obtenerClientesParaSelector(): Promise<
   ClienteSelectorOption[]
 > {
+  const user = await requireUser();
+
   const clientes = await prisma.cliente.findMany({
+    where: buildClienteVisibilityWhere(user),
     select: {
       id: true,
       cedula: true,
@@ -73,59 +82,67 @@ export async function obtenerClientesParaSelector(): Promise<
 /**
  * Lista clientes para la vista principal.
  *
- * Calcula métricas derivadas desde créditos/eventos sin persistir resúmenes
+ * Calcula metricas derivadas desde creditos/eventos sin persistir resumenes
  * financieros como fuente de verdad.
+ *
+ * Regla de seguridad:
+ * - El filtro de ownership se aplica en la query, no en la UI.
  */
 export async function obtenerClientesParaListado({
   query,
   estadoDocumentos,
 }: ObtenerClientesParaListadoParams = {}): Promise<ClienteListadoItem[]> {
+  const user = await requireUser();
   const normalizedQuery = query?.trim() ?? "";
   const estadoDocumentosFiltro = parseEstadoDocumentos(estadoDocumentos);
 
+  const filtrosFuncionales = {
+    ...(estadoDocumentosFiltro
+      ? {
+          estadoDocumentos: estadoDocumentosFiltro,
+        }
+      : {}),
+    ...(normalizedQuery
+      ? {
+          OR: [
+            {
+              nombre: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              cedula: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              telefono: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              empresa: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              contacto: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
   const clientes = await prisma.cliente.findMany({
     where: {
-      ...(estadoDocumentosFiltro
-        ? {
-            estadoDocumentos: estadoDocumentosFiltro,
-          }
-        : {}),
-      ...(normalizedQuery
-        ? {
-            OR: [
-              {
-                nombre: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-              {
-                cedula: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-              {
-                telefono: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-              {
-                empresa: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-              {
-                contacto: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          }
-        : {}),
+      AND: [buildClienteVisibilityWhere(user), filtrosFuncionales],
     },
     include: {
       creditos: {
@@ -205,10 +222,22 @@ export async function obtenerClientesParaListado({
   });
 }
 
+/**
+ * Obtiene detalle de cliente aplicando ownership en servidor.
+ *
+ * No se usa findUnique porque findUnique por id ignoraria ownerUserId.
+ */
 export async function obtenerClienteDetalle(id: string) {
-  return prisma.cliente.findUnique({
+  const user = await requireUser();
+
+  return prisma.cliente.findFirst({
     where: {
-      id,
+      AND: [
+        {
+          id,
+        },
+        buildClienteVisibilityWhere(user),
+      ],
     },
     include: {
       documentos: {
@@ -270,7 +299,6 @@ function isPerfilClienteIncompleto(cliente: {
     cliente.estadoDocumentos === EstadoDocumentos.FALTAN_DOCUMENTOS
   );
 }
-
 
 function calcularSaldoCapitalVigente(credito: {
   monto: unknown;

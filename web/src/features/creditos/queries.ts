@@ -6,6 +6,8 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/server/auth/guards";
+import { buildCreditoVisibilityWhere } from "@/server/auth/scope";
 
 interface ObtenerCreditosParaListadoParams {
   query?: string;
@@ -41,10 +43,23 @@ export interface CreditoListadoItem {
   } | null;
 }
 
+/**
+ * Obtiene detalle de credito aplicando ownership en servidor.
+ *
+ * No se usa findUnique porque findUnique por id ignoraria el ownerUserId
+ * ubicado en la relacion credito -> cliente.
+ */
 export async function obtenerCreditoDetalle(id: string) {
-  return prisma.credito.findUnique({
+  const user = await requireUser();
+
+  return prisma.credito.findFirst({
     where: {
-      id,
+      AND: [
+        {
+          id,
+        },
+        buildCreditoVisibilityWhere(user),
+      ],
     },
     include: {
       cliente: {
@@ -70,63 +85,69 @@ export async function obtenerCreditoDetalle(id: string) {
 }
 
 /**
- * Obtiene créditos para la vista principal de cartera.
+ * Obtiene creditos para la vista principal de cartera.
  *
  * Decisiones:
- * - Búsqueda global por código, cliente, cédula o teléfono.
+ * - Busqueda global por codigo, cliente, cedula o telefono.
  * - Filtro simple por estado.
- * - Incluye eventos para calcular saldo y próxima cuota sin guardar resúmenes
+ * - Incluye eventos para calcular saldo y proxima cuota sin guardar resumenes
  *   derivados como fuente de verdad.
  *
- * Este enfoque es suficiente para la fase actual. Cuando haya volumen real,
- * se puede optimizar con SQL agregado o vistas materializadas.
+ * Regla de seguridad:
+ * - ADMIN ve todos.
+ * - OPERADOR/LECTURA solo ven creditos cuyo cliente pertenece a su ownerUserId.
  */
 export async function obtenerCreditosParaListado({
   query,
   estado,
 }: ObtenerCreditosParaListadoParams = {}): Promise<CreditoListadoItem[]> {
+  const user = await requireUser();
   const normalizedQuery = query?.trim() ?? "";
   const estadoFiltro = parseEstadoCredito(estado);
 
+  const filtrosFuncionales = {
+    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+    ...(normalizedQuery
+      ? {
+          OR: [
+            {
+              codigo: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              cliente: {
+                nombre: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+            {
+              cliente: {
+                cedula: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+            {
+              cliente: {
+                telefono: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
   const creditos = await prisma.credito.findMany({
     where: {
-      ...(estadoFiltro ? { estado: estadoFiltro } : {}),
-      ...(normalizedQuery
-        ? {
-            OR: [
-              {
-                codigo: {
-                  contains: normalizedQuery,
-                  mode: "insensitive",
-                },
-              },
-              {
-                cliente: {
-                  nombre: {
-                    contains: normalizedQuery,
-                    mode: "insensitive",
-                  },
-                },
-              },
-              {
-                cliente: {
-                  cedula: {
-                    contains: normalizedQuery,
-                    mode: "insensitive",
-                  },
-                },
-              },
-              {
-                cliente: {
-                  telefono: {
-                    contains: normalizedQuery,
-                    mode: "insensitive",
-                  },
-                },
-              },
-            ],
-          }
-        : {}),
+      AND: [buildCreditoVisibilityWhere(user), filtrosFuncionales],
     },
     include: {
       cliente: {
@@ -209,6 +230,7 @@ function parseEstadoCredito(value: string | undefined): EstadoCredito | null {
 
   return null;
 }
+
 function isEstadoProximaCuota(estado: EstadoEventoFinanciero): boolean {
   return (
     estado === EstadoEventoFinanciero.PENDIENTE ||
@@ -216,7 +238,6 @@ function isEstadoProximaCuota(estado: EstadoEventoFinanciero): boolean {
     estado === EstadoEventoFinanciero.MORA
   );
 }
-
 
 function calcularSaldoCapitalVigente(credito: {
   monto: unknown;
