@@ -18,8 +18,11 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import { ClienteOwnerTransferCard } from "@/features/clientes/components/cliente-owner-transfer-card";
 import { obtenerClienteDetalle } from "@/features/clientes/queries";
+import { obtenerUsuariosOperadoresActivos } from "@/features/clientes/admin-queries";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
+import { getCurrentUser, hasRole } from "@/server/auth/guards";
 
 interface ClienteDetallePageProps {
   params: Promise<{
@@ -30,37 +33,26 @@ interface ClienteDetallePageProps {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-/**
- * Detalle de cliente.
- *
- * Decisión visual:
- * - La topbar global ya identifica el módulo Clientes.
- * - Esta vista elimina el hero redundante y usa un encabezado compacto propio
- *   del registro: nombre, cédula, teléfono, empresa y acciones.
- * - Las métricas financieras y la información de contacto quedan separadas por
- *   función para reducir repetición visual.
- *
- * Restricción:
- * - Esta vista no decide permisos.
- * - La futura regla de acceso por cliente debe implementarse en queries/guards,
- *   no ocultando contenido en UI.
- */
 export default async function ClienteDetallePage({
   params,
 }: ClienteDetallePageProps) {
   const { id } = await params;
-  const cliente = await obtenerClienteDetalle(id);
+  const [cliente, user] = await Promise.all([
+    obtenerClienteDetalle(id),
+    getCurrentUser(),
+  ]);
 
   if (!cliente) {
     notFound();
   }
 
+  const isAdmin = user ? hasRole(user, "ADMIN") : false;
+  const operadores = isAdmin ? await obtenerUsuariosOperadoresActivos() : [];
 
   const perfilIncompleto =
     !cliente.telefono ||
     !cliente.direccion ||
     cliente.estadoDocumentos === "FALTAN_DOCUMENTOS";
-
 
   const creditosActivos = cliente.creditos.filter(
     (credito) => credito.estado === "ACTIVO",
@@ -135,6 +127,14 @@ export default async function ClienteDetallePage({
             </div>
           </div>
         </section>
+      ) : null}
+
+      {isAdmin ? (
+        <ClienteOwnerTransferCard
+          clienteId={cliente.id}
+          currentOwnerUserId={cliente.ownerUserId}
+          operadores={operadores}
+        />
       ) : null}
 
       <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
