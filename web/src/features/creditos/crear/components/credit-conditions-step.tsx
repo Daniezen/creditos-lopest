@@ -20,24 +20,14 @@ interface CreditConditionsStepProps {
   ) => void;
 }
 
-/**
- * Paso Crédito.
- *
- * Desktop:
- * - condiciones a la izquierda;
- * - resumen compacto y cronograma completo a la derecha.
- *
- * Pantallas medianas/móviles:
- * - contenido apilado para evitar cortes horizontales.
- */
 export function CreditConditionsStep({
   form,
   resultado,
   onChange,
 }: CreditConditionsStepProps) {
   return (
-    <section className="grid min-w-0 gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-      <div className="min-w-0 xl:sticky xl:top-6 xl:h-fit">
+    <section className="grid min-w-0 gap-6 min-[1180px]:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="mx-auto w-full max-w-[460px] min-w-0 min-[1180px]:mx-0 min-[1180px]:max-w-none min-[1180px]:sticky min-[1180px]:top-[118px] min-[1180px]:h-fit">
         <SimulatorForm form={form} onChange={onChange} variant="panel" />
       </div>
 
@@ -45,7 +35,7 @@ export function CreditConditionsStep({
         {resultado.estado === "empty" ? <EmptySimulationState /> : null}
 
         {resultado.estado === "error" && resultado.error ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-900">
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-900 shadow-sm">
             <h3 className="font-semibold">No se pudo simular</h3>
 
             <p className="mt-2 text-sm leading-6 text-red-700">

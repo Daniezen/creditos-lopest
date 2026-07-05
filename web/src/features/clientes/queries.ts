@@ -164,16 +164,7 @@ export async function obtenerClientesParaListado({
     );
 
     const saldoTotal = creditosActivos.reduce((total, credito) => {
-      const ultimoEventoConSaldo = [...credito.eventos]
-        .reverse()
-        .find((evento) => evento.saldoCapitalPost !== null);
-
-      return (
-        total +
-        (ultimoEventoConSaldo?.saldoCapitalPost
-          ? Number(ultimoEventoConSaldo.saldoCapitalPost)
-          : Number(credito.monto))
-      );
+      return total + calcularSaldoCapitalVigente(credito);
     }, 0);
 
     const proximaCuota =
@@ -278,4 +269,26 @@ function isPerfilClienteIncompleto(cliente: {
     !cliente.direccion ||
     cliente.estadoDocumentos === EstadoDocumentos.FALTAN_DOCUMENTOS
   );
+}
+
+
+function calcularSaldoCapitalVigente(credito: {
+  monto: unknown;
+  eventos: {
+    estado: EstadoEventoFinanciero;
+    saldoCapitalPost: unknown | null;
+  }[];
+}): number {
+  const ultimoEventoPagadoConSaldo = [...credito.eventos]
+    .reverse()
+    .find(
+      (evento) =>
+        evento.estado === EstadoEventoFinanciero.PAGADO &&
+        evento.saldoCapitalPost !== null,
+    );
+
+  return ultimoEventoPagadoConSaldo?.saldoCapitalPost !== null &&
+    ultimoEventoPagadoConSaldo?.saldoCapitalPost !== undefined
+    ? Number(ultimoEventoPagadoConSaldo.saldoCapitalPost)
+    : Number(credito.monto);
 }

@@ -1,5 +1,8 @@
-import type { ComponentType, ReactNode } from "react";
+"use client";
+
+import type { ComponentType, KeyboardEvent, ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CalendarDays, CreditCard, Eye, Plus, ShieldCheck, WalletCards } from "lucide-react";
 
 import { formatCurrencyCOP, formatDateCO, formatPercent } from "@/lib/formatters";
@@ -14,6 +17,21 @@ interface CreditosListProps {
 }
 
 export function CreditosList({ creditos, query, estado }: CreditosListProps) {
+  const router = useRouter();
+
+  function openCredito(id: string) {
+    router.push(`/creditos/${id}`);
+  }
+
+  function handleCreditoKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+    id: string,
+  ) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openCredito(id);
+    }
+  }
   const creditosActivos = creditos.filter((credito) => credito.estado === "ACTIVO");
   const saldoTotal = creditos.reduce((total, credito) => total + credito.saldoCapital, 0);
   const montoTotal = creditos.reduce((total, credito) => total + credito.monto, 0);
@@ -34,20 +52,20 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
       <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div className="grid flex-1 gap-3 sm:grid-cols-3">
             <PortfolioMetric label="Saldo vigente" value={formatCurrencyCOP(saldoTotal)} strong />
             <PortfolioMetric label="Créditos activos" value={String(creditosActivos.length)} />
             <PortfolioMetric label="Próxima cuota" value={proximaCuota ? formatCurrencyCOP(proximaCuota.valorProgramado) : "-"} helper={proximaCuota ? formatDateCO(proximaCuota.fechaProgramada) : undefined} />
           </div>
-          <Link href="/creditos/nuevo" className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700">
+          <Link href="/creditos/nuevo" className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700">
             <Plus className="h-4 w-4" /> Nuevo crédito
           </Link>
         </div>
       </section>
 
       <section className="mb-5 rounded-[1.75rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <form action="/creditos" className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_auto]">
+        <form action="/creditos" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
           <CreditSearchCombobox name="q" initialValue={query} items={searchItems} />
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">Estado</span>
@@ -96,7 +114,14 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {creditos.map((credito) => (
-                    <tr key={credito.id} className="transition hover:bg-violet-50/45">
+                    <tr
+                      key={credito.id}
+                      role="link"
+                      tabIndex={0}
+                      onClick={() => openCredito(credito.id)}
+                      onKeyDown={(event) => handleCreditoKeyDown(event, credito.id)}
+                      className="cursor-pointer transition hover:bg-violet-50/45"
+                    >
                       <TableCell><Link href={`/creditos/${credito.id}`} className="font-bold text-violet-700 hover:underline">{credito.codigo}</Link></TableCell>
                       <TableCell><div><p className="font-semibold text-slate-950">{credito.cliente.nombre}</p><p className="mt-1 text-xs text-slate-500">C.C. {credito.cliente.cedula}</p></div></TableCell>
                       <TableCell className="text-right font-semibold text-slate-950">{formatCurrencyCOP(credito.monto)}</TableCell>
@@ -118,8 +143,30 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
 }
 
 function CreditoCompactCard({ credito }: { credito: CreditoListadoItem }) {
+  const router = useRouter();
+
+  function openCredito(id: string) {
+    router.push(`/creditos/${id}`);
+  }
+
+  function handleCreditoKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+    id: string,
+  ) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openCredito(id);
+    }
+  }
+
   return (
-    <article className="p-3 transition hover:bg-violet-50/40 sm:p-4">
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={() => openCredito(credito.id)}
+      onKeyDown={(event) => handleCreditoKeyDown(event, credito.id)}
+      className="cursor-pointer p-3 transition hover:bg-violet-50/40 sm:p-4"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

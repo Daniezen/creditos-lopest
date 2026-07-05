@@ -22,16 +22,6 @@ function createIdempotencyKey() {
   return `credito-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
 
-/**
- * Flujo formal de creación de crédito.
- *
- * Flujo:
- * 1. Cliente
- * 2. Crédito: condiciones + preview inmediato
- * 3. Confirmación
- *
- * No guarda todavía.
- */
 export function CreateCreditPageContent({
   initialClientes,
 }: CreateCreditPageContentProps) {
@@ -171,7 +161,7 @@ export function CreateCreditPageContent({
         </div>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 lg:left-[330px] lg:px-10">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 lg:left-[92px] lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-slate-500">
             Paso {currentStep} de 3
@@ -198,7 +188,7 @@ export function CreateCreditPageContent({
               disabled={currentStep === 3 || !canGoToStep(currentStep + 1)}
               className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Continuar
+              {currentStep === 3 ? "Guardar arriba" : "Continuar"}
             </button>
           </div>
         </div>

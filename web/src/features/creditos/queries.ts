@@ -162,9 +162,7 @@ export async function obtenerCreditosParaListado({
   });
 
   return creditos.map((credito) => {
-    const ultimoEventoConSaldo = [...credito.eventos]
-      .reverse()
-      .find((evento) => evento.saldoCapitalPost !== null);
+    const saldoCapitalVigente = calcularSaldoCapitalVigente(credito);
 
     const proximaCuota =
       credito.eventos.find((evento) =>
@@ -186,9 +184,7 @@ export async function obtenerCreditosParaListado({
 
       cliente: credito.cliente,
 
-      saldoCapital: ultimoEventoConSaldo?.saldoCapitalPost
-        ? Number(ultimoEventoConSaldo.saldoCapitalPost)
-        : Number(credito.monto),
+      saldoCapital: saldoCapitalVigente,
 
       proximaCuota: proximaCuota
         ? {
@@ -219,4 +215,26 @@ function isEstadoProximaCuota(estado: EstadoEventoFinanciero): boolean {
     estado === EstadoEventoFinanciero.ATRASADO ||
     estado === EstadoEventoFinanciero.MORA
   );
+}
+
+
+function calcularSaldoCapitalVigente(credito: {
+  monto: unknown;
+  eventos: {
+    estado: EstadoEventoFinanciero;
+    saldoCapitalPost: unknown | null;
+  }[];
+}): number {
+  const ultimoEventoPagadoConSaldo = [...credito.eventos]
+    .reverse()
+    .find(
+      (evento) =>
+        evento.estado === EstadoEventoFinanciero.PAGADO &&
+        evento.saldoCapitalPost !== null,
+    );
+
+  return ultimoEventoPagadoConSaldo?.saldoCapitalPost !== null &&
+    ultimoEventoPagadoConSaldo?.saldoCapitalPost !== undefined
+    ? Number(ultimoEventoPagadoConSaldo.saldoCapitalPost)
+    : Number(credito.monto);
 }
