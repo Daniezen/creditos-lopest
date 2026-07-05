@@ -67,6 +67,11 @@ model Cliente {
   creditos   Credito[]
   documentos DocumentoCliente[]
 
+  
+  ownerUserId String?
+  ownerUser   User? @relation("ClienteOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@index([ownerUserId])
   @@index([nombre])
   @@index([telefono])
   @@map("clientes")
@@ -267,6 +272,8 @@ model User {
   roles    UserRole[]
   oauthAccounts OauthAccount[]
   auditLogs AuditLog[] @relation("AuditActor")
+
+  clientesPropios Cliente[] @relation("ClienteOwner")
 
   @@index([email])
   @@index([activo])
