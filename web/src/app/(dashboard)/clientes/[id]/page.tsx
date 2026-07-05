@@ -18,9 +18,10 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import { ClienteCreditOwnerTransferPanel } from "@/features/clientes/components/cliente-credit-owner-transfer-panel";
 import { ClienteOwnerTransferCard } from "@/features/clientes/components/cliente-owner-transfer-card";
-import { obtenerClienteDetalle } from "@/features/clientes/queries";
 import { obtenerUsuariosOperadoresActivos } from "@/features/clientes/admin-queries";
+import { obtenerClienteDetalle } from "@/features/clientes/queries";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 import { getCurrentUser, hasRole } from "@/server/auth/guards";
 
@@ -130,11 +131,17 @@ export default async function ClienteDetallePage({
       ) : null}
 
       {isAdmin ? (
-        <ClienteOwnerTransferCard
-          clienteId={cliente.id}
-          currentOwnerUserId={cliente.ownerUserId}
-          operadores={operadores}
-        />
+        <>
+          <ClienteOwnerTransferCard
+            clienteId={cliente.id}
+            currentOwnerUserId={cliente.ownerUserId}
+            operadores={operadores}
+          />
+          <ClienteCreditOwnerTransferPanel
+            creditos={cliente.creditos}
+            operadores={operadores}
+          />
+        </>
       ) : null}
 
       <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
