@@ -6,7 +6,10 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/server/auth/guards";
-import { buildClienteVisibilityWhere } from "@/server/auth/scope";
+import {
+  buildClienteVisibilityWhere,
+  buildCreditoVisibilityWhere,
+} from "@/server/auth/scope";
 
 import type { ClienteSelectorOption } from "./types";
 
@@ -40,16 +43,6 @@ export interface ClienteListadoItem {
   } | null;
 }
 
-/**
- * Obtiene clientes para selectores de UI.
- *
- * Regla de seguridad:
- * - ADMIN ve todos.
- * - OPERADOR/LECTURA solo ven clientes propios via ownerUserId.
- *
- * Se mantiene separado del listado principal porque el autocomplete necesita
- * un contrato mas liviano que la vista completa de cartera por cliente.
- */
 export async function obtenerClientesParaSelector(): Promise<
   ClienteSelectorOption[]
 > {
@@ -79,15 +72,6 @@ export async function obtenerClientesParaSelector(): Promise<
   return clientes;
 }
 
-/**
- * Lista clientes para la vista principal.
- *
- * Calcula metricas derivadas desde creditos/eventos sin persistir resumenes
- * financieros como fuente de verdad.
- *
- * Regla de seguridad:
- * - El filtro de ownership se aplica en la query, no en la UI.
- */
 export async function obtenerClientesParaListado({
   query,
   estadoDocumentos,
@@ -146,6 +130,7 @@ export async function obtenerClientesParaListado({
     },
     include: {
       creditos: {
+        where: buildCreditoVisibilityWhere(user),
         include: {
           eventos: {
             orderBy: [
@@ -222,11 +207,6 @@ export async function obtenerClientesParaListado({
   });
 }
 
-/**
- * Obtiene detalle de cliente aplicando ownership en servidor.
- *
- * No se usa findUnique porque findUnique por id ignoraria ownerUserId.
- */
 export async function obtenerClienteDetalle(id: string) {
   const user = await requireUser();
 
@@ -246,6 +226,7 @@ export async function obtenerClienteDetalle(id: string) {
         },
       },
       creditos: {
+        where: buildCreditoVisibilityWhere(user),
         include: {
           eventos: {
             orderBy: [

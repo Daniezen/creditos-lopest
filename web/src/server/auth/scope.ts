@@ -12,6 +12,11 @@ export function canSeeAllOwners(user: CurrentUserScope): boolean {
   return hasRole(user, "ADMIN");
 }
 
+/**
+ * Un cliente es visible para un operador si:
+ * - es propietario principal/documental del cliente; o
+ * - tiene al menos un credito propio dentro de ese cliente.
+ */
 export function buildClienteVisibilityWhere(
   user: CurrentUserScope,
 ): Prisma.ClienteWhereInput {
@@ -20,10 +25,24 @@ export function buildClienteVisibilityWhere(
   }
 
   return {
-    ownerUserId: user.id,
+    OR: [
+      {
+        ownerUserId: user.id,
+      },
+      {
+        creditos: {
+          some: {
+            ownerUserId: user.id,
+          },
+        },
+      },
+    ],
   };
 }
 
+/**
+ * La cartera financiera se controla a nivel de credito.
+ */
 export function buildCreditoVisibilityWhere(
   user: CurrentUserScope,
 ): Prisma.CreditoWhereInput {
@@ -32,9 +51,7 @@ export function buildCreditoVisibilityWhere(
   }
 
   return {
-    cliente: {
-      ownerUserId: user.id,
-    },
+    ownerUserId: user.id,
   };
 }
 
@@ -47,9 +64,7 @@ export function buildEventoFinancieroVisibilityWhere(
 
   return {
     credito: {
-      cliente: {
-        ownerUserId: user.id,
-      },
+      ownerUserId: user.id,
     },
   };
 }
@@ -86,11 +101,7 @@ export async function requireCreditoAccess(creditoId: string) {
     select: {
       id: true,
       clienteId: true,
-      cliente: {
-        select: {
-          ownerUserId: true,
-        },
-      },
+      ownerUserId: true,
     },
   });
 

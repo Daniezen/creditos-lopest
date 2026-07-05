@@ -21,21 +21,6 @@ function normalizeOptional(value: FormDataEntryValue | null): string | null {
   return typeof value === "string" ? value.trim() || null : null;
 }
 
-/**
- * Transfiere el propietario operativo de un cliente.
- *
- * Regla arquitectónica:
- * - No se migran créditos, cuotas ni documentos.
- * - La propiedad vive en Cliente.ownerUserId.
- * - Al cambiar el owner del cliente, la visibilidad de créditos/cuotas cambia
- *   automáticamente por los scopes credito -> cliente -> ownerUserId.
- *
- * Restricción técnica:
- * - Esta action se usa directamente como <form action={...}>.
- * - Por contrato de React/Next, una form action debe retornar void/Promise<void>.
- * - Si luego queremos mostrar feedback inline, debe migrarse a useActionState en
- *   un componente cliente; no se debe devolver un objeto desde esta action.
- */
 export async function transferirClienteOwnerAction(
   formData: FormData,
 ): Promise<void> {
@@ -78,12 +63,22 @@ export async function transferirClienteOwnerAction(
       });
 
       if (!targetOwner || !targetOwner.activo) {
-        throw new Error("El usuario destino no existe o está inactivo.");
+        throw new Error("El usuario destino no existe o esta inactivo.");
       }
 
       if (cliente.ownerUserId === targetOwner.id) {
         throw new Error("El cliente ya pertenece al propietario seleccionado.");
       }
+
+      const affectedCredits = await tx.credito.updateMany({
+        where: {
+          clienteId: cliente.id,
+        },
+        data: {
+          ownerUserId: targetOwner.id,
+          accionPor: admin.id,
+        },
+      });
 
       const updated = await tx.cliente.update({
         where: {
@@ -115,8 +110,10 @@ export async function transferirClienteOwnerAction(
           ownerNombre: targetOwner.nombre,
         } satisfies Prisma.InputJsonObject,
         metadata: {
+          mode: "FULL_CLIENT_TRANSFER",
           clienteNombre: cliente.nombre,
           clienteCedula: cliente.cedula,
+          affectedCredits: affectedCredits.count,
         } satisfies Prisma.InputJsonObject,
       });
 
@@ -132,6 +129,118 @@ export async function transferirClienteOwnerAction(
       error instanceof Error
         ? error.message
         : "No se pudo transferir el propietario del cliente.",
+    );
+  }
+}
+
+export async function transferirCreditoOwnerAction(
+  formData: FormData,
+): Promise<void> {
+  try {
+    const admin = await requireRole("ADMIN");
+    const creditoId = leerCampoObligatorio(formData, "creditoId");
+    const targetOwnerUserId = leerCampoObligatorio(formData, "targetOwnerUserId");
+    const reason = normalizeOptional(formData.get("reason"));
+
+    const result = await prisma.$transaction(async (tx) => {
+      const credito = await tx.credito.findUnique({
+        where: {
+          id: creditoId,
+        },
+        include: {
+          ownerUser: {
+            select: {
+              id: true,
+              email: true,
+              nombre: true,
+            },
+          },
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              cedula: true,
+            },
+          },
+        },
+      });
+
+      if (!credito) {
+        throw new Error("El credito no existe.");
+      }
+
+      const targetOwner = await tx.user.findUnique({
+        where: {
+          id: targetOwnerUserId,
+        },
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          activo: true,
+        },
+      });
+
+      if (!targetOwner || !targetOwner.activo) {
+        throw new Error("El usuario destino no existe o esta inactivo.");
+      }
+
+      if (credito.ownerUserId === targetOwner.id) {
+        throw new Error("El credito ya pertenece al propietario seleccionado.");
+      }
+
+      const updated = await tx.credito.update({
+        where: {
+          id: credito.id,
+        },
+        data: {
+          ownerUserId: targetOwner.id,
+          accionPor: admin.id,
+        },
+        select: {
+          id: true,
+          clienteId: true,
+        },
+      });
+
+      await recordAuditLogTx(tx, {
+        actorId: admin.id,
+        action: "CREDITO_TRANSFER_OWNER",
+        entityType: "Credito",
+        entityId: credito.id,
+        reason,
+        before: {
+          ownerUserId: credito.ownerUserId,
+          ownerEmail: credito.ownerUser?.email ?? null,
+          ownerNombre: credito.ownerUser?.nombre ?? null,
+        } satisfies Prisma.InputJsonObject,
+        after: {
+          ownerUserId: targetOwner.id,
+          ownerEmail: targetOwner.email,
+          ownerNombre: targetOwner.nombre,
+        } satisfies Prisma.InputJsonObject,
+        metadata: {
+          mode: "SINGLE_CREDIT_TRANSFER",
+          creditoCodigo: credito.codigo,
+          clienteId: credito.cliente.id,
+          clienteNombre: credito.cliente.nombre,
+          clienteCedula: credito.cliente.cedula,
+        } satisfies Prisma.InputJsonObject,
+      });
+
+      return updated;
+    });
+
+    revalidatePath("/clientes");
+    revalidatePath(`/clientes/${result.clienteId}`);
+    revalidatePath("/creditos");
+    revalidatePath(`/creditos/${result.id}`);
+    revalidatePath("/reportes");
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "No se pudo transferir el propietario del credito.",
     );
   }
 }
