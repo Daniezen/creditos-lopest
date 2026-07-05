@@ -1,0 +1,112 @@
+/*
+  Sidebar responsive - Lopest
+
+  Alcance:
+  - Solo gobierna layout de la sidebar.
+  - No usa selectores globales sobre aside/nav/a.
+  - No usa !important.
+  - Mantiene Tailwind para estilos visuales generales.
+
+  Reglas:
+  - Desktop normal: 380px.
+  - <= 1200px: 300px.
+  - Rutas densas (/reportes y /creditos/nuevo): 92px.
+  - Altura baja: compactacion vertical solo en sidebar no densa.
+*/
+
+.sidebar {
+  width: 380px;
+}
+
+.sidebarDense {
+  width: 92px;
+}
+
+.brand {
+  padding: 1.75rem;
+}
+
+.brandDense {
+  padding: 1.5rem 1rem;
+}
+
+.createSection {
+  padding: 1.25rem;
+}
+
+.quickAction {
+  min-height: 5rem;
+  padding: 0.75rem;
+}
+
+.nav {
+  padding: 1.5rem 1.25rem;
+  scrollbar-width: thin;
+}
+
+.navDense {
+  padding: 1.5rem 0.75rem;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.navItem {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.navItemDense {
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+
+.logout {
+  padding: 1.25rem;
+}
+
+@media (max-width: 1200px) {
+  .sidebar:not(.sidebarDense) {
+    width: 300px;
+  }
+}
+
+@media (max-height: 650px) and (min-width: 1024px) {
+  .sidebar:not(.sidebarDense) .brand {
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
+  }
+
+  .sidebar:not(.sidebarDense) .createSection {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .sidebar:not(.sidebarDense) .quickAction {
+    min-height: 4.35rem;
+    padding: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .sidebar:not(.sidebarDense) .nav {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .sidebar:not(.sidebarDense) .navList {
+    gap: 0.28rem;
+  }
+
+  .sidebar:not(.sidebarDense) .navItem {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .sidebar:not(.sidebarDense) .logout {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
