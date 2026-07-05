@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
@@ -40,15 +41,6 @@ function leerCampoObligatorio(formData: FormData, name: string): string {
   return value.trim();
 }
 
-/**
- * Regla legacy de Sheets para extensión de plazo:
- * - Mensual: sumar 1 mes.
- * - Quincenal: sumar 15 días.
- *
- * Nota:
- * Esto replica comportamiento operativo de Sheets. No recalcula calendario 5/20,
- * 10/25 o 15/30 en esta fase para evitar cambiar reglas financieras ya usadas.
- */
 function calcularSiguienteFechaLegacy(fecha: Date, frecuencia: FrecuenciaPago): Date {
   const siguiente = new Date(fecha);
 
@@ -67,20 +59,14 @@ function estadoInicialPorFecha(fechaProgramada: Date, hoy: Date): EstadoEventoFi
     : EstadoEventoFinanciero.PENDIENTE;
 }
 
-/**
- * Extiende plazo de crédito SOLO_INTERES.
- *
- * Comportamiento heredado:
- * 1. Busca la última cuota programada no cancelada por abono.
- * 2. Mueve el capital de esa última cuota a nuevas cuotas futuras.
- * 3. La cuota final anterior queda solo con interés.
- * 4. La última cuota nueva conserva el capital.
- */
 export async function extenderPlazoSoloInteres(formData: FormData): Promise<void> {
   const creditoId = leerCampoObligatorio(formData, "creditoId");
   const cuotasExtraRaw = leerCampoObligatorio(formData, "cuotasExtra");
   const cuotasExtra = Number(cuotasExtraRaw);
   const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
 
   if (!Number.isInteger(cuotasExtra) || cuotasExtra <= 0 || cuotasExtra > 60) {
     throw new Error("Ingresa un número entero de cuotas extra entre 1 y 60.");
@@ -154,7 +140,7 @@ export async function extenderPlazoSoloInteres(formData: FormData): Promise<void
         capitalProgramado: "0.00",
         valorProgramado: toMoneyDecimalString(interesBase),
         saldoCapitalPost: toMoneyDecimalString(capitalFinal),
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
 
@@ -193,7 +179,7 @@ export async function extenderPlazoSoloInteres(formData: FormData): Promise<void
         saldoCapitalPost: toMoneyDecimalString(saldoCapitalPost),
         estado: estadoInicialPorFecha(fechaIterativa, hoy),
         diasAtraso: 0,
-        accionPor: "sistema",
+        accionPor: user.id,
       });
     }
 
@@ -209,7 +195,7 @@ export async function extenderPlazoSoloInteres(formData: FormData): Promise<void
         plazoMeses: credito.plazoMeses,
         estado: EstadoCredito.ACTIVO,
         fechaCancelacion: null,
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
   });

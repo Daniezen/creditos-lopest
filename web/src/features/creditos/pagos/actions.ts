@@ -9,15 +9,8 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
-/**
- * Día calendario actual en zona Colombia.
- *
- * Motivo:
- * - Los pagos y atrasos se evalúan por día calendario, no por instante UTC.
- * - El servidor puede estar en UTC u otra zona; usar America/Bogota evita
- *   marcar estados con un día corrido durante la noche.
- */
 function obtenerHoyColombia(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -65,6 +58,7 @@ function leerCampoObligatorio(formData: FormData, name: string): string {
 async function sincronizarEstadoCredito(
   tx: Prisma.TransactionClient,
   creditoId: string,
+  accionPor: string,
 ): Promise<void> {
   const eventos = await tx.eventoFinanciero.findMany({
     where: {
@@ -93,25 +87,18 @@ async function sincronizarEstadoCredito(
     data: {
       estado: todasCerradas ? EstadoCredito.CANCELADO : EstadoCredito.ACTIVO,
       fechaCancelacion: todasCerradas ? obtenerHoyColombia() : null,
-      accionPor: "sistema",
+      accionPor,
     },
   });
 }
 
-/**
- * Marca una cuota programada como pagada.
- *
- * Regla heredada de Sheets:
- * - estado = PAGADO;
- * - fechaPago = hoy;
- * - montoPagado = valorProgramado;
- * - capitalPagado = capitalProgramado;
- * - interesPagado = interesProgramado.
- */
 export async function registrarPagoCuota(formData: FormData): Promise<void> {
   const eventoId = leerCampoObligatorio(formData, "eventoId");
   const creditoId = leerCampoObligatorio(formData, "creditoId");
   const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
 
   await prisma.$transaction(async (tx) => {
     const evento = await tx.eventoFinanciero.findUnique({
@@ -156,29 +143,24 @@ export async function registrarPagoCuota(formData: FormData): Promise<void> {
         interesPagado: evento.interesProgramado,
         estado: EstadoEventoFinanciero.PAGADO,
         diasAtraso: 0,
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
 
-    await sincronizarEstadoCredito(tx, creditoId);
+    await sincronizarEstadoCredito(tx, creditoId, user.id);
   });
 
   revalidatePath("/creditos");
   revalidatePath(`/creditos/${creditoId}`);
 }
 
-/**
- * Reversa inicial de pago.
- *
- * Advertencia:
- * - Esta versión replica el comportamiento operativo de Sheets.
- * - En una fase posterior debe reemplazarse por reversa auditada con motivo,
- *   usuario y evento de reversa independiente.
- */
 export async function reversarPagoCuota(formData: FormData): Promise<void> {
   const eventoId = leerCampoObligatorio(formData, "eventoId");
   const creditoId = leerCampoObligatorio(formData, "creditoId");
   const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
 
   await prisma.$transaction(async (tx) => {
     const evento = await tx.eventoFinanciero.findUnique({
@@ -222,29 +204,25 @@ export async function reversarPagoCuota(formData: FormData): Promise<void> {
           nuevoEstado === EstadoEventoFinanciero.ATRASADO
             ? calcularDiasAtraso(evento.fechaProgramada, hoy)
             : 0,
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
 
-    await sincronizarEstadoCredito(tx, creditoId);
+    await sincronizarEstadoCredito(tx, creditoId, user.id);
   });
 
   revalidatePath("/creditos");
   revalidatePath(`/creditos/${creditoId}`);
 }
 
-/**
- * Actualiza cuotas vencidas del crédito.
- *
- * Regla heredada de Sheets:
- * - PENDIENTE con fechaProgramada < hoy => ATRASADO.
- * - MORA queda reservada para una regla posterior explícita.
- */
 export async function actualizarCuotasVencidasCredito(
   formData: FormData,
 ): Promise<void> {
   const creditoId = leerCampoObligatorio(formData, "creditoId");
   const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
 
   await prisma.$transaction(async (tx) => {
     const eventos = await tx.eventoFinanciero.findMany({
@@ -270,12 +248,12 @@ export async function actualizarCuotasVencidasCredito(
         data: {
           estado: EstadoEventoFinanciero.ATRASADO,
           diasAtraso: calcularDiasAtraso(evento.fechaProgramada, hoy),
-          accionPor: "sistema",
+          accionPor: user.id,
         },
       });
     }
 
-    await sincronizarEstadoCredito(tx, creditoId);
+    await sincronizarEstadoCredito(tx, creditoId, user.id);
   });
 
   revalidatePath("/creditos");

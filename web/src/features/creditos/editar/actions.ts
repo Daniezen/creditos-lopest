@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { generarCronogramaSimulado } from "@/domain/creditos/simulador/calcular-cronograma";
 import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
 import {
   mapEstadoCuotaToPrisma,
@@ -22,11 +23,6 @@ interface ActualizarCreditoInput {
   form: SimulatorFormState;
   observaciones?: string;
   nota?: string;
-
-  /**
-   * Código temporal de override administrativo.
-   * Será reemplazado por roles reales cuando exista autenticación propia.
-   */
   adminOverrideCode?: string;
 }
 
@@ -64,7 +60,6 @@ function eventoTieneActividadFinanciera(evento: {
   );
 }
 
-
 function isAdminOverrideAutorizado(code: string | undefined): boolean {
   const expectedCode = process.env.CREDIT_ADMIN_OVERRIDE_CODE;
 
@@ -99,6 +94,9 @@ export async function actualizarCredito(
   }
 
   try {
+    const { user } = await requireCreditoAccess(id);
+    assertCanMutate(user);
+
     const result = await prisma.$transaction(async (tx) => {
       const credito = await tx.credito.findUnique({
         where: {
@@ -143,7 +141,7 @@ export async function actualizarCredito(
           data: {
             observaciones: input.observaciones?.trim() || null,
             nota: input.nota?.trim() || null,
-            accionPor: "sistema",
+            accionPor: user.id,
           },
         });
 
@@ -191,7 +189,7 @@ export async function actualizarCredito(
           ),
           observaciones: input.observaciones?.trim() || null,
           nota: input.nota?.trim() || null,
-          accionPor: "sistema",
+          accionPor: user.id,
         },
       });
 
@@ -218,9 +216,7 @@ export async function actualizarCredito(
             interesProgramado: toMoneyDecimalString(cuota.interesProgramado),
             saldoCapitalPost: toMoneyDecimalString(cuota.saldoCapitalPost),
             estado: mapEstadoCuotaToPrisma(cuota.estado),
-            accionPor: adminOverrideAutorizado
-              ? "admin_override"
-              : "sistema",
+            accionPor: adminOverrideAutorizado ? "admin_override" : user.id,
           })),
       });
 
@@ -261,6 +257,9 @@ export async function eliminarCredito(
   }
 
   try {
+    const { user } = await requireCreditoAccess(id);
+    assertCanMutate(user);
+
     await prisma.$transaction(async (tx) => {
       const credito = await tx.credito.findUnique({
         where: {

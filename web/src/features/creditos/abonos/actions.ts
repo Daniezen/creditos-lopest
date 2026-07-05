@@ -11,20 +11,12 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
-/**
- * Formato decimal seguro para dinero en Prisma/PostgreSQL.
- */
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
-/**
- * Fecha calendario de Colombia.
- *
- * Los abonos, pagos y vencimientos se operan por día calendario local,
- * no por instante UTC.
- */
 function obtenerHoyColombia(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Bogota",
@@ -50,13 +42,6 @@ function leerCampoObligatorio(formData: FormData, name: string): string {
   return value.trim();
 }
 
-/**
- * Acepta formato colombiano:
- * - "100000"
- * - "100.000"
- * - "$100.000"
- * - "100000,50"
- */
 function parseMontoInput(value: string): number {
   const cleaned = value
     .trim()
@@ -78,17 +63,10 @@ function esEstadoPendienteOperativo(estado: EstadoEventoFinanciero): boolean {
   );
 }
 
-/**
- * Sincroniza estado global del crédito después de pagos/abonos.
- *
- * Regla:
- * - si todas las cuotas programadas están PAGADO o CANCELADO_POR_ABONO,
- *   el crédito queda CANCELADO;
- * - en caso contrario queda ACTIVO.
- */
 async function sincronizarEstadoCredito(
   tx: Prisma.TransactionClient,
   creditoId: string,
+  accionPor: string,
 ): Promise<void> {
   const eventos = await tx.eventoFinanciero.findMany({
     where: {
@@ -117,17 +95,11 @@ async function sincronizarEstadoCredito(
     data: {
       estado: todasCerradas ? EstadoCredito.CANCELADO : EstadoCredito.ACTIVO,
       fechaCancelacion: todasCerradas ? obtenerHoyColombia() : null,
-      accionPor: "sistema",
+      accionPor,
     },
   });
 }
 
-/**
- * Recalcula saldos capital post después de mutar cuotas futuras.
- *
- * No guarda resúmenes como fuente de verdad; solo actualiza el saldo proyectado
- * por evento/cuota para mantener la vista coherente.
- */
 async function recalcularSaldosCapitalPost(
   tx: Prisma.TransactionClient,
   creditoId: string,
@@ -188,19 +160,14 @@ async function recalcularSaldosCapitalPost(
   }
 }
 
-/**
- * Registra un abono extraordinario a capital.
- *
- * Regla heredada de Sheets:
- * - Crea evento ABONO_CAPITAL pagado.
- * - AMORTIZACION_FIJA: reduce plazo atacando cuotas futuras desde la cola.
- * - SOLO_INTERES: reduce base de capital y recalcula intereses futuros.
- */
 export async function registrarAbonoCapital(formData: FormData): Promise<void> {
   const creditoId = leerCampoObligatorio(formData, "creditoId");
   const montoRaw = leerCampoObligatorio(formData, "montoAbono");
   const montoAbono = parseMontoInput(montoRaw);
   const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
 
   if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
     throw new Error("Ingresa un monto de abono válido mayor a cero.");
@@ -273,7 +240,7 @@ export async function registrarAbonoCapital(formData: FormData): Promise<void> {
         saldoCapitalPost: toMoneyDecimalString(saldoPosteriorAbono),
         estado: EstadoEventoFinanciero.PAGADO,
         diasAtraso: 0,
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
 
@@ -294,17 +261,13 @@ export async function registrarAbonoCapital(formData: FormData): Promise<void> {
     }
 
     await recalcularSaldosCapitalPost(tx, credito.id);
-    await sincronizarEstadoCredito(tx, credito.id);
+    await sincronizarEstadoCredito(tx, credito.id, user.id);
   });
 
   revalidatePath("/creditos");
   revalidatePath(`/creditos/${creditoId}`);
 }
 
-/**
- * Amortización fija:
- * El abono reduce plazo atacando cuotas futuras desde la última hacia atrás.
- */
 async function aplicarAbonoAmortizacionFija(input: {
   tx: Prisma.TransactionClient;
   cuotasOperativas: Array<{
@@ -365,10 +328,6 @@ async function aplicarAbonoAmortizacionFija(input: {
   }
 }
 
-/**
- * Solo interés:
- * El abono reduce la base de capital y recalcula el interés futuro.
- */
 async function aplicarAbonoSoloInteres(input: {
   tx: Prisma.TransactionClient;
   frecuencia: FrecuenciaPago;

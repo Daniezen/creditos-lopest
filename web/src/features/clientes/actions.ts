@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
+import {
+  assertCanMutate,
+  requireClienteAccess,
+  requireMutationUser,
+} from "@/server/auth/scope";
 
 import type { ClienteSelectorOption } from "./types";
 
@@ -87,6 +92,11 @@ function eventoTieneActividadFinanciera(evento: {
 
 /**
  * Crea un cliente mínimo/ampliado para el flujo de creación de crédito.
+ *
+ * Seguridad:
+ * - exige usuario con capacidad de mutación;
+ * - asigna ownerUserId al usuario autenticado que crea el cliente;
+ * - la reasignación a otro owner debe hacerse luego con flujo admin auditado.
  */
 export async function crearClienteMinimo(
   input: CrearClienteMinimoInput,
@@ -109,6 +119,8 @@ export async function crearClienteMinimo(
   }
 
   try {
+    const user = await requireMutationUser();
+
     const cliente = await prisma.cliente.create({
       data: {
         cedula,
@@ -119,7 +131,8 @@ export async function crearClienteMinimo(
         recomienda: normalizeOptional(input.recomienda),
         contacto: normalizeOptional(input.contacto),
         contacto2: normalizeOptional(input.contacto2),
-        accionPor: "sistema",
+        ownerUserId: user.id,
+        accionPor: user.id,
       },
       select: {
         id: true,
@@ -155,7 +168,7 @@ export async function crearClienteMinimo(
 
     return {
       ok: false,
-      error: "No se pudo crear el cliente.",
+      error: error instanceof Error ? error.message : "No se pudo crear el cliente.",
     };
   }
 }
@@ -163,8 +176,9 @@ export async function crearClienteMinimo(
 /**
  * Actualiza un cliente.
  *
- * A diferencia de Sheets, cambiar cédula no requiere propagar a créditos:
- * la relación real es Cliente.id -> Credito.clienteId.
+ * Seguridad:
+ * - valida ownership/ADMIN antes de mutar;
+ * - LECTURA queda bloqueado por assertCanMutate.
  */
 export async function actualizarCliente(
   input: ActualizarClienteInput,
@@ -195,6 +209,9 @@ export async function actualizarCliente(
   }
 
   try {
+    const { user } = await requireClienteAccess(id);
+    assertCanMutate(user);
+
     const duplicado = await prisma.cliente.findFirst({
       where: {
         cedula,
@@ -230,7 +247,7 @@ export async function actualizarCliente(
         contacto2: normalizeOptional(input.contacto2),
         carpetaAdjuntosUrl: normalizeOptional(input.carpetaAdjuntosUrl),
         estadoDocumentos: input.estadoDocumentos ?? "FALTAN_DOCUMENTOS",
-        accionPor: "sistema",
+        accionPor: user.id,
       },
     });
 
@@ -246,7 +263,8 @@ export async function actualizarCliente(
 
     return {
       ok: false,
-      error: "No se pudo actualizar el cliente.",
+      error:
+        error instanceof Error ? error.message : "No se pudo actualizar el cliente.",
     };
   }
 }
@@ -254,12 +272,9 @@ export async function actualizarCliente(
 /**
  * Elimina un cliente solo si es seguro.
  *
- * Permite el caso operativo importante:
- * - cliente creado por error;
- * - crédito creado vacío/sin pagos;
- * - se permite borrar cliente y créditos vacíos asociados.
- *
- * Bloquea si existe actividad financiera o documentos.
+ * Seguridad:
+ * - primero valida ownership/ADMIN;
+ * - luego aplica reglas de integridad financiera/documental.
  */
 export async function eliminarCliente(
   input: EliminarClienteInput,
@@ -274,6 +289,9 @@ export async function eliminarCliente(
   }
 
   try {
+    const { user } = await requireClienteAccess(id);
+    assertCanMutate(user);
+
     await prisma.$transaction(async (tx) => {
       const cliente = await tx.cliente.findUnique({
         where: {

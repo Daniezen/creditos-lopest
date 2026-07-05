@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { generarCronogramaSimulado } from "@/domain/creditos/simulador/calcular-cronograma";
 import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
 
 import { reservarCodigoCredito } from "../codigos";
 import {
@@ -38,11 +39,11 @@ type CrearCreditoDesdeWizardResult =
 /**
  * Crea un crédito real desde el wizard.
  *
- * Garantías:
- * - Recalcula el cronograma en servidor.
- * - Reserva código LP dentro de transacción.
- * - Crea crédito y eventos financieros atómicamente.
- * - Usa idempotencyKey para reducir riesgo de doble submit.
+ * Seguridad:
+ * - valida ownership/ADMIN sobre el cliente antes de crear el crédito;
+ * - impide que un usuario cree créditos sobre clientes ajenos;
+ * - mantiene idempotencyKey para doble submit, pero valida que coincida con
+ *   el mismo cliente solicitado.
  */
 export async function crearCreditoDesdeWizard(
   input: CrearCreditoDesdeWizardInput,
@@ -65,6 +66,9 @@ export async function crearCreditoDesdeWizard(
   }
 
   try {
+    const { user } = await requireClienteAccess(clienteId);
+    assertCanMutate(user);
+
     const condiciones = normalizarCondicionesCredito(input.form);
 
     const resultado = await prisma.$transaction(async (tx) => {
@@ -75,11 +79,19 @@ export async function crearCreditoDesdeWizard(
         select: {
           id: true,
           codigo: true,
+          clienteId: true,
         },
       });
 
       if (creditoExistente) {
-        return creditoExistente;
+        if (creditoExistente.clienteId !== clienteId) {
+          throw new Error("La operación idempotente no corresponde al cliente seleccionado.");
+        }
+
+        return {
+          id: creditoExistente.id,
+          codigo: creditoExistente.codigo,
+        };
       }
 
       const cliente = await tx.cliente.findUnique({
@@ -132,7 +144,7 @@ export async function crearCreditoDesdeWizard(
             condiciones.tipoAmortizacion,
           ),
 
-          accionPor: "sistema",
+          accionPor: user.id,
         },
         select: {
           id: true,
@@ -157,7 +169,7 @@ export async function crearCreditoDesdeWizard(
           saldoCapitalPost: toMoneyDecimalString(cuota.saldoCapitalPost),
           estado: mapEstadoCuotaToPrisma(cuota.estado),
 
-          accionPor: "sistema",
+          accionPor: user.id,
         })),
       });
 
