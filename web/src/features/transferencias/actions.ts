@@ -12,15 +12,7 @@ import {
   requireTransferenciasUser,
 } from "./queries";
 
-export interface TransferActionState {
-  ok: boolean;
-  message: string | null;
-}
-
-export const initialTransferActionState: TransferActionState = {
-  ok: false,
-  message: null,
-};
+import type { TransferActionState } from "./state";
 
 function leerCampoObligatorio(formData: FormData, name: string): string {
   const value = formData.get(name);

@@ -6,10 +6,10 @@ import { CreditCard, Search, Users } from "lucide-react";
 import { formatCurrencyCOP } from "@/lib/formatters";
 
 import {
-  initialTransferActionState,
   transferirClienteCompletoAction,
   transferirCreditoIndividualAction,
 } from "../actions";
+import { initialTransferActionState } from "../state";
 import type {
   TransferClienteOption,
   TransferCreditoOption,
