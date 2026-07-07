@@ -180,10 +180,7 @@ function DestinationSummary({ owner }: { owner: TransferOwnerOption | null }) {
 
   return (
     <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-violet-600">
-        Destino automático
-      </p>
-      <p className="mt-1 text-sm font-black text-slate-950">{owner.nombre}</p>
+      <p className="text-sm font-black text-slate-950">{owner.nombre}</p>
       <p className="mt-0.5 text-xs font-semibold text-slate-500">{owner.email}</p>
     </div>
   );
@@ -202,7 +199,7 @@ function creditoLabel(credito: TransferCreditoOption): string {
 }
 
 function creditoDescription(credito: TransferCreditoOption): string {
-  return `${credito.clienteNombre} | Propietario: ${credito.ownerNombre ?? "sin propietario"}`;
+  return credito.clienteNombre;
 }
 
 function findAutoDestination(input: {
