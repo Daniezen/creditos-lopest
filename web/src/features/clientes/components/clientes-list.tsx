@@ -59,10 +59,9 @@ export function ClientesList({
     0,
   );
 
-  const saldoTotal = clientes.reduce(
-    (total, cliente) => total + cliente.saldoTotal,
-    0,
-  );
+  const clientesConCreditoActivo = clientes.filter(
+    (cliente) => cliente.creditosActivos > 0,
+  ).length;
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
@@ -89,8 +88,8 @@ export function ClientesList({
 
             <PortfolioMetric
               icon={WalletCards}
-              label="Saldo cartera"
-              value={formatCurrencyCOP(saldoTotal)}
+              label="Clientes con crédito activo"
+              value={String(clientesConCreditoActivo)}
               helper={`${creditosActivos} crédito(s) activo(s)`}
             />
           </div>
@@ -207,7 +206,7 @@ export function ClientesList({
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>Créditos activos</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
+                    <TableHead className="text-right">Capital pendiente</TableHead>
                     <TableHead>Documentos</TableHead>
                     <TableHead className="text-right">Acción</TableHead>
                   </tr>
@@ -341,7 +340,7 @@ function ClienteCompactCard({ cliente }: { cliente: ClienteListadoItem }) {
         <CompactDatum label="Teléfono" value={cliente.telefono || "-"} />
         <CompactDatum label="Empresa" value={cliente.empresa || "-"} />
         <CompactDatum label="Créditos" value={String(cliente.creditosActivos)} />
-        <CompactDatum label="Saldo" value={formatCurrencyCOP(cliente.saldoTotal)} />
+        <CompactDatum label="Capital pendiente" value={formatCurrencyCOP(cliente.saldoTotal)} />
       </div>
 
       <div className="mt-2">

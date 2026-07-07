@@ -33,7 +33,7 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
     }
   }
   const creditosActivos = creditos.filter((credito) => credito.estado === "ACTIVO");
-  const saldoTotal = creditos.reduce((total, credito) => total + credito.saldoCapital, 0);
+  const saldoTotal = creditosActivos.reduce((total, credito) => total + credito.saldoCapital, 0);
   const montoTotal = creditos.reduce((total, credito) => total + credito.monto, 0);
   const proximaCuota = creditos
     .map((credito) => credito.proximaCuota)
@@ -54,7 +54,7 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
       <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div className="grid flex-1 gap-3 sm:grid-cols-3">
-            <PortfolioMetric label="Saldo vigente" value={formatCurrencyCOP(saldoTotal)} strong />
+            <PortfolioMetric label="Capital pendiente activo" value={formatCurrencyCOP(saldoTotal)} helper={`${creditosActivos.length} crédito(s) activo(s) · saldo tras último pago`} strong />
             <PortfolioMetric label="Créditos activos" value={String(creditosActivos.length)} />
             <PortfolioMetric label="Próxima cuota" value={proximaCuota ? formatCurrencyCOP(proximaCuota.valorProgramado) : "-"} helper={proximaCuota ? formatDateCO(proximaCuota.fechaProgramada) : undefined} />
           </div>
@@ -109,7 +109,7 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
               <table className="min-w-[1040px] w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <TableHead>Código</TableHead><TableHead>Cliente</TableHead><TableHead className="text-right">Monto</TableHead><TableHead className="text-right">Saldo</TableHead><TableHead>Próxima cuota</TableHead><TableHead className="text-right">Tasa</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acción</TableHead>
+                    <TableHead>Código</TableHead><TableHead>Cliente</TableHead><TableHead className="text-right">Monto</TableHead><TableHead className="text-right">Capital pendiente</TableHead><TableHead>Próxima cuota</TableHead><TableHead className="text-right">Tasa</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acción</TableHead>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -180,7 +180,7 @@ function CreditoCompactCard({ credito }: { credito: CreditoListadoItem }) {
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
         <CompactDatum label="Monto" value={formatCurrencyCOP(credito.monto)} />
-        <CompactDatum label="Saldo" value={formatCurrencyCOP(credito.saldoCapital)} />
+        <CompactDatum label="Capital pendiente" value={formatCurrencyCOP(credito.saldoCapital)} />
         <CompactDatum label="Tasa" value={formatPercent(credito.tasaMensual)} />
         <CompactDatoProximaCuota credito={credito} />
       </div>

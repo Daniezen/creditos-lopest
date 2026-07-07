@@ -1,0 +1,1580 @@
+[INFO] Comparacion DB vs export Sheets
+[INFO] Fecha: 20260707_055453
+[INFO] Proyecto: /home/deploy/apps/lopest
+
+DROP SCHEMA
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COPY 135
+COPY 272
+COPY 1688
+Pager usage is off.
+=== 0. RESUMEN DE CONTEOS ===
+ entidad  | expected | actual | diferencia 
+----------+----------+--------+------------
+ clientes |      135 |    135 |          0
+ creditos |      272 |    272 |          0
+ eventos  |     1688 |   1688 |          0
+(3 rows)
+
+=== 1. DUPLICADOS DEL EXCEL / STAGING ===
+          issue          |          key          | count 
+-------------------------+-----------------------+-------
+ evento_codigo_duplicado | LP-26-0262-ABX-200000 |     2
+(1 row)
+
+=== 2. CLIENTES FALTANTES EN DB ===
+ cedula 
+--------
+(0 rows)
+
+=== 3. CLIENTES EXTRA EN DB ===
+ cedula | nombre 
+--------+--------
+(0 rows)
+
+=== 4. DIFERENCIAS DE CAMPOS - CLIENTES ===
+ cedula | campo | expected | actual 
+--------+-------+----------+--------
+(0 rows)
+
+=== 5. CREDITOS FALTANTES EN DB ===
+ id_credito 
+------------
+(0 rows)
+
+=== 6. CREDITOS EXTRA EN DB ===
+ codigo | nombre 
+--------+--------
+(0 rows)
+
+=== 7. DIFERENCIAS DE CAMPOS - CREDITOS ===
+   codigo   |     campo     |        expected        |       actual        
+------------+---------------+------------------------+---------------------
+ LP-26-0001 | fechaPrestamo | 2026-03-02 00:00:00-05 | 2026-03-02 00:00:00
+ LP-26-0001 | monto         | 300000                 | 300000.00
+ LP-26-0001 | plazoMeses    | 3                      | 3.00
+ LP-26-0001 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0003 | fechaPrestamo | 2025-12-02 00:00:00-05 | 2025-12-02 00:00:00
+ LP-26-0003 | monto         | 400000                 | 400000.00
+ LP-26-0003 | plazoMeses    | 4                      | 4.00
+ LP-26-0003 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0004 | fechaPrestamo | 2026-01-06 00:00:00-05 | 2026-01-06 00:00:00
+ LP-26-0004 | monto         | 800000                 | 800000.00
+ LP-26-0004 | plazoMeses    | 5                      | 5.00
+ LP-26-0004 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0005 | fechaPrestamo | 2026-02-02 00:00:00-05 | 2026-02-02 00:00:00
+ LP-26-0005 | monto         | 300000                 | 300000.00
+ LP-26-0005 | plazoMeses    | 3                      | 3.00
+ LP-26-0005 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0006 | fechaPrestamo | 2026-02-09 00:00:00-05 | 2026-02-09 00:00:00
+ LP-26-0006 | monto         | 700000                 | 700000.00
+ LP-26-0006 | plazoMeses    | 7                      | 7.00
+ LP-26-0006 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0007 | fechaPrestamo | 2026-02-17 00:00:00-05 | 2026-02-17 00:00:00
+ LP-26-0007 | monto         | 300000                 | 300000.00
+ LP-26-0007 | plazoMeses    | 3                      | 3.00
+ LP-26-0007 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0008 | fechaPrestamo | 2025-12-21 00:00:00-05 | 2025-12-21 00:00:00
+ LP-26-0008 | monto         | 1000000                | 1000000.00
+ LP-26-0008 | plazoMeses    | 5                      | 5.00
+ LP-26-0008 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0009 | fechaPrestamo | 2026-01-18 00:00:00-05 | 2026-01-18 00:00:00
+ LP-26-0009 | monto         | 1000000                | 1000000.00
+ LP-26-0009 | plazoMeses    | 5                      | 5.00
+ LP-26-0009 | tasaMensual   | 0.18                   | 0.180000
+ LP-26-0011 | fechaPrestamo | 2026-03-10 00:00:00-05 | 2026-03-10 00:00:00
+ LP-26-0011 | monto         | 300000                 | 300000.00
+ LP-26-0011 | plazoMeses    | 3                      | 3.00
+ LP-26-0011 | tasaMensual   | 0.1                    | 0.100000
+ LP-26-0015 | fechaPrestamo | 2026-01-18 00:00:00-05 | 2026-01-18 00:00:00
+ LP-26-0015 | monto         | 1000000                | 1000000.00
+ LP-26-0015 | plazoMeses    | 4                      | 4.00
+ LP-26-0015 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0016 | fechaPrestamo | 2026-02-02 00:00:00-05 | 2026-02-02 00:00:00
+ LP-26-0016 | monto         | 300000                 | 300000.00
+ LP-26-0016 | plazoMeses    | 2                      | 2.00
+ LP-26-0016 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0017 | fechaPrestamo | 2026-02-14 00:00:00-05 | 2026-02-14 00:00:00
+ LP-26-0017 | monto         | 400000                 | 400000.00
+ LP-26-0017 | plazoMeses    | 4                      | 4.00
+ LP-26-0017 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0018 | fechaPrestamo | 2025-12-07 00:00:00-05 | 2025-12-07 00:00:00
+ LP-26-0018 | monto         | 300000                 | 300000.00
+ LP-26-0018 | plazoMeses    | 3                      | 3.00
+ LP-26-0018 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0019 | fechaPrestamo | 2026-03-01 00:00:00-05 | 2026-03-01 00:00:00
+ LP-26-0019 | monto         | 1600000                | 1600000.00
+ LP-26-0019 | plazoMeses    | 7                      | 7.00
+ LP-26-0019 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0020 | fechaPrestamo | 2026-03-14 00:00:00-05 | 2026-03-14 00:00:00
+ LP-26-0020 | monto         | 1000000                | 1000000.00
+ LP-26-0020 | plazoMeses    | 6                      | 6.00
+ LP-26-0020 | tasaMensual   | 0.19                   | 0.190000
+ LP-26-0021 | fechaPrestamo | 2026-01-02 00:00:00-05 | 2026-01-02 00:00:00
+ LP-26-0021 | monto         | 500000                 | 500000.00
+ LP-26-0021 | plazoMeses    | 4                      | 4.00
+ LP-26-0021 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0022 | fechaPrestamo | 2025-10-16 00:00:00-05 | 2025-10-16 00:00:00
+ LP-26-0022 | monto         | 500000                 | 500000.00
+ LP-26-0022 | plazoMeses    | 4                      | 4.00
+ LP-26-0022 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0023 | fechaPrestamo | 2026-02-11 00:00:00-05 | 2026-02-11 00:00:00
+ LP-26-0023 | monto         | 800000                 | 800000.00
+ LP-26-0023 | plazoMeses    | 3                      | 3.00
+ LP-26-0023 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0024 | fechaPrestamo | 2026-01-24 00:00:00-05 | 2026-01-24 00:00:00
+ LP-26-0024 | monto         | 300000                 | 300000.00
+ LP-26-0024 | plazoMeses    | 3                      | 3.00
+ LP-26-0024 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0026 | fechaPrestamo | 2025-11-24 00:00:00-05 | 2025-11-24 00:00:00
+ LP-26-0026 | monto         | 480000                 | 480000.00
+ LP-26-0026 | plazoMeses    | 4                      | 4.00
+ LP-26-0026 | tasaMensual   | 0.18                   | 0.180000
+ LP-26-0027 | fechaPrestamo | 2026-03-14 00:00:00-05 | 2026-03-14 00:00:00
+ LP-26-0027 | monto         | 300000                 | 300000.00
+ LP-26-0027 | plazoMeses    | 1                      | 1.00
+ LP-26-0027 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0028 | fechaPrestamo | 2026-03-20 00:00:00-05 | 2026-03-20 00:00:00
+ LP-26-0028 | monto         | 300000                 | 300000.00
+ LP-26-0028 | plazoMeses    | 3                      | 3.00
+ LP-26-0028 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0029 | fechaPrestamo | 2026-03-21 00:00:00-05 | 2026-03-21 00:00:00
+ LP-26-0029 | monto         | 400000                 | 400000.00
+ LP-26-0029 | plazoMeses    | 3                      | 3.00
+ LP-26-0029 | tasaMensual   | 0.167                  | 0.167000
+ LP-26-0030 | fechaPrestamo | 2026-03-18 00:00:00-05 | 2026-03-18 00:00:00
+ LP-26-0030 | monto         | 400000                 | 400000.00
+ LP-26-0030 | plazoMeses    | 4                      | 4.00
+ LP-26-0030 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0031 | fechaPrestamo | 2025-12-03 00:00:00-05 | 2025-12-03 00:00:00
+ LP-26-0031 | monto         | 1000000                | 1000000.00
+ LP-26-0031 | plazoMeses    | 4                      | 4.00
+ LP-26-0031 | tasaMensual   | 0.16                   | 0.160000
+ LP-26-0032 | fechaPrestamo | 2026-03-17 00:00:00-05 | 2026-03-17 00:00:00
+ LP-26-0032 | monto         | 500000                 | 500000.00
+ LP-26-0032 | plazoMeses    | 2                      | 2.00
+ LP-26-0032 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0033 | fechaPrestamo | 2026-03-20 00:00:00-05 | 2026-03-20 00:00:00
+ LP-26-0033 | monto         | 200000                 | 200000.00
+ LP-26-0033 | plazoMeses    | 2                      | 2.00
+ LP-26-0033 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0034 | fechaPrestamo | 2026-02-07 00:00:00-05 | 2026-02-07 00:00:00
+ LP-26-0034 | monto         | 200000                 | 200000.00
+ LP-26-0034 | plazoMeses    | 2                      | 2.00
+ LP-26-0034 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0035 | fechaPrestamo | 2026-01-17 00:00:00-05 | 2026-01-17 00:00:00
+ LP-26-0035 | monto         | 500000                 | 500000.00
+ LP-26-0035 | plazoMeses    | 3                      | 3.00
+ LP-26-0035 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0036 | fechaPrestamo | 2026-01-05 00:00:00-05 | 2026-01-05 00:00:00
+ LP-26-0036 | monto         | 1000000                | 1000000.00
+ LP-26-0036 | plazoMeses    | 6                      | 6.00
+ LP-26-0036 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0037 | fechaPrestamo | 2026-02-02 00:00:00-05 | 2026-02-02 00:00:00
+ LP-26-0037 | monto         | 400000                 | 400000.00
+ LP-26-0037 | plazoMeses    | 4                      | 4.00
+ LP-26-0037 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0038 | fechaPrestamo | 2026-02-11 00:00:00-05 | 2026-02-11 00:00:00
+ LP-26-0038 | monto         | 300000                 | 300000.00
+ LP-26-0038 | plazoMeses    | 3                      | 3.00
+ LP-26-0038 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0039 | fechaPrestamo | 2025-09-05 00:00:00-05 | 2025-09-05 00:00:00
+ LP-26-0039 | monto         | 800000                 | 800000.00
+ LP-26-0039 | plazoMeses    | 8                      | 8.00
+ LP-26-0039 | tasaMensual   | 0.138                  | 0.138000
+ LP-26-0040 | fechaPrestamo | 2025-12-16 00:00:00-05 | 2025-12-16 00:00:00
+ LP-26-0040 | monto         | 500000                 | 500000.00
+ LP-26-0040 | plazoMeses    | 4                      | 4.00
+ LP-26-0040 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0041 | fechaPrestamo | 2026-01-17 00:00:00-05 | 2026-01-17 00:00:00
+ LP-26-0041 | monto         | 300000                 | 300000.00
+ LP-26-0041 | plazoMeses    | 3                      | 3.00
+ LP-26-0041 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0043 | fechaPrestamo | 2025-10-12 00:00:00-05 | 2025-10-12 00:00:00
+ LP-26-0043 | monto         | 400000                 | 400000.00
+ LP-26-0043 | plazoMeses    | 4                      | 4.00
+ LP-26-0043 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0044 | fechaPrestamo | 2026-02-03 00:00:00-05 | 2026-02-03 00:00:00
+ LP-26-0044 | monto         | 300000                 | 300000.00
+ LP-26-0044 | plazoMeses    | 3                      | 3.00
+ LP-26-0044 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0045 | fechaPrestamo | 2026-03-13 00:00:00-05 | 2026-03-13 00:00:00
+ LP-26-0045 | monto         | 400000                 | 400000.00
+ LP-26-0045 | plazoMeses    | 1                      | 1.00
+ LP-26-0045 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0046 | fechaPrestamo | 2026-02-23 00:00:00-05 | 2026-02-23 00:00:00
+ LP-26-0046 | monto         | 300000                 | 300000.00
+ LP-26-0046 | plazoMeses    | 3                      | 3.00
+ LP-26-0046 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0047 | fechaPrestamo | 2026-03-20 00:00:00-05 | 2026-03-20 00:00:00
+ LP-26-0047 | monto         | 300000                 | 300000.00
+ LP-26-0047 | plazoMeses    | 3                      | 3.00
+ LP-26-0047 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0048 | fechaPrestamo | 2026-01-04 00:00:00-05 | 2026-01-04 00:00:00
+ LP-26-0048 | monto         | 1000000                | 1000000.00
+ LP-26-0048 | plazoMeses    | 4                      | 4.00
+ LP-26-0048 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0049 | fechaPrestamo | 2026-04-23 00:00:00-05 | 2026-04-23 00:00:00
+ LP-26-0049 | monto         | 500000                 | 500000.00
+ LP-26-0049 | plazoMeses    | 3                      | 3.00
+ LP-26-0049 | tasaMensual   | 0.07                   | 0.070000
+ LP-26-0050 | fechaPrestamo | 2025-12-31 00:00:00-05 | 2025-12-31 00:00:00
+ LP-26-0050 | monto         | 500000                 | 500000.00
+ LP-26-0050 | plazoMeses    | 4                      | 4.00
+ LP-26-0050 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0051 | fechaPrestamo | 2026-01-15 00:00:00-05 | 2026-01-15 00:00:00
+ LP-26-0051 | monto         | 500000                 | 500000.00
+ LP-26-0051 | plazoMeses    | 4                      | 4.00
+ LP-26-0051 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0052 | fechaPrestamo | 2026-03-03 00:00:00-05 | 2026-03-03 00:00:00
+ LP-26-0052 | monto         | 250000                 | 250000.00
+ LP-26-0052 | plazoMeses    | 3                      | 3.00
+ LP-26-0052 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0053 | fechaPrestamo | 2026-01-20 00:00:00-05 | 2026-01-20 00:00:00
+ LP-26-0053 | monto         | 500000                 | 500000.00
+ LP-26-0053 | plazoMeses    | 3                      | 3.00
+ LP-26-0053 | tasaMensual   | 0.14                   | 0.140000
+ LP-26-0054 | fechaPrestamo | 2026-03-23 00:00:00-05 | 2026-03-23 00:00:00
+ LP-26-0054 | monto         | 400000                 | 400000.00
+ LP-26-0054 | plazoMeses    | 4                      | 4.00
+ LP-26-0054 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0055 | fechaPrestamo | 2026-02-02 00:00:00-05 | 2026-02-02 00:00:00
+ LP-26-0055 | monto         | 1000000                | 1000000.00
+ LP-26-0055 | plazoMeses    | 7                      | 7.00
+ LP-26-0055 | tasaMensual   | 0.157                  | 0.157000
+ LP-26-0056 | fechaPrestamo | 2026-03-06 00:00:00-05 | 2026-03-06 00:00:00
+ LP-26-0056 | monto         | 500000                 | 500000.00
+ LP-26-0056 | plazoMeses    | 5                      | 5.00
+ LP-26-0056 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0057 | fechaPrestamo | 2026-02-20 00:00:00-05 | 2026-02-20 00:00:00
+ LP-26-0057 | monto         | 400000                 | 400000.00
+ LP-26-0057 | plazoMeses    | 4                      | 4.00
+ LP-26-0057 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0058 | fechaPrestamo | 2026-03-18 00:00:00-05 | 2026-03-18 00:00:00
+ LP-26-0058 | monto         | 1200000                | 1200000.00
+ LP-26-0058 | plazoMeses    | 3                      | 3.00
+ LP-26-0058 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0059 | fechaPrestamo | 2025-12-12 00:00:00-05 | 2025-12-12 00:00:00
+ LP-26-0059 | monto         | 2000000                | 2000000.00
+ LP-26-0059 | plazoMeses    | 5                      | 5.00
+ LP-26-0059 | tasaMensual   | 0.15                   | 0.150000
+ LP-26-0060 | fechaPrestamo | 2025-12-21 00:00:00-05 | 2025-12-21 00:00:00
+ LP-26-0060 | monto         | 700000                 | 700000.00
+ LP-26-0060 | plazoMeses    | 6                      | 6.00
+ LP-26-0060 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0061 | fechaPrestamo | 2026-03-26 00:00:00-05 | 2026-03-26 00:00:00
+ LP-26-0061 | monto         | 760000                 | 760000.00
+ LP-26-0061 | plazoMeses    | 4                      | 4.00
+ LP-26-0061 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0062 | fechaPrestamo | 2026-01-05 00:00:00-05 | 2026-01-05 00:00:00
+ LP-26-0062 | monto         | 500000                 | 500000.00
+ LP-26-0062 | plazoMeses    | 4                      | 4.00
+ LP-26-0062 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0063 | fechaPrestamo | 2026-01-25 00:00:00-05 | 2026-01-25 00:00:00
+ LP-26-0063 | monto         | 300000                 | 300000.00
+ LP-26-0063 | plazoMeses    | 3                      | 3.00
+ LP-26-0063 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0064 | fechaPrestamo | 2026-03-20 00:00:00-05 | 2026-03-20 00:00:00
+ LP-26-0064 | monto         | 300000                 | 300000.00
+ LP-26-0064 | plazoMeses    | 1                      | 1.00
+ LP-26-0064 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0065 | fechaPrestamo | 2026-03-24 00:00:00-05 | 2026-03-24 00:00:00
+ LP-26-0065 | monto         | 300000                 | 300000.00
+ LP-26-0065 | plazoMeses    | 3                      | 3.00
+ LP-26-0065 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0066 | fechaPrestamo | 2026-03-17 00:00:00-05 | 2026-03-17 00:00:00
+ LP-26-0066 | monto         | 500000                 | 500000.00
+ LP-26-0066 | plazoMeses    | 3                      | 3.00
+ LP-26-0066 | tasaMensual   | 0.187                  | 0.187000
+ LP-26-0067 | fechaPrestamo | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0067 | monto         | 500000                 | 500000.00
+ LP-26-0067 | plazoMeses    | 4                      | 4.00
+ LP-26-0067 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0068 | fechaPrestamo | 2026-02-01 00:00:00-05 | 2026-02-01 00:00:00
+ LP-26-0068 | monto         | 500000                 | 500000.00
+ LP-26-0068 | plazoMeses    | 4                      | 4.00
+ LP-26-0068 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0069 | fechaPrestamo | 2026-03-07 00:00:00-05 | 2026-03-07 00:00:00
+ LP-26-0069 | monto         | 500000                 | 500000.00
+ LP-26-0069 | plazoMeses    | 4                      | 4.00
+ LP-26-0069 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0070 | fechaPrestamo | 2025-07-22 00:00:00-05 | 2025-07-22 00:00:00
+ LP-26-0070 | monto         | 500000                 | 500000.00
+ LP-26-0070 | plazoMeses    | 4                      | 4.00
+ LP-26-0070 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0071 | fechaPrestamo | 2026-02-06 00:00:00-05 | 2026-02-06 00:00:00
+ LP-26-0071 | monto         | 500000                 | 500000.00
+ LP-26-0071 | plazoMeses    | 3                      | 3.00
+ LP-26-0071 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0073 | fechaPrestamo | 2026-02-04 00:00:00-05 | 2026-02-04 00:00:00
+ LP-26-0073 | monto         | 700000                 | 700000.00
+ LP-26-0073 | plazoMeses    | 4                      | 4.00
+ LP-26-0073 | tasaMensual   | 0.16                   | 0.160000
+ LP-26-0075 | fechaPrestamo | 2026-01-13 00:00:00-05 | 2026-01-13 00:00:00
+ LP-26-0075 | monto         | 300000                 | 300000.00
+ LP-26-0075 | plazoMeses    | 3                      | 3.00
+ LP-26-0075 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0076 | fechaPrestamo | 2025-12-20 00:00:00-05 | 2025-12-20 00:00:00
+ LP-26-0076 | monto         | 400000                 | 400000.00
+ LP-26-0076 | plazoMeses    | 4                      | 4.00
+ LP-26-0076 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0077 | fechaPrestamo | 2026-02-20 00:00:00-05 | 2026-02-20 00:00:00
+ LP-26-0077 | monto         | 300000                 | 300000.00
+ LP-26-0077 | plazoMeses    | 3                      | 3.00
+ LP-26-0077 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0078 | fechaPrestamo | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0078 | monto         | 500000                 | 500000.00
+ LP-26-0078 | plazoMeses    | 4                      | 4.00
+ LP-26-0078 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0080 | fechaPrestamo | 2026-01-25 00:00:00-05 | 2026-01-25 00:00:00
+ LP-26-0080 | monto         | 300000                 | 300000.00
+ LP-26-0080 | plazoMeses    | 3                      | 3.00
+ LP-26-0080 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0081 | fechaPrestamo | 2026-03-17 00:00:00-05 | 2026-03-17 00:00:00
+ LP-26-0081 | monto         | 300000                 | 300000.00
+ LP-26-0081 | plazoMeses    | 3                      | 3.00
+ LP-26-0081 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0082 | fechaPrestamo | 2026-02-23 00:00:00-05 | 2026-02-23 00:00:00
+ LP-26-0082 | monto         | 600000                 | 600000.00
+ LP-26-0082 | plazoMeses    | 5                      | 5.00
+ LP-26-0082 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0083 | fechaPrestamo | 2026-02-26 00:00:00-05 | 2026-02-26 00:00:00
+ LP-26-0083 | monto         | 500000                 | 500000.00
+ LP-26-0083 | plazoMeses    | 4                      | 4.00
+ LP-26-0083 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0085 | fechaPrestamo | 2025-09-16 00:00:00-05 | 2025-09-16 00:00:00
+ LP-26-0085 | monto         | 500000                 | 500000.00
+ LP-26-0085 | plazoMeses    | 5                      | 5.00
+ LP-26-0085 | tasaMensual   | 0.1345                 | 0.134500
+ LP-26-0086 | fechaPrestamo | 2025-08-04 00:00:00-05 | 2025-08-04 00:00:00
+ LP-26-0086 | monto         | 642420                 | 642420.00
+ LP-26-0086 | plazoMeses    | 6                      | 6.00
+ LP-26-0086 | tasaMensual   | 0.134                  | 0.134000
+ LP-26-0087 | fechaPrestamo | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0087 | monto         | 400000                 | 400000.00
+ LP-26-0087 | plazoMeses    | 4                      | 4.00
+ LP-26-0087 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0088 | fechaPrestamo | 2026-03-27 00:00:00-05 | 2026-03-27 00:00:00
+ LP-26-0088 | monto         | 400000                 | 400000.00
+ LP-26-0088 | plazoMeses    | 1                      | 1.00
+ LP-26-0088 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0090 | fechaPrestamo | 2026-04-01 00:00:00-05 | 2026-04-01 00:00:00
+ LP-26-0090 | monto         | 400000                 | 400000.00
+ LP-26-0090 | plazoMeses    | 4                      | 4.00
+ LP-26-0090 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0091 | fechaPrestamo | 2026-04-01 00:00:00-05 | 2026-04-01 00:00:00
+ LP-26-0091 | monto         | 300000                 | 300000.00
+ LP-26-0091 | plazoMeses    | 3                      | 3.00
+ LP-26-0091 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0092 | fechaPrestamo | 2026-04-04 00:00:00-05 | 2026-04-04 00:00:00
+ LP-26-0092 | monto         | 500000                 | 500000.00
+ LP-26-0092 | plazoMeses    | 4                      | 4.00
+ LP-26-0092 | tasaMensual   | 0.17                   | 0.170000
+ LP-26-0093 | fechaPrestamo | 2026-04-02 00:00:00-05 | 2026-04-02 00:00:00
+ LP-26-0093 | monto         | 200000                 | 200000.00
+ LP-26-0093 | plazoMeses    | 1                      | 1.00
+ LP-26-0093 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0094 | fechaPrestamo | 2026-04-02 00:00:00-05 | 2026-04-02 00:00:00
+ LP-26-0094 | monto         | 500000                 | 500000.00
+ LP-26-0094 | plazoMeses    | 1                      | 1.00
+ LP-26-0094 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0096 | fechaPrestamo | 2026-04-06 00:00:00-05 | 2026-04-06 00:00:00
+ LP-26-0096 | monto         | 200000                 | 200000.00
+ LP-26-0096 | plazoMeses    | 2                      | 2.00
+ LP-26-0096 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0099 | fechaPrestamo | 2026-04-04 00:00:00-05 | 2026-04-04 00:00:00
+ LP-26-0099 | monto         | 200000                 | 200000.00
+ LP-26-0099 | plazoMeses    | 2                      | 2.00
+ LP-26-0099 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0100 | fechaPrestamo | 2026-04-04 00:00:00-05 | 2026-04-04 00:00:00
+ LP-26-0100 | monto         | 300000                 | 300000.00
+ LP-26-0100 | plazoMeses    | 3                      | 3.00
+ LP-26-0100 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0101 | fechaPrestamo | 2026-04-07 00:00:00-05 | 2026-04-07 00:00:00
+ LP-26-0101 | monto         | 300000                 | 300000.00
+ LP-26-0101 | plazoMeses    | 1                      | 1.00
+ LP-26-0101 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0102 | fechaPrestamo | 2026-04-09 00:00:00-05 | 2026-04-09 00:00:00
+ LP-26-0102 | monto         | 300000                 | 300000.00
+ LP-26-0102 | plazoMeses    | 3                      | 3.00
+ LP-26-0102 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0103 | fechaPrestamo | 2026-03-30 00:00:00-05 | 2026-03-30 00:00:00
+ LP-26-0103 | monto         | 400000                 | 400000.00
+ LP-26-0103 | plazoMeses    | 4                      | 4.00
+ LP-26-0103 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0106 | fechaPrestamo | 2026-03-18 00:00:00-05 | 2026-03-18 00:00:00
+ LP-26-0106 | monto         | 200000                 | 200000.00
+ LP-26-0106 | plazoMeses    | 1                      | 1.00
+ LP-26-0106 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0111 | fechaPrestamo | 2026-02-17 00:00:00-05 | 2026-02-17 00:00:00
+ LP-26-0111 | monto         | 300000                 | 300000.00
+ LP-26-0111 | plazoMeses    | 3                      | 3.00
+ LP-26-0111 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0112 | fechaPrestamo | 2025-12-03 00:00:00-05 | 2025-12-03 00:00:00
+ LP-26-0112 | monto         | 400000                 | 400000.00
+ LP-26-0112 | plazoMeses    | 4                      | 4.00
+ LP-26-0112 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0114 | fechaPrestamo | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0114 | monto         | 500000                 | 500000.00
+ LP-26-0114 | plazoMeses    | 2                      | 2.00
+ LP-26-0114 | tasaMensual   | 0.14                   | 0.140000
+ LP-26-0115 | fechaPrestamo | 2025-09-19 00:00:00-05 | 2025-09-19 00:00:00
+ LP-26-0115 | monto         | 700000                 | 700000.00
+ LP-26-0115 | plazoMeses    | 7                      | 7.00
+ LP-26-0115 | tasaMensual   | 0.1345                 | 0.134500
+ LP-26-0116 | fechaPrestamo | 2025-10-24 00:00:00-05 | 2025-10-24 00:00:00
+ LP-26-0116 | monto         | 700000                 | 700000.00
+ LP-26-0116 | plazoMeses    | 7                      | 7.00
+ LP-26-0116 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0118 | fechaPrestamo | 2026-01-04 00:00:00-05 | 2026-01-04 00:00:00
+ LP-26-0118 | monto         | 400000                 | 400000.00
+ LP-26-0118 | plazoMeses    | 4                      | 4.00
+ LP-26-0118 | tasaMensual   | 0.05                   | 0.050000
+ LP-26-0119 | fechaPrestamo | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0119 | monto         | 2500000                | 2500000.00
+ LP-26-0119 | plazoMeses    | 4                      | 4.00
+ LP-26-0119 | tasaMensual   | 0.15                   | 0.150000
+ LP-26-0120 | fechaPrestamo | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0120 | monto         | 1000000                | 1000000.00
+ LP-26-0120 | plazoMeses    | 2.5                    | 2.50
+ LP-26-0120 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0121 | fechaPrestamo | 2026-04-13 00:00:00-05 | 2026-04-13 00:00:00
+ LP-26-0121 | monto         | 500000                 | 500000.00
+ LP-26-0121 | plazoMeses    | 4                      | 4.00
+ LP-26-0121 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0122 | fechaPrestamo | 2026-02-13 00:00:00-05 | 2026-02-13 00:00:00
+ LP-26-0122 | monto         | 500000                 | 500000.00
+ LP-26-0122 | plazoMeses    | 5                      | 5.00
+ LP-26-0122 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0124 | fechaPrestamo | 2026-01-19 00:00:00-05 | 2026-01-19 00:00:00
+ LP-26-0124 | monto         | 400000                 | 400000.00
+ LP-26-0124 | plazoMeses    | 4                      | 4.00
+ LP-26-0124 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0125 | fechaPrestamo | 2025-09-17 00:00:00-05 | 2025-09-17 00:00:00
+ LP-26-0125 | monto         | 1750000                | 1750000.00
+ LP-26-0125 | plazoMeses    | 3                      | 3.00
+ LP-26-0125 | tasaMensual   | 0.034                  | 0.034000
+ LP-26-0126 | fechaPrestamo | 2026-04-09 00:00:00-05 | 2026-04-09 00:00:00
+ LP-26-0126 | monto         | 400000                 | 400000.00
+ LP-26-0126 | plazoMeses    | 4                      | 4.00
+ LP-26-0126 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0127 | fechaPrestamo | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0127 | monto         | 600000                 | 600000.00
+ LP-26-0127 | plazoMeses    | 5                      | 5.00
+ LP-26-0127 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0128 | fechaPrestamo | 2026-03-13 00:00:00-05 | 2026-03-13 00:00:00
+ LP-26-0128 | monto         | 300000                 | 300000.00
+ LP-26-0128 | plazoMeses    | 3                      | 3.00
+ LP-26-0128 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0130 | fechaPrestamo | 2026-04-16 00:00:00-05 | 2026-04-16 00:00:00
+ LP-26-0130 | monto         | 800000                 | 800000.00
+ LP-26-0130 | plazoMeses    | 4                      | 4.00
+ LP-26-0130 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0131 | fechaPrestamo | 2026-04-16 00:00:00-05 | 2026-04-16 00:00:00
+ LP-26-0131 | monto         | 460000                 | 460000.00
+ LP-26-0131 | plazoMeses    | 5                      | 5.00
+ LP-26-0131 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0132 | fechaPrestamo | 2026-04-17 00:00:00-05 | 2026-04-17 00:00:00
+ LP-26-0132 | monto         | 1200000                | 1200000.00
+ LP-26-0132 | plazoMeses    | 7                      | 7.00
+ LP-26-0132 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0133 | fechaPrestamo | 2026-04-16 00:00:00-05 | 2026-04-16 00:00:00
+ LP-26-0133 | monto         | 700000                 | 700000.00
+ LP-26-0133 | plazoMeses    | 7                      | 7.00
+ LP-26-0133 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0134 | fechaPrestamo | 2026-04-17 00:00:00-05 | 2026-04-17 00:00:00
+ LP-26-0134 | monto         | 1200000                | 1200000.00
+ LP-26-0134 | plazoMeses    | 4                      | 4.00
+ LP-26-0134 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0135 | fechaPrestamo | 2026-04-18 00:00:00-05 | 2026-04-18 00:00:00
+ LP-26-0135 | monto         | 400000                 | 400000.00
+ LP-26-0135 | plazoMeses    | 4                      | 4.00
+ LP-26-0135 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0136 | fechaPrestamo | 2025-12-03 00:00:00-05 | 2025-12-03 00:00:00
+ LP-26-0136 | monto         | 485000                 | 485000.00
+ LP-26-0136 | plazoMeses    | 4                      | 4.00
+ LP-26-0136 | tasaMensual   | 0.15                   | 0.150000
+ LP-26-0137 | fechaPrestamo | 2026-04-02 00:00:00-05 | 2026-04-02 00:00:00
+ LP-26-0137 | monto         | 500000                 | 500000.00
+ LP-26-0137 | plazoMeses    | 4                      | 4.00
+ LP-26-0137 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0138 | fechaPrestamo | 2026-01-30 00:00:00-05 | 2026-01-30 00:00:00
+ LP-26-0138 | monto         | 300000                 | 300000.00
+ LP-26-0138 | plazoMeses    | 3                      | 3.00
+ LP-26-0138 | tasaMensual   | 0.1556                 | 0.155600
+ LP-26-0139 | fechaPrestamo | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0139 | monto         | 1000000                | 1000000.00
+ LP-26-0139 | plazoMeses    | 5                      | 5.00
+ LP-26-0139 | tasaMensual   | 0.15                   | 0.150000
+ LP-26-0140 | fechaPrestamo | 2026-01-30 00:00:00-05 | 2026-01-30 00:00:00
+ LP-26-0140 | monto         | 1200000                | 1200000.00
+ LP-26-0140 | plazoMeses    | 10                     | 10.00
+ LP-26-0140 | tasaMensual   | 0.107                  | 0.107000
+ LP-26-0144 | fechaPrestamo | 2026-04-20 00:00:00-05 | 2026-04-20 00:00:00
+ LP-26-0144 | monto         | 3980000                | 3980000.00
+ LP-26-0144 | plazoMeses    | 18                     | 18.00
+ LP-26-0144 | tasaMensual   | 0.01                   | 0.010000
+ LP-26-0145 | fechaPrestamo | 2026-01-05 00:00:00-05 | 2026-01-05 00:00:00
+ LP-26-0145 | monto         | 1500000                | 1500000.00
+ LP-26-0145 | plazoMeses    | 7                      | 7.00
+ LP-26-0145 | tasaMensual   | 0.15                   | 0.150000
+ LP-26-0146 | fechaPrestamo | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0146 | monto         | 2000000                | 2000000.00
+ LP-26-0146 | plazoMeses    | 6                      | 6.00
+ LP-26-0146 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0147 | fechaPrestamo | 2025-07-08 00:00:00-05 | 2025-07-08 00:00:00
+ LP-26-0147 | monto         | 1146000                | 1146000.00
+ LP-26-0147 | plazoMeses    | 24                     | 24.00
+ LP-26-0147 | tasaMensual   | 0.1143                 | 0.114300
+ LP-26-0148 | fechaPrestamo | 2026-04-20 00:00:00-05 | 2026-04-20 00:00:00
+ LP-26-0148 | monto         | 700000                 | 700000.00
+ LP-26-0148 | plazoMeses    | 5                      | 5.00
+ LP-26-0148 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0150 | fechaPrestamo | 2026-04-23 00:00:00-05 | 2026-04-23 00:00:00
+ LP-26-0150 | monto         | 300000                 | 300000.00
+ LP-26-0150 | plazoMeses    | 2                      | 2.00
+ LP-26-0150 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0151 | fechaPrestamo | 2026-04-19 00:00:00-05 | 2026-04-19 00:00:00
+ LP-26-0151 | monto         | 400000                 | 400000.00
+ LP-26-0151 | plazoMeses    | 4                      | 4.00
+ LP-26-0151 | tasaMensual   | 0.2                    | 0.200000
+ LP-26-0152 | fechaPrestamo | 2026-04-21 00:00:00-05 | 2026-04-21 00:00:00
+ LP-26-0152 | monto         | 400000                 | 400000.00
+ LP-26-0152 | plazoMeses    | 1                      | 1.00
+ LP-26-0152 | tasaMensual   | 0.125                  | 0.125000
+ LP-26-0153 | fechaPrestamo | 2026-04-23 00:00:00-05 | 2026-04-23 00:00:00
+ LP-26-0153 | monto         | 700000                 | 700000.00
+ LP-26-0153 | plazoMeses    | 4                      | 4.00
+ LP-26-0153 | tasaMensual   | 0.16                   | 0.160000
+ LP-26-0154 | fechaPrestamo | 2026-04-23 00:00:00-05 | 2026-04-23 00:00:00
+ LP-26-0154 | monto         | 300000                 | 300000.00
+ LP-26-0154 | plazoMeses    | 3                      | 3.00
+ LP-26-0154 | tasaMensual   | 0.2                    | 0.200000
+(500 rows)
+
+=== 8. EVENTOS FALTANTES EN DB ===
+ codigo 
+--------
+(0 rows)
+
+=== 9. EVENTOS EXTRA EN DB ===
+ codigo | credito 
+--------+---------
+(0 rows)
+
+=== 10. DIFERENCIAS DE CAMPOS - EVENTOS ===
+     codigo     |       campo       |        expected        |       actual        
+----------------+-------------------+------------------------+---------------------
+ LP-26-0001-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C1  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0001-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C1  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C1  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C1  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0001-C1  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0001-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C2  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0001-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C2  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C2  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C2  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0001-C2  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0001-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C3  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0001-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C3  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C3  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C3  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0001-C3  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0001-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C4  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0001-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C4  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C4  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C4  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0001-C4  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0001-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C5  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0001-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C5  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C5  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C5  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0001-C5  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0001-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0001-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0001-C6  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0001-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0001-C6  | interesProgramado | 30000                  | 30000.00
+ LP-26-0001-C6  | montoPagado       | 80000                  | 80000.00
+ LP-26-0001-C6  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0001-C6  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0003-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C1  | fechaProgramada   | 2025-12-15 00:00:00-05 | 2025-12-15 00:00:00
+ LP-26-0003-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C1  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C1  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C1  | saldoCapitalPost  | 350000                 | 350000.00
+ LP-26-0003-C1  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C2  | fechaProgramada   | 2025-12-31 00:00:00-05 | 2025-12-31 00:00:00
+ LP-26-0003-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C2  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C2  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C2  | saldoCapitalPost  | 300000                 | 300000.00
+ LP-26-0003-C2  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C3  | fechaProgramada   | 2026-01-15 00:00:00-05 | 2026-01-15 00:00:00
+ LP-26-0003-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C3  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C3  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C3  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0003-C3  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C4  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0003-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C4  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C4  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C4  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0003-C4  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C5  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0003-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C5  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C5  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C5  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0003-C5  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C6  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0003-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C6  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C6  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C6  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0003-C6  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C7  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C7  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0003-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C7  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C7  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C7  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0003-C7  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0003-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0003-C8  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0003-C8  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0003-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0003-C8  | interesProgramado | 40000                  | 40000.00
+ LP-26-0003-C8  | montoPagado       | 90000                  | 90000.00
+ LP-26-0003-C8  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0003-C8  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0004-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C1  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C1  | fechaProgramada   | 2026-01-15 00:00:00-05 | 2026-01-15 00:00:00
+ LP-26-0004-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C1  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C1  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C1  | saldoCapitalPost  | 720000                 | 720000.00
+ LP-26-0004-C1  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C10 | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C10 | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0004-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0004-C10 | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C10 | montoPagado       | 0                      | 0.00
+ LP-26-0004-C10 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0004-C10 | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C2  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C2  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0004-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C2  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C2  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C2  | saldoCapitalPost  | 640000                 | 640000.00
+ LP-26-0004-C2  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C3  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C3  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0004-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C3  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C3  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C3  | saldoCapitalPost  | 560000                 | 560000.00
+ LP-26-0004-C3  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C4  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C4  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0004-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C4  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C4  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C4  | saldoCapitalPost  | 480000                 | 480000.00
+ LP-26-0004-C4  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C5  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C5  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0004-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C5  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C5  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C5  | saldoCapitalPost  | 400000                 | 400000.00
+ LP-26-0004-C5  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C6  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C6  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0004-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C6  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C6  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C6  | saldoCapitalPost  | 320000                 | 320000.00
+ LP-26-0004-C6  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C7  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C7  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0004-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C7  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C7  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C7  | saldoCapitalPost  | 240000                 | 240000.00
+ LP-26-0004-C7  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C8  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C8  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0004-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C8  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C8  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C8  | saldoCapitalPost  | 160000                 | 160000.00
+ LP-26-0004-C8  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0004-C9  | capitalPagado     | 0                      | 0.00
+ LP-26-0004-C9  | capitalProgramado | 80000                  | 80000.00
+ LP-26-0004-C9  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0004-C9  | interesPagado     | 0                      | 0.00
+ LP-26-0004-C9  | interesProgramado | 80000                  | 80000.00
+ LP-26-0004-C9  | montoPagado       | 160000                 | 160000.00
+ LP-26-0004-C9  | saldoCapitalPost  | 80000                  | 80000.00
+ LP-26-0004-C9  | valorProgramado   | 160000                 | 160000.00
+ LP-26-0005-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C1  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0005-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C1  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C1  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C1  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0005-C1  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0005-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C2  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0005-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C2  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C2  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C2  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0005-C2  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0005-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C3  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0005-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C3  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C3  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C3  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0005-C3  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0005-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C4  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0005-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C4  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C4  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C4  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0005-C4  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0005-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C5  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0005-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C5  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C5  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C5  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0005-C5  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0005-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0005-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0005-C6  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0005-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0005-C6  | interesProgramado | 30000                  | 30000.00
+ LP-26-0005-C6  | montoPagado       | 80000                  | 80000.00
+ LP-26-0005-C6  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0005-C6  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0006-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C1  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0006-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C1  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C1  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C1  | saldoCapitalPost  | 650000                 | 650000.00
+ LP-26-0006-C1  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C10 | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C10 | fechaProgramada   | 2026-06-30 00:00:00-05 | 2026-06-30 00:00:00
+ LP-26-0006-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0006-C10 | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C10 | montoPagado       | 0                      | 0.00
+ LP-26-0006-C10 | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0006-C10 | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C11 | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C11 | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C11 | fechaProgramada   | 2026-07-15 00:00:00-05 | 2026-07-15 00:00:00
+ LP-26-0006-C11 | interesPagado     | 0                      | 0.00
+ LP-26-0006-C11 | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C11 | montoPagado       | 0                      | 0.00
+ LP-26-0006-C11 | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0006-C11 | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C12 | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C12 | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C12 | fechaProgramada   | 2026-07-31 00:00:00-05 | 2026-07-31 00:00:00
+ LP-26-0006-C12 | interesPagado     | 0                      | 0.00
+ LP-26-0006-C12 | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C12 | montoPagado       | 0                      | 0.00
+ LP-26-0006-C12 | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0006-C12 | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C13 | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C13 | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C13 | fechaProgramada   | 2026-08-15 00:00:00-05 | 2026-08-15 00:00:00
+ LP-26-0006-C13 | interesPagado     | 0                      | 0.00
+ LP-26-0006-C13 | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C13 | montoPagado       | 0                      | 0.00
+ LP-26-0006-C13 | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0006-C13 | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C14 | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C14 | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C14 | fechaProgramada   | 2026-08-31 00:00:00-05 | 2026-08-31 00:00:00
+ LP-26-0006-C14 | interesPagado     | 0                      | 0.00
+ LP-26-0006-C14 | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C14 | montoPagado       | 0                      | 0.00
+ LP-26-0006-C14 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0006-C14 | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C2  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0006-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C2  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C2  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C2  | saldoCapitalPost  | 600000                 | 600000.00
+ LP-26-0006-C2  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C3  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0006-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C3  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C3  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C3  | saldoCapitalPost  | 550000                 | 550000.00
+ LP-26-0006-C3  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C4  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0006-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C4  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C4  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C4  | saldoCapitalPost  | 500000                 | 500000.00
+ LP-26-0006-C4  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C5  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0006-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C5  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C5  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C5  | saldoCapitalPost  | 450000                 | 450000.00
+ LP-26-0006-C5  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C6  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0006-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C6  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C6  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C6  | saldoCapitalPost  | 400000                 | 400000.00
+ LP-26-0006-C6  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C7  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C7  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0006-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C7  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C7  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C7  | saldoCapitalPost  | 350000                 | 350000.00
+ LP-26-0006-C7  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C8  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C8  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0006-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C8  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C8  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C8  | saldoCapitalPost  | 300000                 | 300000.00
+ LP-26-0006-C8  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0006-C9  | capitalPagado     | 0                      | 0.00
+ LP-26-0006-C9  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0006-C9  | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0006-C9  | interesPagado     | 0                      | 0.00
+ LP-26-0006-C9  | interesProgramado | 70000                  | 70000.00
+ LP-26-0006-C9  | montoPagado       | 120000                 | 120000.00
+ LP-26-0006-C9  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0006-C9  | valorProgramado   | 120000                 | 120000.00
+ LP-26-0007-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C1  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0007-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C1  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C1  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C1  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0007-C1  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0007-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C2  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0007-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C2  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C2  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C2  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0007-C2  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0007-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C3  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0007-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C3  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C3  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C3  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0007-C3  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0007-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C4  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0007-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C4  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C4  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C4  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0007-C4  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0007-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C5  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0007-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C5  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C5  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C5  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0007-C5  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0007-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0007-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0007-C6  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0007-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0007-C6  | interesProgramado | 30000                  | 30000.00
+ LP-26-0007-C6  | montoPagado       | 80000                  | 80000.00
+ LP-26-0007-C6  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0007-C6  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0008-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C1  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C1  | fechaProgramada   | 2025-12-31 00:00:00-05 | 2025-12-31 00:00:00
+ LP-26-0008-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C1  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C1  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C1  | saldoCapitalPost  | 900000                 | 900000.00
+ LP-26-0008-C1  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C10 | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C10 | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0008-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0008-C10 | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C10 | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C10 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0008-C10 | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C2  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C2  | fechaProgramada   | 2026-01-15 00:00:00-05 | 2026-01-15 00:00:00
+ LP-26-0008-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C2  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C2  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C2  | saldoCapitalPost  | 800000                 | 800000.00
+ LP-26-0008-C2  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C3  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C3  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0008-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C3  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C3  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C3  | saldoCapitalPost  | 700000                 | 700000.00
+ LP-26-0008-C3  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C4  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C4  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0008-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C4  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C4  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C4  | saldoCapitalPost  | 600000                 | 600000.00
+ LP-26-0008-C4  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C5  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C5  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0008-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C5  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C5  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C5  | saldoCapitalPost  | 500000                 | 500000.00
+ LP-26-0008-C5  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C6  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C6  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0008-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C6  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C6  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C6  | saldoCapitalPost  | 400000                 | 400000.00
+ LP-26-0008-C6  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C7  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C7  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0008-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C7  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C7  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C7  | saldoCapitalPost  | 300000                 | 300000.00
+ LP-26-0008-C7  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C8  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C8  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0008-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C8  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C8  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C8  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0008-C8  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0008-C9  | capitalPagado     | 0                      | 0.00
+ LP-26-0008-C9  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0008-C9  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0008-C9  | interesPagado     | 0                      | 0.00
+ LP-26-0008-C9  | interesProgramado | 85000                  | 85000.00
+ LP-26-0008-C9  | montoPagado       | 185000                 | 185000.00
+ LP-26-0008-C9  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0008-C9  | valorProgramado   | 185000                 | 185000.00
+ LP-26-0009-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C1  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C1  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0009-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C1  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C1  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C1  | saldoCapitalPost  | 900000                 | 900000.00
+ LP-26-0009-C1  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C10 | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C10 | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0009-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0009-C10 | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C10 | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C10 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0009-C10 | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C2  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C2  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0009-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C2  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C2  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C2  | saldoCapitalPost  | 800000                 | 800000.00
+ LP-26-0009-C2  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C3  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C3  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0009-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C3  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C3  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C3  | saldoCapitalPost  | 700000                 | 700000.00
+ LP-26-0009-C3  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C4  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C4  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0009-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C4  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C4  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C4  | saldoCapitalPost  | 600000                 | 600000.00
+ LP-26-0009-C4  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C5  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C5  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0009-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C5  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C5  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C5  | saldoCapitalPost  | 500000                 | 500000.00
+ LP-26-0009-C5  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C6  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C6  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0009-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C6  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C6  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C6  | saldoCapitalPost  | 400000                 | 400000.00
+ LP-26-0009-C6  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C7  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C7  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0009-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C7  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C7  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C7  | saldoCapitalPost  | 300000                 | 300000.00
+ LP-26-0009-C7  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C8  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C8  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0009-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C8  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C8  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C8  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0009-C8  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0009-C9  | capitalPagado     | 0                      | 0.00
+ LP-26-0009-C9  | capitalProgramado | 100000                 | 100000.00
+ LP-26-0009-C9  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0009-C9  | interesPagado     | 0                      | 0.00
+ LP-26-0009-C9  | interesProgramado | 90000                  | 90000.00
+ LP-26-0009-C9  | montoPagado       | 190000                 | 190000.00
+ LP-26-0009-C9  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0009-C9  | valorProgramado   | 190000                 | 190000.00
+ LP-26-0011-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C1  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0011-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C1  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C1  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C1  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0011-C1  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0011-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C2  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0011-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C2  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C2  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C2  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0011-C2  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0011-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C3  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0011-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C3  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C3  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C3  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0011-C3  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0011-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C4  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0011-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C4  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C4  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C4  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0011-C4  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0011-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C5  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0011-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C5  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C5  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C5  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0011-C5  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0011-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0011-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0011-C6  | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0011-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0011-C6  | interesProgramado | 15000                  | 15000.00
+ LP-26-0011-C6  | montoPagado       | 65000                  | 65000.00
+ LP-26-0011-C6  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0011-C6  | valorProgramado   | 65000                  | 65000.00
+ LP-26-0015-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C1  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C1  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0015-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C1  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C1  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C1  | saldoCapitalPost  | 875000                 | 875000.00
+ LP-26-0015-C1  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C2  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C2  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0015-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C2  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C2  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C2  | saldoCapitalPost  | 750000                 | 750000.00
+ LP-26-0015-C2  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C3  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C3  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0015-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C3  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C3  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C3  | saldoCapitalPost  | 625000                 | 625000.00
+ LP-26-0015-C3  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C4  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C4  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0015-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C4  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C4  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C4  | saldoCapitalPost  | 500000                 | 500000.00
+ LP-26-0015-C4  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C5  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C5  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0015-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C5  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C5  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C5  | saldoCapitalPost  | 375000                 | 375000.00
+ LP-26-0015-C5  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C6  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C6  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0015-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C6  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C6  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C6  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0015-C6  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C7  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C7  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0015-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C7  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C7  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C7  | saldoCapitalPost  | 125000                 | 125000.00
+ LP-26-0015-C7  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0015-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0015-C8  | capitalProgramado | 125000                 | 125000.00
+ LP-26-0015-C8  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0015-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0015-C8  | interesProgramado | 100000                 | 100000.00
+ LP-26-0015-C8  | montoPagado       | 0                      | 0.00
+ LP-26-0015-C8  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0015-C8  | valorProgramado   | 225000                 | 225000.00
+ LP-26-0016-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0016-C1  | capitalProgramado | 75000                  | 75000.00
+ LP-26-0016-C1  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0016-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0016-C1  | interesProgramado | 30000                  | 30000.00
+ LP-26-0016-C1  | montoPagado       | 105000                 | 105000.00
+ LP-26-0016-C1  | saldoCapitalPost  | 225000                 | 225000.00
+ LP-26-0016-C1  | valorProgramado   | 105000                 | 105000.00
+ LP-26-0016-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0016-C2  | capitalProgramado | 75000                  | 75000.00
+ LP-26-0016-C2  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0016-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0016-C2  | interesProgramado | 30000                  | 30000.00
+ LP-26-0016-C2  | montoPagado       | 105000                 | 105000.00
+ LP-26-0016-C2  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0016-C2  | valorProgramado   | 105000                 | 105000.00
+ LP-26-0016-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0016-C3  | capitalProgramado | 75000                  | 75000.00
+ LP-26-0016-C3  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0016-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0016-C3  | interesProgramado | 30000                  | 30000.00
+ LP-26-0016-C3  | montoPagado       | 105000                 | 105000.00
+ LP-26-0016-C3  | saldoCapitalPost  | 75000                  | 75000.00
+ LP-26-0016-C3  | valorProgramado   | 105000                 | 105000.00
+ LP-26-0016-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0016-C4  | capitalProgramado | 75000                  | 75000.00
+ LP-26-0016-C4  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0016-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0016-C4  | interesProgramado | 30000                  | 30000.00
+ LP-26-0016-C4  | montoPagado       | 105000                 | 105000.00
+ LP-26-0016-C4  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0016-C4  | valorProgramado   | 105000                 | 105000.00
+ LP-26-0017-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C1  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0017-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C1  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C1  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C1  | saldoCapitalPost  | 350000                 | 350000.00
+ LP-26-0017-C1  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C2  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0017-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C2  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C2  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C2  | saldoCapitalPost  | 300000                 | 300000.00
+ LP-26-0017-C2  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C3  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0017-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C3  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C3  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C3  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0017-C3  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C4  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0017-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C4  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C4  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C4  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0017-C4  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C5  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0017-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C5  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C5  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C5  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0017-C5  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C6  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0017-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C6  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C6  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C6  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0017-C6  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C7  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C7  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0017-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C7  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C7  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C7  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0017-C7  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0017-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0017-C8  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0017-C8  | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0017-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0017-C8  | interesProgramado | 40000                  | 40000.00
+ LP-26-0017-C8  | montoPagado       | 90000                  | 90000.00
+ LP-26-0017-C8  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0017-C8  | valorProgramado   | 90000                  | 90000.00
+ LP-26-0018-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C1  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C1  | fechaProgramada   | 2025-12-15 00:00:00-05 | 2025-12-15 00:00:00
+ LP-26-0018-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C1  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C1  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C1  | saldoCapitalPost  | 250000                 | 250000.00
+ LP-26-0018-C1  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0018-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C2  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C2  | fechaProgramada   | 2025-12-31 00:00:00-05 | 2025-12-31 00:00:00
+ LP-26-0018-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C2  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C2  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C2  | saldoCapitalPost  | 200000                 | 200000.00
+ LP-26-0018-C2  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0018-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C3  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C3  | fechaProgramada   | 2026-01-15 00:00:00-05 | 2026-01-15 00:00:00
+ LP-26-0018-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C3  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C3  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C3  | saldoCapitalPost  | 150000                 | 150000.00
+ LP-26-0018-C3  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0018-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C4  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C4  | fechaProgramada   | 2026-01-31 00:00:00-05 | 2026-01-31 00:00:00
+ LP-26-0018-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C4  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C4  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C4  | saldoCapitalPost  | 100000                 | 100000.00
+ LP-26-0018-C4  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0018-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C5  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C5  | fechaProgramada   | 2026-02-15 00:00:00-05 | 2026-02-15 00:00:00
+ LP-26-0018-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C5  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C5  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C5  | saldoCapitalPost  | 50000                  | 50000.00
+ LP-26-0018-C5  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0018-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0018-C6  | capitalProgramado | 50000                  | 50000.00
+ LP-26-0018-C6  | fechaProgramada   | 2026-02-28 00:00:00-05 | 2026-02-28 00:00:00
+ LP-26-0018-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0018-C6  | interesProgramado | 30000                  | 30000.00
+ LP-26-0018-C6  | montoPagado       | 80000                  | 80000.00
+ LP-26-0018-C6  | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0018-C6  | valorProgramado   | 80000                  | 80000.00
+ LP-26-0019-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C1  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C1  | fechaProgramada   | 2026-03-15 00:00:00-05 | 2026-03-15 00:00:00
+ LP-26-0019-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C1  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C1  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C1  | saldoCapitalPost  | 1485714.28571429       | 1485714.29
+ LP-26-0019-C1  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C10 | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C10 | fechaProgramada   | 2026-07-31 00:00:00-05 | 2026-07-31 00:00:00
+ LP-26-0019-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0019-C10 | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C10 | montoPagado       | 0                      | 0.00
+ LP-26-0019-C10 | saldoCapitalPost  | 457142.857142857       | 457142.86
+ LP-26-0019-C10 | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C11 | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C11 | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C11 | fechaProgramada   | 2026-08-15 00:00:00-05 | 2026-08-15 00:00:00
+ LP-26-0019-C11 | interesPagado     | 0                      | 0.00
+ LP-26-0019-C11 | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C11 | montoPagado       | 0                      | 0.00
+ LP-26-0019-C11 | saldoCapitalPost  | 342857.142857142       | 342857.14
+ LP-26-0019-C11 | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C12 | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C12 | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C12 | fechaProgramada   | 2026-08-31 00:00:00-05 | 2026-08-31 00:00:00
+ LP-26-0019-C12 | interesPagado     | 0                      | 0.00
+ LP-26-0019-C12 | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C12 | montoPagado       | 0                      | 0.00
+ LP-26-0019-C12 | saldoCapitalPost  | 228571.428571428       | 228571.43
+ LP-26-0019-C12 | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C13 | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C13 | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C13 | fechaProgramada   | 2026-09-15 00:00:00-05 | 2026-09-15 00:00:00
+ LP-26-0019-C13 | interesPagado     | 0                      | 0.00
+ LP-26-0019-C13 | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C13 | montoPagado       | 0                      | 0.00
+ LP-26-0019-C13 | saldoCapitalPost  | 114285.714285714       | 114285.71
+ LP-26-0019-C13 | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C14 | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C14 | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C14 | fechaProgramada   | 2026-09-30 00:00:00-05 | 2026-09-30 00:00:00
+ LP-26-0019-C14 | interesPagado     | 0                      | 0.00
+ LP-26-0019-C14 | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C14 | montoPagado       | 0                      | 0.00
+ LP-26-0019-C14 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0019-C14 | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C2  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C2  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0019-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C2  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C2  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C2  | saldoCapitalPost  | 1371428.57142857       | 1371428.57
+ LP-26-0019-C2  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C3  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C3  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0019-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C3  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C3  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C3  | saldoCapitalPost  | 1257142.85714286       | 1257142.86
+ LP-26-0019-C3  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C4  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C4  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0019-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C4  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C4  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C4  | saldoCapitalPost  | 1142857.14285714       | 1142857.14
+ LP-26-0019-C4  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C5  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C5  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0019-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C5  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C5  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C5  | saldoCapitalPost  | 1028571.42857143       | 1028571.43
+ LP-26-0019-C5  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C6  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C6  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0019-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C6  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C6  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C6  | saldoCapitalPost  | 914285.714285714       | 914285.71
+ LP-26-0019-C6  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C7  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C7  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C7  | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0019-C7  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C7  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C7  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C7  | saldoCapitalPost  | 800000                 | 800000.00
+ LP-26-0019-C7  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C8  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C8  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C8  | fechaProgramada   | 2026-06-30 00:00:00-05 | 2026-06-30 00:00:00
+ LP-26-0019-C8  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C8  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C8  | montoPagado       | 274285.714285714       | 274285.71
+ LP-26-0019-C8  | saldoCapitalPost  | 685714.285714285       | 685714.29
+ LP-26-0019-C8  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0019-C9  | capitalPagado     | 0                      | 0.00
+ LP-26-0019-C9  | capitalProgramado | 114285.714285714       | 114285.71
+ LP-26-0019-C9  | fechaProgramada   | 2026-07-15 00:00:00-05 | 2026-07-15 00:00:00
+ LP-26-0019-C9  | interesPagado     | 0                      | 0.00
+ LP-26-0019-C9  | interesProgramado | 160000                 | 160000.00
+ LP-26-0019-C9  | montoPagado       | 0                      | 0.00
+ LP-26-0019-C9  | saldoCapitalPost  | 571428.571428571       | 571428.57
+ LP-26-0019-C9  | valorProgramado   | 274285.714285714       | 274285.71
+ LP-26-0020-C1  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C1  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C1  | fechaProgramada   | 2026-03-31 00:00:00-05 | 2026-03-31 00:00:00
+ LP-26-0020-C1  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C1  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C1  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C1  | saldoCapitalPost  | 916666.666666667       | 916666.67
+ LP-26-0020-C1  | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C10 | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C10 | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C10 | fechaProgramada   | 2026-08-15 00:00:00-05 | 2026-08-15 00:00:00
+ LP-26-0020-C10 | interesPagado     | 0                      | 0.00
+ LP-26-0020-C10 | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C10 | montoPagado       | 0                      | 0.00
+ LP-26-0020-C10 | saldoCapitalPost  | 166666.666666667       | 166666.67
+ LP-26-0020-C10 | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C11 | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C11 | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C11 | fechaProgramada   | 2026-08-31 00:00:00-05 | 2026-08-31 00:00:00
+ LP-26-0020-C11 | interesPagado     | 0                      | 0.00
+ LP-26-0020-C11 | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C11 | montoPagado       | 0                      | 0.00
+ LP-26-0020-C11 | saldoCapitalPost  | 83333.3333333332       | 83333.33
+ LP-26-0020-C11 | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C12 | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C12 | capitalProgramado | 83333.3333333332       | 83333.33
+ LP-26-0020-C12 | fechaProgramada   | 2026-09-15 00:00:00-05 | 2026-09-15 00:00:00
+ LP-26-0020-C12 | interesPagado     | 0                      | 0.00
+ LP-26-0020-C12 | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C12 | montoPagado       | 0                      | 0.00
+ LP-26-0020-C12 | saldoCapitalPost  | 0                      | 0.00
+ LP-26-0020-C12 | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C2  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C2  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C2  | fechaProgramada   | 2026-04-15 00:00:00-05 | 2026-04-15 00:00:00
+ LP-26-0020-C2  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C2  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C2  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C2  | saldoCapitalPost  | 833333.333333333       | 833333.33
+ LP-26-0020-C2  | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C3  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C3  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C3  | fechaProgramada   | 2026-04-30 00:00:00-05 | 2026-04-30 00:00:00
+ LP-26-0020-C3  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C3  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C3  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C3  | saldoCapitalPost  | 750000                 | 750000.00
+ LP-26-0020-C3  | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C4  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C4  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C4  | fechaProgramada   | 2026-05-15 00:00:00-05 | 2026-05-15 00:00:00
+ LP-26-0020-C4  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C4  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C4  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C4  | saldoCapitalPost  | 666666.666666667       | 666666.67
+ LP-26-0020-C4  | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C5  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C5  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C5  | fechaProgramada   | 2026-05-31 00:00:00-05 | 2026-05-31 00:00:00
+ LP-26-0020-C5  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C5  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C5  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C5  | saldoCapitalPost  | 583333.333333333       | 583333.33
+ LP-26-0020-C5  | valorProgramado   | 178333.333333333       | 178333.33
+ LP-26-0020-C6  | capitalPagado     | 0                      | 0.00
+ LP-26-0020-C6  | capitalProgramado | 83333.3333333333       | 83333.33
+ LP-26-0020-C6  | fechaProgramada   | 2026-06-15 00:00:00-05 | 2026-06-15 00:00:00
+ LP-26-0020-C6  | interesPagado     | 0                      | 0.00
+ LP-26-0020-C6  | interesProgramado | 95000                  | 95000.00
+ LP-26-0020-C6  | montoPagado       | 178333.333333333       | 178333.33
+ LP-26-0020-C6  | saldoCapitalPost  | 500000                 | 500000.00
+ LP-26-0020-C6  | valorProgramado   | 178333.333333333       | 178333.33
+(1000 rows)
+
+=== 11. CHECK FINAL: TOTAL DE DIFERENCIAS ===
+    check_name     | ok 
+-------------------+----
+ clientes_count_ok | t
+ creditos_count_ok | t
+ eventos_count_ok  | t
+(3 rows)
+
