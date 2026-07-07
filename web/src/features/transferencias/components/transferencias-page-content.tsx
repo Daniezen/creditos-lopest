@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { ArrowRightLeft, CreditCard, Search, Users } from "lucide-react";
+import { useActionState, useMemo, useState, type ReactNode } from "react";
+import { CreditCard, Search, Users } from "lucide-react";
 
 import { formatCurrencyCOP } from "@/lib/formatters";
 
 import {
+  initialTransferActionState,
   transferirClienteCompletoAction,
   transferirCreditoIndividualAction,
 } from "../actions";
@@ -24,6 +25,7 @@ interface SearchableSelectOption {
   value: string;
   label: string;
   description?: string;
+  eyebrow?: string;
 }
 
 interface SearchableSelectProps {
@@ -65,11 +67,11 @@ function SearchableSelect({
     }
 
     return options
-      .filter((option) => {
-        return normalizeSearch(`${option.label} ${option.description ?? ""}`).includes(
+      .filter((option) =>
+        normalizeSearch(`${option.label} ${option.description ?? ""} ${option.eyebrow ?? ""}`).includes(
           normalizedQuery,
-        );
-      })
+        ),
+      )
       .slice(0, 80);
   }, [options, query]);
 
@@ -115,11 +117,16 @@ function SearchableSelect({
                 onClick={() => handleSelect(option)}
                 className="block w-full rounded-xl px-4 py-3 text-left transition hover:bg-violet-50"
               >
-                <span className="block text-sm font-bold text-slate-950">
+                {option.eyebrow ? (
+                  <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-violet-600">
+                    {option.eyebrow}
+                  </span>
+                ) : null}
+                <span className="block text-sm font-black text-slate-950">
                   {option.label}
                 </span>
                 {option.description ? (
-                  <span className="mt-0.5 block text-xs text-slate-500">
+                  <span className="mt-0.5 block text-xs font-semibold text-slate-500">
                     {option.description}
                   </span>
                 ) : null}
@@ -143,8 +150,43 @@ function FieldShell({ label, children }: { label: string; children: ReactNode })
   );
 }
 
-function ownerDescription(owner: TransferOwnerOption): string {
-  return owner.email;
+function ActionFeedback({ ok, message }: { ok: boolean; message: string | null }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <div
+      className={[
+        "rounded-2xl border px-4 py-3 text-sm font-semibold",
+        ok
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-rose-200 bg-rose-50 text-rose-800",
+      ].join(" ")}
+    >
+      {message}
+    </div>
+  );
+}
+
+function DestinationSummary({ owner }: { owner: TransferOwnerOption | null }) {
+  if (!owner) {
+    return (
+      <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-400">
+        Primero selecciona el origen para calcular el destino.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-violet-600">
+        Destino automático
+      </p>
+      <p className="mt-1 text-sm font-black text-slate-950">{owner.nombre}</p>
+      <p className="mt-0.5 text-xs font-semibold text-slate-500">{owner.email}</p>
+    </div>
+  );
 }
 
 function clienteLabel(cliente: TransferClienteOption): string {
@@ -156,19 +198,35 @@ function clienteDescription(cliente: TransferClienteOption): string {
 }
 
 function creditoLabel(credito: TransferCreditoOption): string {
-  return `${credito.codigo} - ${credito.clienteNombre}`;
+  return `${formatCurrencyCOP(credito.monto)} - ${credito.codigo}`;
 }
 
 function creditoDescription(credito: TransferCreditoOption): string {
-  return `${formatCurrencyCOP(credito.monto)} | Propietario: ${credito.ownerNombre ?? "sin propietario"}`;
+  return `${credito.clienteNombre} | Propietario: ${credito.ownerNombre ?? "sin propietario"}`;
+}
+
+function findAutoDestination(input: {
+  owners: TransferOwnerOption[];
+  currentOwnerId: string | null | undefined;
+}): TransferOwnerOption | null {
+  const candidates = input.owners.filter((owner) => owner.id !== input.currentOwnerId);
+
+  return candidates.length === 1 ? candidates[0] : null;
 }
 
 export function TransferenciasPageContent({ context }: TransferenciasPageContentProps) {
+  const [clienteState, clienteAction, clientePending] = useActionState(
+    transferirClienteCompletoAction,
+    initialTransferActionState,
+  );
+  const [creditoState, creditoAction, creditoPending] = useActionState(
+    transferirCreditoIndividualAction,
+    initialTransferActionState,
+  );
+
   const [clienteCompletoId, setClienteCompletoId] = useState("");
-  const [clienteCompletoDestinoId, setClienteCompletoDestinoId] = useState("");
   const [creditoClienteId, setCreditoClienteId] = useState("");
   const [creditoId, setCreditoId] = useState("");
-  const [creditoDestinoId, setCreditoDestinoId] = useState("");
 
   const selectedClienteCompleto =
     context.clientes.find((cliente) => cliente.id === clienteCompletoId) ?? null;
@@ -187,55 +245,31 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
   const selectedCredito =
     creditosDelCliente.find((credito) => credito.id === creditoId) ?? null;
 
+  const clienteCompletoDestino = findAutoDestination({
+    owners: context.owners,
+    currentOwnerId: selectedClienteCompleto?.ownerUserId,
+  });
+
+  const creditoDestino = findAutoDestination({
+    owners: context.owners,
+    currentOwnerId: selectedCredito?.ownerUserId,
+  });
+
   const clienteOptions = context.clientes.map((cliente) => ({
     value: cliente.id,
     label: clienteLabel(cliente),
     description: clienteDescription(cliente),
   }));
 
-  const ownersForClienteCompleto = context.owners.filter(
-    (owner) => owner.id !== selectedClienteCompleto?.ownerUserId,
-  );
-
-  const ownersForCredito = context.owners.filter(
-    (owner) => owner.id !== selectedCredito?.ownerUserId,
-  );
-
-  const ownerOptionsForClienteCompleto = ownersForClienteCompleto.map((owner) => ({
-    value: owner.id,
-    label: owner.nombre,
-    description: ownerDescription(owner),
-  }));
-
-  const ownerOptionsForCredito = ownersForCredito.map((owner) => ({
-    value: owner.id,
-    label: owner.nombre,
-    description: ownerDescription(owner),
-  }));
-
   const creditosOptions = creditosDelCliente.map((credito) => ({
     value: credito.id,
     label: creditoLabel(credito),
     description: creditoDescription(credito),
+    eyebrow: credito.ownerNombre ? `Propietario: ${credito.ownerNombre}` : "Sin propietario",
   }));
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <section className="mb-5 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="border-b border-violet-100 bg-[radial-gradient(circle_at_top_left,#ede9fe_0%,#faf5ff_42%,#fff7ed_100%)] px-6 py-5 sm:px-7">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
-            Transferencias de cartera
-          </p>
-          <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-            Clientes y créditos entre cuentas
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Mueve clientes completos con todos sus créditos, o créditos individuales
-            para compartir un cliente entre Germán y Martha con carteras separadas.
-          </p>
-        </div>
-      </section>
-
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
           <div className="border-b border-violet-100 pb-4">
@@ -251,9 +285,9 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
             </p>
           </div>
 
-          <form action={transferirClienteCompletoAction} className="mt-5 grid gap-4">
+          <form action={clienteAction} className="mt-5 grid gap-4">
             <input type="hidden" name="clienteId" value={clienteCompletoId} />
-            <input type="hidden" name="targetOwnerUserId" value={clienteCompletoDestinoId} />
+            <input type="hidden" name="targetOwnerUserId" value={clienteCompletoDestino?.id ?? ""} />
 
             <SearchableSelect
               label="Cliente"
@@ -261,25 +295,12 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               emptyMessage="No se encontraron clientes."
               options={clienteOptions}
               value={clienteCompletoId}
-              onChange={(value) => {
-                setClienteCompletoId(value);
-                setClienteCompletoDestinoId("");
-              }}
+              onChange={setClienteCompletoId}
             />
 
-            <SearchableSelect
-              label="Destino"
-              placeholder={
-                selectedClienteCompleto
-                  ? "Buscar propietario destino"
-                  : "Primero selecciona un cliente"
-              }
-              emptyMessage="No hay propietarios destino disponibles."
-              options={ownerOptionsForClienteCompleto}
-              value={clienteCompletoDestinoId}
-              onChange={setClienteCompletoDestinoId}
-              disabled={!selectedClienteCompleto}
-            />
+            <FieldShell label="Destino">
+              <DestinationSummary owner={clienteCompletoDestino} />
+            </FieldShell>
 
             <FieldShell label="Motivo opcional">
               <input
@@ -289,12 +310,14 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               />
             </FieldShell>
 
+            <ActionFeedback ok={clienteState.ok} message={clienteState.message} />
+
             <button
               type="submit"
-              disabled={!clienteCompletoId || !clienteCompletoDestinoId}
+              disabled={!clienteCompletoId || !clienteCompletoDestino || clientePending}
               className="inline-flex w-fit items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Transferir cliente completo
+              {clientePending ? "Transfiriendo..." : "Transferir cliente completo"}
             </button>
           </form>
         </section>
@@ -313,9 +336,9 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
             </p>
           </div>
 
-          <form action={transferirCreditoIndividualAction} className="mt-5 grid gap-4">
+          <form action={creditoAction} className="mt-5 grid gap-4">
             <input type="hidden" name="creditoId" value={creditoId} />
-            <input type="hidden" name="targetOwnerUserId" value={creditoDestinoId} />
+            <input type="hidden" name="targetOwnerUserId" value={creditoDestino?.id ?? ""} />
 
             <SearchableSelect
               label="Cliente"
@@ -326,7 +349,6 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               onChange={(value) => {
                 setCreditoClienteId(value);
                 setCreditoId("");
-                setCreditoDestinoId("");
               }}
             />
 
@@ -334,28 +356,19 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               label="Crédito"
               placeholder={
                 selectedCreditoCliente
-                  ? "Buscar crédito por código, cliente o propietario"
+                  ? "Buscar crédito por monto, código, cliente o propietario"
                   : "Primero selecciona un cliente"
               }
               emptyMessage="Este cliente no tiene créditos transferibles en este alcance."
               options={creditosOptions}
               value={creditoId}
-              onChange={(value) => {
-                setCreditoId(value);
-                setCreditoDestinoId("");
-              }}
+              onChange={setCreditoId}
               disabled={!selectedCreditoCliente}
             />
 
-            <SearchableSelect
-              label="Destino"
-              placeholder={selectedCredito ? "Buscar propietario destino" : "Primero selecciona un crédito"}
-              emptyMessage="No hay propietarios destino disponibles."
-              options={ownerOptionsForCredito}
-              value={creditoDestinoId}
-              onChange={setCreditoDestinoId}
-              disabled={!selectedCredito}
-            />
+            <FieldShell label="Destino">
+              <DestinationSummary owner={creditoDestino} />
+            </FieldShell>
 
             <FieldShell label="Motivo opcional">
               <input
@@ -365,12 +378,14 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               />
             </FieldShell>
 
+            <ActionFeedback ok={creditoState.ok} message={creditoState.message} />
+
             <button
               type="submit"
-              disabled={!creditoId || !creditoDestinoId}
+              disabled={!creditoId || !creditoDestino || creditoPending}
               className="inline-flex w-fit items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Transferir crédito
+              {creditoPending ? "Transfiriendo..." : "Transferir crédito"}
             </button>
           </form>
         </section>

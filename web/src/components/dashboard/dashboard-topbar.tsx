@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import {
+  ArrowRightLeft,
   BarChart3,
   Bell,
   Calculator,
@@ -31,15 +32,8 @@ interface SectionMetadata {
 /**
  * Topbar principal del dashboard Lopest.
  *
- * Cambio de diseño:
- * - La topbar absorbe parte de la personalidad visual que antes estaba repetida
- *   dentro de cada vista mediante cards tipo hero.
- * - Cada sección tiene un ícono contextual, evitando repetir títulos internos.
- * - La barra inferior conserva identidad Lopest: violeta/fucsia/ámbar, sin copiar
- *   la firma multicolor de Impulsa.
- *
  * Responsabilidad:
- * - Mostrar contexto global de la sección.
+ * - Mostrar contexto global de la sección activa.
  * - Mostrar usuario autenticado y rol principal.
  *
  * No responsabilidad:
@@ -68,7 +62,7 @@ export function DashboardTopbar({ user }: DashboardTopbarProps) {
               {section.title}
             </p>
 
-            <p className="mt-2 max-w-2xl truncate text-sm font-medium text-slate-500">
+            <p className="mt-2 max-w-4xl truncate text-sm font-medium text-slate-500">
               {section.description}
             </p>
           </div>
@@ -108,13 +102,16 @@ export function DashboardTopbar({ user }: DashboardTopbarProps) {
   );
 }
 
-/**
- * Mapa de secciones del dashboard.
- *
- * Esta función evita que cada vista repita un hero con el mismo título.
- * La topbar queda como fuente única de contexto visual.
- */
 function getSectionMetadata(pathname: string): SectionMetadata {
+  if (pathname.startsWith("/transferencias")) {
+    return {
+      title: "Transferencias de cartera",
+      description:
+        "Clientes y créditos entre cuentas: mueve clientes completos o créditos individuales para compartir cartera entre Germán y Martha.",
+      icon: ArrowRightLeft,
+    };
+  }
+
   if (pathname.startsWith("/creditos/nuevo")) {
     return {
       title: "Nuevo crédito",
@@ -165,6 +162,10 @@ function getSectionMetadata(pathname: string): SectionMetadata {
 function getPrimaryRole(roles: string[]): string {
   if (roles.includes("ADMIN")) {
     return "ADMIN";
+  }
+
+  if (roles.includes("TRANSFERENCIAS_CARTERA")) {
+    return "TRANSFERENCIAS";
   }
 
   if (roles.includes("OPERADOR")) {
