@@ -1,4 +1,5 @@
 import {
+  ArrowRightLeft,
   BarChart3,
   Calculator,
   CreditCard,
@@ -10,9 +11,10 @@ import {
  * Configuración central de navegación del dashboard.
  *
  * Regla:
- * - El sidebar solo contiene módulos principales.
- * - Acciones como crear cliente o crear crédito viven en accesos rápidos
- *   o dentro del módulo correspondiente.
+ * - El sidebar contiene módulos principales.
+ * - Las reglas de autorización viven en las rutas/acciones de servidor.
+ * - Transferencias se muestra como módulo; usuarios sin permiso quedan
+ *   bloqueados por el guard de /transferencias.
  */
 export interface DashboardNavItem {
   label: string;
@@ -40,6 +42,12 @@ export const dashboardNavigation: DashboardNavItem[] = [
     href: "/creditos",
     description: "Biblioteca y gestión de créditos.",
     icon: CreditCard,
+  },
+  {
+    label: "Transferencias",
+    href: "/transferencias",
+    description: "Mover clientes completos o créditos individuales entre cuentas.",
+    icon: ArrowRightLeft,
   },
   {
     label: "Reportes",

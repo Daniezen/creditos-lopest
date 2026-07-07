@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 
-export type AppRole = "ADMIN" | "OPERADOR" | "LECTURA";
+export type AppRole = "ADMIN" | "OPERADOR" | "LECTURA" | "TRANSFERENCIAS_CARTERA";
 
 /**
  * Obtiene el usuario autenticado desde NextAuth y normaliza el contrato interno.
