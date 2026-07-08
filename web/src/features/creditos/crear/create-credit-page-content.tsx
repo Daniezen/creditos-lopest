@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
 import type { ClienteSelectorOption } from "@/features/clientes/types";
@@ -11,6 +12,7 @@ import { ClientStep } from "./components/client-step";
 import { ConfirmationStep } from "./components/confirmation-step";
 import { CreateCreditStepper } from "./components/create-credit-stepper";
 import { CreditConditionsStep } from "./components/credit-conditions-step";
+import { crearCreditoDesdeWizard } from "./actions";
 
 interface CreateCreditPageContentProps {
   initialClientes: ClienteSelectorOption[];
@@ -25,6 +27,9 @@ function createIdempotencyKey() {
 export function CreateCreditPageContent({
   initialClientes,
 }: CreateCreditPageContentProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<CreateCreditStep>(1);
   const [clientes, setClientes] =
     useState<ClienteSelectorOption[]>(initialClientes);
@@ -37,6 +42,37 @@ export function CreateCreditPageContent({
   const hasValidSimulation = useMemo(() => {
     return resultado.estado === "success" && resultado.cronograma.length > 0;
   }, [resultado]);
+
+  const canSaveCredit = selectedCliente !== null && hasValidSimulation;
+
+  function handleGuardarCredito() {
+    if (!selectedCliente) {
+      setSaveError("Selecciona un cliente antes de guardar.");
+      return;
+    }
+
+    if (resultado.estado !== "success") {
+      setSaveError("Completa las condiciones del crédito antes de guardar.");
+      return;
+    }
+
+    setSaveError(null);
+
+    startTransition(async () => {
+      const response = await crearCreditoDesdeWizard({
+        clienteId: selectedCliente.id,
+        form,
+        idempotencyKey,
+      });
+
+      if (!response.ok) {
+        setSaveError(response.error);
+        return;
+      }
+
+      router.push(`/creditos/${response.creditoId}`);
+    });
+  }
 
   function canGoToStep(step: number) {
     if (step === 1) {
@@ -155,7 +191,7 @@ export function CreateCreditPageContent({
               cliente={selectedCliente}
               form={form}
               resultado={resultado}
-              idempotencyKey={idempotencyKey}
+              error={saveError}
             />
           ) : null}
         </div>
@@ -182,14 +218,25 @@ export function CreateCreditPageContent({
               Atrás
             </button>
 
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={currentStep === 3 || !canGoToStep(currentStep + 1)}
-              className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              {currentStep === 3 ? "Guardar arriba" : "Continuar"}
-            </button>
+            {currentStep === 3 ? (
+              <button
+                type="button"
+                onClick={handleGuardarCredito}
+                disabled={!canSaveCredit || isPending}
+                className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {isPending ? "Guardando..." : "Guardar crédito"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canGoToStep(currentStep + 1)}
+                className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Continuar
+              </button>
+            )}
           </div>
         </div>
       </footer>

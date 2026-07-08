@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   ClipboardCheck,
@@ -27,24 +25,20 @@ import {
   parseTasaMensualInput,
 } from "@/lib/formatters";
 
-import { crearCreditoDesdeWizard } from "../actions";
 
 interface ConfirmationStepProps {
   cliente: ClienteSelectorOption | null;
   form: SimulatorFormState;
   resultado: SimulationResult;
-  idempotencyKey: string;
+  error: string | null;
 }
 
 export function ConfirmationStep({
   cliente,
   form,
   resultado,
-  idempotencyKey,
+  error,
 }: ConfirmationStepProps) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   const monto = parseNumericInput(form.monto);
   const tasaMensual = parseTasaMensualInput(form.tasaMensual);
@@ -52,36 +46,6 @@ export function ConfirmationStep({
     ? parseDateInputValue(form.fechaPrestamo)
     : null;
 
-  const canSave = cliente !== null && resultado.estado === "success";
-
-  function handleGuardarCredito() {
-    if (!cliente) {
-      setError("Selecciona un cliente antes de guardar.");
-      return;
-    }
-
-    if (resultado.estado !== "success") {
-      setError("Completa las condiciones del crédito antes de guardar.");
-      return;
-    }
-
-    setError(null);
-
-    startTransition(async () => {
-      const response = await crearCreditoDesdeWizard({
-        clienteId: cliente.id,
-        form,
-        idempotencyKey,
-      });
-
-      if (!response.ok) {
-        setError(response.error);
-        return;
-      }
-
-      router.push(`/creditos/${response.creditoId}`);
-    });
-  }
 
   return (
     <section className="space-y-6">
@@ -166,16 +130,6 @@ export function ConfirmationStep({
             {error}
           </div>
         ) : null}
-
-        <button
-          type="button"
-          onClick={handleGuardarCredito}
-          disabled={!canSave || isPending}
-          className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          <ClipboardCheck className="h-4 w-4" />
-          {isPending ? "Guardando..." : "Guardar crédito"}
-        </button>
       </div>
     </section>
   );

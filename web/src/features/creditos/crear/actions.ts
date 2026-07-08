@@ -80,12 +80,37 @@ export async function crearCreditoDesdeWizard(
           id: true,
           codigo: true,
           clienteId: true,
+          ownerUserId: true,
         },
       });
 
       if (creditoExistente) {
         if (creditoExistente.clienteId !== clienteId) {
           throw new Error("La operación idempotente no corresponde al cliente seleccionado.");
+        }
+
+        if (!creditoExistente.ownerUserId) {
+          await tx.credito.update({
+            where: {
+              id: creditoExistente.id,
+            },
+            data: {
+              ownerUserId: user.id,
+              accionPor: user.id,
+            },
+          });
+        }
+
+        if (!creditoExistente.ownerUserId) {
+          await tx.credito.update({
+            where: {
+              id: creditoExistente.id,
+            },
+            data: {
+              ownerUserId: user.id,
+              accionPor: user.id,
+            },
+          });
         }
 
         return {
