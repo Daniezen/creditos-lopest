@@ -10,6 +10,7 @@ import {
   Hash,
   Landmark,
   Percent,
+  PencilLine,
   WalletCards,
 } from "lucide-react";
 
@@ -100,13 +101,23 @@ export default async function CreditoDetallePage({
               </p>
             </div>
 
-            <Link
+                        <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/creditos/${credito.id}/editar`}
+                className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+              >
+                <PencilLine className="h-4 w-4" />
+                Editar crédito
+              </Link>
+
+<Link
               href="/creditos"
               className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
             >
               <ArrowLeft className="h-4 w-4" />
               Volver
             </Link>
+            </div>
           </div>
         </div>
 

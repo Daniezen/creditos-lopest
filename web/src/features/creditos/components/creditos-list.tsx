@@ -3,7 +3,7 @@
 import type { ComponentType, KeyboardEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, CreditCard, Eye, Plus, ShieldCheck, WalletCards } from "lucide-react";
+import { CalendarDays, CreditCard, Eye, PencilLine, Plus, ShieldCheck, WalletCards } from "lucide-react";
 
 import { formatCurrencyCOP, formatDateCO, formatPercent } from "@/lib/formatters";
 
@@ -129,7 +129,7 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
                       <TableCell>{credito.proximaCuota ? <div><p className="font-semibold text-slate-950">{formatCurrencyCOP(credito.proximaCuota.valorProgramado)}</p><p className="mt-1 flex items-center gap-1 text-xs text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{formatDateCO(credito.proximaCuota.fechaProgramada)}</p></div> : "-"}</TableCell>
                       <TableCell className="text-right">{formatPercent(credito.tasaMensual)}</TableCell>
                       <TableCell><EstadoCreditoBadge estado={credito.estado} /></TableCell>
-                      <TableCell className="text-right"><Link href={`/creditos/${credito.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"><Eye className="h-3.5 w-3.5" />Ver</Link></TableCell>
+                      <TableCell className="text-right"><div className="flex justify-end gap-2"><Link href={`/creditos/${credito.id}/editar`} className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-100 hover:text-fuchsia-700"><PencilLine className="h-3.5 w-3.5" />Editar</Link><Link href={`/creditos/${credito.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"><Eye className="h-3.5 w-3.5" />Ver</Link></div></TableCell>
                     </tr>
                   ))}
                 </tbody>
