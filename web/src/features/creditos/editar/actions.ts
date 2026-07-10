@@ -23,7 +23,6 @@ interface ActualizarCreditoInput {
   form: SimulatorFormState;
   observaciones?: string;
   nota?: string;
-  adminOverrideCode?: string;
 }
 
 interface EliminarCreditoInput {
@@ -58,16 +57,6 @@ function eventoTieneActividadFinanciera(evento: {
     Number(evento.interesPagado) > 0 ||
     evento.fechaPago !== null
   );
-}
-
-function isAdminOverrideAutorizado(code: string | undefined): boolean {
-  const expectedCode = process.env.CREDIT_ADMIN_OVERRIDE_CODE;
-
-  if (!expectedCode) {
-    return false;
-  }
-
-  return code?.trim() === expectedCode;
 }
 
 function eventoPuedeRegenerarse(evento: {
@@ -129,11 +118,8 @@ export async function actualizarCredito(
       }
 
       const tieneActividad = credito.eventos.some(eventoTieneActividadFinanciera);
-      const adminOverrideAutorizado = isAdminOverrideAutorizado(
-        input.adminOverrideCode,
-      );
 
-      if (tieneActividad && !adminOverrideAutorizado) {
+      if (tieneActividad) {
         await tx.credito.update({
           where: {
             id,
@@ -216,7 +202,7 @@ export async function actualizarCredito(
             interesProgramado: toMoneyDecimalString(cuota.interesProgramado),
             saldoCapitalPost: toMoneyDecimalString(cuota.saldoCapitalPost),
             estado: mapEstadoCuotaToPrisma(cuota.estado),
-            accionPor: adminOverrideAutorizado ? "admin_override" : user.id,
+            accionPor: user.id,
           })),
       });
 

@@ -43,11 +43,9 @@ export function CreditEditForm({
     nota,
   });
   const [error, setError] = useState<string | null>(null);
-  const [adminOverrideCode, setAdminOverrideCode] = useState("");
-  const [adminOverrideEnabled, setAdminOverrideEnabled] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const effectiveCanEditFinancial = canEditFinancial || adminOverrideEnabled;
+  const effectiveCanEditFinancial = canEditFinancial;
 
   function updateField<K extends keyof SimulatorFormState>(
     field: K,
@@ -68,7 +66,6 @@ export function CreditEditForm({
         form,
         observaciones: notes.observaciones,
         nota: notes.nota,
-        adminOverrideCode: adminOverrideEnabled ? adminOverrideCode : undefined,
       });
 
       if (!result.ok) {
@@ -114,31 +111,14 @@ export function CreditEditForm({
           <div className="flex gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
-              Este crédito ya tiene actividad financiera. Sin autorización
-              administrativa solo se pueden editar notas y observaciones.
+              Este crédito ya tiene actividad financiera. Para proteger el
+              historial y el saldo, solo se pueden editar notas y observaciones.
             </p>
           </div>
 
-          <label className="flex items-center gap-2 font-semibold text-amber-900">
-            <input
-              type="checkbox"
-              checked={adminOverrideEnabled}
-              onChange={(event) =>
-                setAdminOverrideEnabled(event.target.checked)
-              }
-            />
-            Habilitar override administrativo
-          </label>
 
-          {adminOverrideEnabled ? (
-            <input
-              type="password"
-              value={adminOverrideCode}
-              placeholder="Código administrativo"
-              onChange={(event) => setAdminOverrideCode(event.target.value)}
-              className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15"
-            />
-          ) : null}
+
+
         </div>
       ) : null}
 

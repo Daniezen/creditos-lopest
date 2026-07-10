@@ -169,6 +169,7 @@ export async function crearCreditoDesdeWizard(
             condiciones.tipoAmortizacion,
           ),
 
+          ownerUserId: user.id,
           accionPor: user.id,
         },
         select: {
