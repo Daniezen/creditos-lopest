@@ -10,6 +10,9 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { recordAuditLogTx } from "@/server/audit/audit-log";
+
+import type { UpdatePaymentDateState } from "./payment-date-state";
 
 function obtenerHoyColombia(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -113,6 +116,7 @@ export async function registrarPagoCuota(formData: FormData): Promise<void> {
         valorProgramado: true,
         capitalProgramado: true,
         interesProgramado: true,
+        fechaProgramada: true,
       },
     });
 
@@ -142,7 +146,7 @@ export async function registrarPagoCuota(formData: FormData): Promise<void> {
         capitalPagado: evento.capitalProgramado,
         interesPagado: evento.interesProgramado,
         estado: EstadoEventoFinanciero.PAGADO,
-        diasAtraso: 0,
+        diasAtraso: calcularDiasAtraso(evento.fechaProgramada, hoy),
         accionPor: user.id,
       },
     });
@@ -152,6 +156,62 @@ export async function registrarPagoCuota(formData: FormData): Promise<void> {
 
   revalidatePath("/creditos");
   revalidatePath(`/creditos/${creditoId}`);
+}
+
+export async function actualizarFechaPagoCuota(
+  _previousState: UpdatePaymentDateState,
+  formData: FormData,
+): Promise<UpdatePaymentDateState> {
+  try {
+    const eventoId = leerCampoObligatorio(formData, "eventoId");
+    const creditoId = leerCampoObligatorio(formData, "creditoId");
+    const fechaPagoRaw = leerCampoObligatorio(formData, "fechaPago");
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaPagoRaw);
+
+    if (!match) throw new Error("La fecha real de pago no tiene un formato válido.");
+
+    const fechaPago = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (fechaPago.getFullYear() !== Number(match[1]) || fechaPago.getMonth() !== Number(match[2]) - 1 || fechaPago.getDate() !== Number(match[3])) {
+      throw new Error("La fecha real de pago no es válida.");
+    }
+
+    const hoy = obtenerHoyColombia();
+    if (fechaPago.getTime() > hoy.getTime()) throw new Error("La fecha real de pago no puede estar en el futuro.");
+
+    const { user } = await requireCreditoAccess(creditoId);
+    assertCanMutate(user);
+
+    await prisma.$transaction(async (tx) => {
+      const evento = await tx.eventoFinanciero.findUnique({
+        where: { id: eventoId },
+        include: { credito: { select: { id: true, codigo: true, fechaPrestamo: true } } },
+      });
+
+      if (!evento || evento.creditoId !== creditoId) throw new Error("La cuota no existe o no pertenece al crédito indicado.");
+      if (evento.tipo !== TipoEventoFinanciero.CUOTA_PROGRAMADA) throw new Error("Solo se puede editar la fecha real de una cuota programada.");
+      if (evento.estado !== EstadoEventoFinanciero.PAGADO || !evento.fechaPago) throw new Error("Solo se puede editar la fecha real de una cuota pagada.");
+      if (fechaPago.getTime() < normalizarFechaSinHora(evento.credito.fechaPrestamo).getTime()) throw new Error("La fecha real de pago no puede ser anterior a la fecha del préstamo.");
+
+      const diasAtraso = calcularDiasAtraso(evento.fechaProgramada, fechaPago);
+
+      await tx.eventoFinanciero.update({ where: { id: evento.id }, data: { fechaPago, diasAtraso, accionPor: user.id } });
+      await recordAuditLogTx(tx, {
+        actorId: user.id,
+        action: "CUOTA_UPDATE_PAYMENT_DATE",
+        entityType: "EventoFinanciero",
+        entityId: evento.id,
+        before: { fechaPago: evento.fechaPago.toISOString(), diasAtraso: evento.diasAtraso },
+        after: { fechaPago: fechaPago.toISOString(), diasAtraso },
+        metadata: { creditoId: evento.credito.id, creditoCodigo: evento.credito.codigo, eventoCodigo: evento.codigo, numeroCuota: evento.numeroCuota },
+      });
+    });
+
+    revalidatePath("/creditos");
+    revalidatePath(`/creditos/${creditoId}`);
+    return { ok: true, message: "Fecha real de pago actualizada." };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "No se pudo actualizar la fecha real de pago." };
+  }
 }
 
 export async function reversarPagoCuota(formData: FormData): Promise<void> {

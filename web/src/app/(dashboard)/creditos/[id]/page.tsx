@@ -21,6 +21,7 @@ import {
 import { extenderPlazoSoloInteres } from "@/features/creditos/plazos/actions";
 import { registrarAbonoCapital } from "@/features/creditos/abonos/actions";
 import { obtenerCreditoDetalle } from "@/features/creditos/queries";
+import { EditPaymentDate } from "@/features/creditos/pagos/components/edit-payment-date";
 import {
   formatCurrencyCOP,
   formatDateCO,
@@ -325,10 +326,11 @@ export default async function CreditoDetallePage({
                       label="Fecha programada"
                       value={formatDateCO(evento.fechaProgramada)}
                     />
-                    <CompactField
-                      label="Fecha real"
-                      value={formatDateCO(evento.fechaPago)}
-                    />
+                    {estaPagado && evento.fechaPago ? (
+                      <EditPaymentDate eventoId={evento.id} creditoId={credito.id} initialDate={evento.fechaPago.toISOString().slice(0, 10)} formattedDate={formatDateCO(evento.fechaPago)} compact />
+                    ) : (
+                      <CompactField label="Fecha real" value="-" />
+                    )}
                     <CompactField
                       label="Intereses"
                       value={formatCurrencyCOP(Number(evento.interesProgramado))}
@@ -412,7 +414,13 @@ export default async function CreditoDetallePage({
 
                     <TableCell>{formatDateCO(evento.fechaProgramada)}</TableCell>
 
-                    <TableCell>{formatDateCO(evento.fechaPago)}</TableCell>
+                    <TableCell>
+                      {estaPagado && evento.fechaPago ? (
+                        <EditPaymentDate eventoId={evento.id} creditoId={credito.id} initialDate={evento.fechaPago.toISOString().slice(0, 10)} formattedDate={formatDateCO(evento.fechaPago)} />
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
 
                     <TableCell className="text-right font-bold text-slate-950">
                       {formatCurrencyCOP(Number(evento.valorProgramado))}
