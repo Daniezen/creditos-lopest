@@ -1,11 +1,13 @@
 "use client";
 
 import type { ComponentType } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, Landmark, UserPlus } from "lucide-react";
+import { CreditCard, UserPlus } from "lucide-react";
 
 import { dashboardNavigation } from "@/config/navigation";
+import lopestLogo from "@/assets/lopest-logo.png";
 
 import { LogoutButton } from "./logout-button";
 import styles from "./sidebar.module.css";
@@ -49,14 +51,17 @@ export function DashboardSidebar() {
           ].join(" ")}
           title="Créditos Lopest"
         >
-          <div
+          <Image
+            src={lopestLogo}
+            alt="Logo de Créditos Lopest"
+            width={256}
+            height={256}
+            priority
             className={[
-              "flex shrink-0 items-center justify-center rounded-[1.7rem] bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-100",
+              "shrink-0 object-contain drop-shadow-[0_10px_18px_rgba(124,58,237,0.20)]",
               isDenseRoute ? "h-14 w-14" : "h-16 w-16",
             ].join(" ")}
-          >
-            <Landmark className={isDenseRoute ? "h-7 w-7" : "h-8 w-8"} />
-          </div>
+          />
 
           {!isDenseRoute ? (
             <div>
