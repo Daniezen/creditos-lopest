@@ -16,7 +16,6 @@ interface CreditEditFormProps {
   creditoId: string;
   canEditFinancial: boolean;
   initialForm: SimulatorFormState;
-  observaciones: string;
   nota: string;
 }
 
@@ -33,15 +32,11 @@ export function CreditEditForm({
   creditoId,
   canEditFinancial,
   initialForm,
-  observaciones,
   nota,
 }: CreditEditFormProps) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
-  const [notes, setNotes] = useState({
-    observaciones,
-    nota,
-  });
+  const [note, setNote] = useState(nota);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -64,8 +59,7 @@ export function CreditEditForm({
       const result = await actualizarCredito({
         id: creditoId,
         form,
-        observaciones: notes.observaciones,
-        nota: notes.nota,
+        nota: note,
       });
 
       if (!result.ok) {
@@ -171,27 +165,11 @@ export function CreditEditForm({
         />
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <TextArea
-          label="Observaciones"
-          value={notes.observaciones}
-          onChange={(value) =>
-            setNotes((current) => ({
-              ...current,
-              observaciones: value,
-            }))
-          }
-        />
-
+      <div className="mt-5">
         <TextArea
           label="Nota"
-          value={notes.nota}
-          onChange={(value) =>
-            setNotes((current) => ({
-              ...current,
-              nota: value,
-            }))
-          }
+          value={note}
+          onChange={setNote}
         />
       </div>
 

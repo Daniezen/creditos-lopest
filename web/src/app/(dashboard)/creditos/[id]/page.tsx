@@ -12,16 +12,14 @@ import {
   Percent,
   PencilLine,
   WalletCards,
+  Activity,
+  StickyNote,
 } from "lucide-react";
 
-import {
-  registrarPagoCuota,
-  reversarPagoCuota,
-} from "@/features/creditos/pagos/actions";
 import { extenderPlazoSoloInteres } from "@/features/creditos/plazos/actions";
 import { registrarAbonoCapital } from "@/features/creditos/abonos/actions";
+import { CreditMovements } from "@/features/creditos/components/credit-movements";
 import { obtenerCreditoDetalle } from "@/features/creditos/queries";
-import { EditPaymentDate } from "@/features/creditos/pagos/components/edit-payment-date";
 import {
   formatCurrencyCOP,
   formatDateCO,
@@ -62,21 +60,56 @@ export default async function CreditoDetallePage({
     notFound();
   }
 
-  const cuotas = credito.eventos.filter(
-    (evento) => evento.tipo === "CUOTA_PROGRAMADA",
-  );
-
   const monto = Number(credito.monto);
   const tasaMensual = Number(credito.tasaMensual);
   const plazoMeses = Number(credito.plazoMeses);
 
-  const saldoActual = cuotas.reduce((saldo, evento) => {
-    if (evento.saldoCapitalPost === null) {
-      return saldo;
-    }
+  // The current balance must come from the latest effective paid event, not
+  // from the final projected installment. In Solo Interés schedules, the last
+  // future installment legitimately projects saldoCapitalPost = 0.
+  const ultimoEventoPagadoConSaldo = [...credito.eventos]
+    .filter(
+      (evento) =>
+        evento.estado === "PAGADO" && evento.saldoCapitalPost !== null,
+    )
+    .sort((a, b) => {
+      const fechaA = a.fechaPago ?? a.fechaProgramada;
+      const fechaB = b.fechaPago ?? b.fechaProgramada;
+      return fechaB.getTime() - fechaA.getTime();
+    })[0];
 
-    return Number(evento.saldoCapitalPost);
-  }, monto);
+  const saldoActual = ultimoEventoPagadoConSaldo
+    ? Number(ultimoEventoPagadoConSaldo.saldoCapitalPost)
+    : monto;
+
+  const cuotasEfectivas = credito.eventos.filter(
+    (evento) =>
+      evento.tipo === "CUOTA_PROGRAMADA" &&
+      evento.estado !== "CANCELADO_POR_ABONO",
+  );
+  const cuotasPagadas = cuotasEfectivas.filter(
+    (evento) => evento.estado === "PAGADO",
+  ).length;
+  const tieneMora = cuotasEfectivas.some((evento) => evento.estado === "MORA");
+  const tieneAtraso = cuotasEfectivas.some(
+    (evento) => evento.estado === "ATRASADO",
+  );
+  const estadoOperativo = tieneMora
+    ? "En mora"
+    : tieneAtraso
+      ? "Atrasado"
+      : credito.estado === "CANCELADO"
+        ? "Pagado"
+        : "Al día";
+  const observacionOperativa =
+    "Pagado: " +
+    cuotasPagadas +
+    "/" +
+    cuotasEfectivas.length +
+    " · Saldo: " +
+    formatCurrencyCOP(saldoActual) +
+    " · " +
+    estadoOperativo;
 
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
@@ -171,6 +204,20 @@ export default async function CreditoDetallePage({
             className="xl:col-span-2"
           />
         </section>
+
+        <section className="grid gap-3 border-t border-violet-100 px-5 pb-5 pt-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+          <OperationalInfo
+            icon={Activity}
+            label="Observación operativa"
+            value={observacionOperativa}
+          />
+          <OperationalInfo
+            icon={StickyNote}
+            label="Nota"
+            value={credito.nota?.trim() || "Sin nota registrada"}
+            muted={!credito.nota?.trim()}
+          />
+        </section>
       </header>
 
 
@@ -245,235 +292,44 @@ export default async function CreditoDetallePage({
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
-          <div>
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Cuotas
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Pagos programados del crédito.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
-              <CalendarDays className="h-4 w-4" />
-              {cuotas.length} cuota(s)
-            </span>
-</div>
-        </div>
-
-        <div className="md:hidden">
-          <div className="divide-y divide-violet-100">
-            {cuotas.map((evento) => {
-              const estaPagado = evento.estado === "PAGADO";
-              const estaAtrasado =
-                evento.estado === "ATRASADO" || evento.estado === "MORA";
-              const estaCanceladoPorAbono =
-                evento.estado === "CANCELADO_POR_ABONO";
-              const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
-
-              const cardClassName = [
-                "p-4 transition",
-                estaPagado
-                  ? "bg-emerald-50/80"
-                  : estaAtrasado
-                    ? "bg-red-50/80"
-                    : estaCanceladoPorAbono
-                      ? "bg-slate-50 text-slate-500"
-                      : "bg-white",
-              ].join(" ");
-
-              return (
-                <article key={evento.id} className={cardClassName}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
-                        Cuota {evento.numeroCuota ?? "-"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-950">
-                        {formatCurrencyCOP(Number(evento.valorProgramado))}
-                      </p>
-                    </div>
-
-                    <form action={action}>
-                      <input type="hidden" name="eventoId" value={evento.id} />
-                      <input type="hidden" name="creditoId" value={credito.id} />
-                      <button
-                        type="submit"
-                        disabled={estaCanceladoPorAbono}
-                        className="inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label={estaPagado ? "Reversar pago" : "Registrar pago"}
-                      >
-                        <span
-                          className={[
-                            "flex h-6 w-6 items-center justify-center rounded border-2 transition",
-                            estaPagado
-                              ? "border-emerald-600 bg-emerald-600 text-white"
-                              : "border-red-400 bg-white text-white",
-                          ].join(" ")}
-                        >
-                          {estaPagado ? <CheckCircle2 className="h-4 w-4" /> : null}
-                        </span>
-                      </button>
-                    </form>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <CompactField
-                      label="Fecha programada"
-                      value={formatDateCO(evento.fechaProgramada)}
-                    />
-                    {estaPagado && evento.fechaPago ? (
-                      <EditPaymentDate eventoId={evento.id} creditoId={credito.id} initialDate={evento.fechaPago.toISOString().slice(0, 10)} formattedDate={formatDateCO(evento.fechaPago)} compact />
-                    ) : (
-                      <CompactField label="Fecha real" value="-" />
-                    )}
-                    <CompactField
-                      label="Intereses"
-                      value={formatCurrencyCOP(Number(evento.interesProgramado))}
-                    />
-                    <CompactField
-                      label="Saldo capital"
-                      value={formatCurrencyCOP(
-                        evento.saldoCapitalPost
-                          ? Number(evento.saldoCapitalPost)
-                          : 0,
-                      )}
-                    />
-                  </div>
-
-                  <div className="mt-3">
-                    <EstadoEventoBadge estado={evento.estado} />
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="hidden overflow-x-auto md:block">
-          <table className="min-w-[920px] w-full table-fixed divide-y divide-slate-200 text-sm">
-            <thead className="bg-violet-50/60 text-xs uppercase tracking-wide text-slate-600">
-              <tr>
-                <TableHead className="w-[90px]">
-                  Número<br />de Cuota
-                </TableHead>
-                <TableHead className="w-[118px]">
-                  Fecha<br />Programada
-                </TableHead>
-                <TableHead className="w-[118px]">
-                  Fecha Real<br />de Pago
-                </TableHead>
-                <TableHead className="w-[110px] text-right">
-                  Valor<br />Cuota
-                </TableHead>
-                <TableHead className="w-[165px] text-right">
-                  Parte de la cuota<br />
-                  que se convierte<br />
-                  en abono a{" "}
-                  <span className="font-black text-blue-700">intereses</span>
-                </TableHead>
-                <TableHead className="w-[145px] text-right">
-                  Saldo crédito<br />
-                  <span className="font-black text-green-700">(capital)</span><br />
-                  después del pago
-                </TableHead>
-                <TableHead className="w-[105px]">Estado</TableHead>
-                <TableHead className="w-[85px] text-center">¿Pagado?</TableHead>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
-              {cuotas.map((evento) => {
-                const estaPagado = evento.estado === "PAGADO";
-                const estaAtrasado =
-                  evento.estado === "ATRASADO" || evento.estado === "MORA";
-                const estaCanceladoPorAbono =
-                  evento.estado === "CANCELADO_POR_ABONO";
-                const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
-
-                const rowClassName = [
-                  "transition",
-                  estaPagado
-                    ? "bg-emerald-50/80 hover:bg-emerald-50"
-                    : estaAtrasado
-                      ? "bg-red-50/80 hover:bg-red-50"
-                      : estaCanceladoPorAbono
-                        ? "bg-slate-50 text-slate-500"
-                        : "hover:bg-violet-50/40",
-                ].join(" ");
-
-                return (
-                  <tr key={evento.id} className={rowClassName}>
-                    <TableCell className="font-semibold text-slate-950">
-                      {evento.numeroCuota ?? "-"}
-                    </TableCell>
-
-                    <TableCell>{formatDateCO(evento.fechaProgramada)}</TableCell>
-
-                    <TableCell>
-                      {estaPagado && evento.fechaPago ? (
-                        <EditPaymentDate eventoId={evento.id} creditoId={credito.id} initialDate={evento.fechaPago.toISOString().slice(0, 10)} formattedDate={formatDateCO(evento.fechaPago)} />
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right font-bold text-slate-950">
-                      {formatCurrencyCOP(Number(evento.valorProgramado))}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      {formatCurrencyCOP(Number(evento.interesProgramado))}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      {formatCurrencyCOP(
-                        evento.saldoCapitalPost
-                          ? Number(evento.saldoCapitalPost)
-                          : 0,
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      <EstadoEventoBadge estado={evento.estado} />
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <form action={action}>
-                        <input type="hidden" name="eventoId" value={evento.id} />
-                        <input type="hidden" name="creditoId" value={credito.id} />
-                        <button
-                          type="submit"
-                          disabled={estaCanceladoPorAbono}
-                          className="inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={estaPagado ? "Reversar pago" : "Registrar pago"}
-                        >
-                          <span
-                            className={[
-                              "flex h-6 w-6 items-center justify-center rounded border-2 transition",
-                              estaPagado
-                                ? "border-emerald-600 bg-emerald-600 text-white"
-                                : "border-red-400 bg-white text-white",
-                            ].join(" ")}
-                          >
-                            {estaPagado ? <CheckCircle2 className="h-4 w-4" /> : null}
-                          </span>
-                        </button>
-                      </form>
-                    </TableCell>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-      </section>
+      <CreditMovements
+        creditoId={credito.id}
+        montoInicial={monto}
+        eventos={credito.eventos}
+      />
     </main>
+  );
+}
+
+interface OperationalInfoProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  muted?: boolean;
+}
+
+function OperationalInfo({
+  icon: Icon,
+  label,
+  value,
+  muted = false,
+}: OperationalInfoProps) {
+  return (
+    <article className="min-w-0 rounded-2xl border border-violet-100 bg-violet-50/35 px-4 py-3">
+      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        <Icon className="h-3.5 w-3.5 text-violet-600" />
+        {label}
+      </p>
+      <p
+        className={[
+          "mt-1.5 line-clamp-2 text-sm leading-5",
+          muted ? "text-slate-400" : "font-medium text-slate-800",
+        ].join(" ")}
+        title={value}
+      >
+        {value}
+      </p>
+    </article>
   );
 }
 
@@ -524,50 +380,6 @@ function MetricCard({
   );
 }
 
-interface CompactFieldProps {
-  label: string;
-  value: string;
-}
-
-function CompactField({ label, value }: CompactFieldProps) {
-  return (
-    <div className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 truncate font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}
-
-interface TableCellProps {
-  className?: string;
-  children: React.ReactNode;
-}
-
-function TableCell({ className = "", children }: TableCellProps) {
-  return (
-    <td className={`whitespace-nowrap px-5 py-4 text-slate-700 ${className}`}>
-      {children}
-    </td>
-  );
-}
-
-interface TableHeadProps {
-  className?: string;
-  children: React.ReactNode;
-}
-
-function TableHead({ className = "", children }: TableHeadProps) {
-  return (
-    <th
-      className={`whitespace-normal px-4 py-3 text-left align-middle font-semibold leading-tight ${className}`}
-    >
-      {children}
-    </th>
-  );
-}
-
 function EstadoCreditoBadge({ estado }: { estado: string }) {
   if (estado === "ACTIVO") {
     return (
@@ -580,46 +392,6 @@ function EstadoCreditoBadge({ estado }: { estado: string }) {
 
   return (
     <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700">
-      {formatEnumLabel(estado)}
-    </span>
-  );
-}
-
-function EstadoEventoBadge({ estado }: { estado: string }) {
-  if (estado === "PENDIENTE") {
-    return (
-      <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
-        Pendiente
-      </span>
-    );
-  }
-
-  if (estado === "PAGADO") {
-    return (
-      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-        Pagado
-      </span>
-    );
-  }
-
-  if (estado === "ATRASADO" || estado === "MORA") {
-    return (
-      <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-        {formatEnumLabel(estado)}
-      </span>
-    );
-  }
-
-  if (estado === "CANCELADO_POR_ABONO") {
-    return (
-      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-        Cancelado por abono
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
       {formatEnumLabel(estado)}
     </span>
   );

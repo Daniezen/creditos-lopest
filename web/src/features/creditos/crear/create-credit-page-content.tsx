@@ -30,6 +30,7 @@ export function CreateCreditPageContent({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [nota, setNota] = useState("");
   const [currentStep, setCurrentStep] = useState<CreateCreditStep>(1);
   const [clientes, setClientes] =
     useState<ClienteSelectorOption[]>(initialClientes);
@@ -62,6 +63,7 @@ export function CreateCreditPageContent({
       const response = await crearCreditoDesdeWizard({
         clienteId: selectedCliente.id,
         form,
+        nota,
         idempotencyKey,
       });
 
@@ -112,6 +114,7 @@ export function CreateCreditPageContent({
 
   function resetWizard() {
     resetForm();
+    setNota("");
     setSelectedCliente(null);
     setIdempotencyKey(createIdempotencyKey());
     setCurrentStep(1);
@@ -191,6 +194,8 @@ export function CreateCreditPageContent({
               cliente={selectedCliente}
               form={form}
               resultado={resultado}
+              nota={nota}
+              onNotaChange={setNota}
               error={saveError}
             />
           ) : null}

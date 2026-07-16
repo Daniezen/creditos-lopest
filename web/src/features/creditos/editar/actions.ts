@@ -21,7 +21,6 @@ import type { SimulatorFormState } from "@/features/simulador-creditos/types";
 interface ActualizarCreditoInput {
   id: string;
   form: SimulatorFormState;
-  observaciones?: string;
   nota?: string;
 }
 
@@ -125,7 +124,6 @@ export async function actualizarCredito(
             id,
           },
           data: {
-            observaciones: input.observaciones?.trim() || null,
             nota: input.nota?.trim() || null,
             accionPor: user.id,
           },
@@ -173,7 +171,6 @@ export async function actualizarCredito(
           tipoAmortizacion: mapTipoAmortizacionToPrisma(
             condiciones.tipoAmortizacion,
           ),
-          observaciones: input.observaciones?.trim() || null,
           nota: input.nota?.trim() || null,
           accionPor: user.id,
         },

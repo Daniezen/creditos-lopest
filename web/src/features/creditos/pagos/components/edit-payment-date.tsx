@@ -21,11 +21,11 @@ const initialState: UpdatePaymentDateState = {
 };
 
 /**
- * Edits the actual payment date without changing the layout dimensions.
+ * Edits the actual payment date without changing the table row or card size.
  *
- * The native date input replaces the rendered date in the same footprint.
- * Confirmation controls are rendered as an absolutely positioned overlay,
- * so they do not participate in table or card layout calculations.
+ * The date text and native input keep the existing footprint. Edit, confirm,
+ * cancel, and feedback controls are absolutely positioned overlays, so they do
+ * not participate in layout calculations or reduce the date's available width.
  */
 export function EditPaymentDate({
   eventoId,
@@ -54,8 +54,8 @@ export function EditPaymentDate({
       <div
         className={
           compact
-            ? "min-w-0 rounded-2xl border border-violet-100 bg-white/80 px-3 py-2"
-            : "flex min-w-0 items-center gap-2"
+            ? "relative min-w-0 rounded-2xl border border-violet-100 bg-white/80 px-3 py-2"
+            : "relative w-full min-w-0"
         }
       >
         {compact ? (
@@ -64,20 +64,29 @@ export function EditPaymentDate({
           </p>
         ) : null}
 
-        <div className={compact ? "mt-1 flex min-w-0 items-center gap-2" : "flex min-w-0 items-center gap-2"}>
-          <span className="min-w-0 truncate font-semibold text-slate-900">
-            {formattedDate}
-          </span>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-violet-100 bg-white text-violet-700 transition hover:bg-violet-50"
-            aria-label="Editar fecha real de pago"
-            title="Editar fecha real de pago"
-          >
-            <PencilLine className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <span
+          className={[
+            "block whitespace-nowrap font-semibold text-slate-900",
+            compact ? "mt-1 text-xs" : "text-sm",
+          ].join(" ")}
+        >
+          {formattedDate}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className={[
+            "absolute z-40 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-violet-100 bg-white text-violet-700 shadow-md shadow-slate-900/10 transition hover:bg-violet-50",
+            compact
+              ? "right-2 top-1/2 -translate-y-1/2"
+              : "left-full top-1/2 ml-1 -translate-y-1/2",
+          ].join(" ")}
+          aria-label="Editar fecha real de pago"
+          title="Editar fecha real de pago"
+        >
+          <PencilLine className="h-3.5 w-3.5" />
+        </button>
       </div>
     );
   }
@@ -88,7 +97,7 @@ export function EditPaymentDate({
       className={
         compact
           ? "relative min-w-0 rounded-2xl border border-violet-200 bg-white/80 px-3 py-2"
-          : "relative min-w-0"
+          : "relative w-full min-w-0"
       }
     >
       <input type="hidden" name="eventoId" value={eventoId} />
@@ -106,19 +115,19 @@ export function EditPaymentDate({
         defaultValue={initialDate}
         required
         disabled={pending || state.ok}
-        className={
-          compact
-            ? "mt-1 block h-7 w-full min-w-0 max-w-full border-0 bg-transparent p-0 text-xs font-semibold text-slate-900 outline-none disabled:opacity-60"
-            : "block h-8 w-full min-w-0 max-w-full rounded-xl border border-violet-200 bg-white px-2 text-xs text-slate-950 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 disabled:opacity-60"
-        }
+        className={[
+          "block w-full min-w-0 max-w-full whitespace-nowrap border-0 bg-transparent p-0 font-semibold text-slate-900 outline-none disabled:opacity-60",
+          compact ? "mt-1 h-5 text-xs" : "h-5 text-xs",
+        ].join(" ")}
       />
 
       <div
-        className={
+        className={[
+          "absolute z-50 flex gap-1 rounded-xl border border-violet-100 bg-white p-1.5 shadow-lg shadow-slate-900/15",
           compact
-            ? "absolute right-0 top-full z-50 mt-1 flex gap-1 rounded-xl border border-violet-100 bg-white p-1.5 shadow-lg shadow-slate-900/15"
-            : "absolute left-full top-1/2 z-50 ml-1.5 flex -translate-y-1/2 gap-1 rounded-xl border border-violet-100 bg-white p-1.5 shadow-lg shadow-slate-900/15"
-        }
+            ? "right-2 top-full mt-1"
+            : "left-full top-1/2 ml-1 -translate-y-1/2",
+        ].join(" ")}
       >
         {!state.ok ? (
           <button
@@ -146,11 +155,12 @@ export function EditPaymentDate({
 
       {pending || state.message ? (
         <div
-          className={
+          className={[
+            "absolute z-50 w-max max-w-[250px] rounded-xl border border-violet-100 bg-white px-3 py-2 shadow-lg shadow-slate-900/15",
             compact
-              ? "absolute right-0 top-[calc(100%+3rem)] z-50 mt-1 max-w-[220px] rounded-xl border border-violet-100 bg-white px-3 py-2 shadow-lg shadow-slate-900/15"
-              : "absolute left-full top-[calc(50%+2.4rem)] z-50 ml-1.5 w-max max-w-[260px] rounded-xl border border-violet-100 bg-white px-3 py-2 shadow-lg shadow-slate-900/15"
-          }
+              ? "right-2 top-[calc(100%+3rem)]"
+              : "left-full top-[calc(50%+2.35rem)] ml-1",
+          ].join(" ")}
         >
           <p
             className={

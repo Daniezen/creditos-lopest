@@ -22,6 +22,7 @@ import type { SimulatorFormState } from "@/features/simulador-creditos/types";
 interface CrearCreditoDesdeWizardInput {
   clienteId: string;
   form: SimulatorFormState;
+  nota?: string;
   idempotencyKey: string;
 }
 
@@ -50,6 +51,11 @@ export async function crearCreditoDesdeWizard(
 ): Promise<CrearCreditoDesdeWizardResult> {
   const clienteId = input.clienteId.trim();
   const idempotencyKey = input.idempotencyKey.trim();
+  const nota = input.nota?.trim() || null;
+
+  if (nota && nota.length > 1000) {
+    return { ok: false, error: "La nota no puede superar 1000 caracteres." };
+  }
 
   if (!clienteId) {
     return {
@@ -87,18 +93,6 @@ export async function crearCreditoDesdeWizard(
       if (creditoExistente) {
         if (creditoExistente.clienteId !== clienteId) {
           throw new Error("La operación idempotente no corresponde al cliente seleccionado.");
-        }
-
-        if (!creditoExistente.ownerUserId) {
-          await tx.credito.update({
-            where: {
-              id: creditoExistente.id,
-            },
-            data: {
-              ownerUserId: user.id,
-              accionPor: user.id,
-            },
-          });
         }
 
         if (!creditoExistente.ownerUserId) {
@@ -170,6 +164,7 @@ export async function crearCreditoDesdeWizard(
           ),
 
           ownerUserId: user.id,
+          nota,
           accionPor: user.id,
         },
         select: {

@@ -19,14 +19,17 @@ import styles from "./sidebar.module.css";
  * - El ancho vive en sidebar.module.css, no en globals.css.
  * - Vista normal desktop: 380px.
  * - Pantallas <= 1200px: 300px.
- * - Rutas densas: /reportes y /creditos/nuevo usan 92px.
+ * - Rutas densas: /reportes, /creditos/nuevo y /creditos/[id] usan 92px.
  * - La compactacion por baja altura queda encapsulada en CSS Module.
  */
 export function DashboardSidebar() {
   const pathname = usePathname();
 
+  const isCreditDetailRoute = /^\/creditos\/[^/]+$/.test(pathname);
   const isDenseRoute =
-    pathname.startsWith("/reportes") || pathname.startsWith("/creditos/nuevo");
+    pathname.startsWith("/reportes") ||
+    pathname.startsWith("/creditos/nuevo") ||
+    isCreditDetailRoute;
 
   return (
     <aside
@@ -47,7 +50,7 @@ export function DashboardSidebar() {
           href="/creditos"
           className={[
             "flex items-center",
-            isDenseRoute ? "justify-center" : "gap-4",
+            isDenseRoute ? "justify-center" : "gap-3",
           ].join(" ")}
           title="Créditos Lopest"
         >
@@ -59,16 +62,16 @@ export function DashboardSidebar() {
             priority
             className={[
               "shrink-0 object-contain drop-shadow-[0_10px_18px_rgba(124,58,237,0.20)]",
-              isDenseRoute ? "h-14 w-14" : "h-16 w-16",
+              isDenseRoute ? "h-11 w-11" : "h-[3.25rem] w-[3.25rem]",
             ].join(" ")}
           />
 
           {!isDenseRoute ? (
             <div>
-              <p className="text-2xl font-black tracking-tight text-violet-950">
+              <p className="text-xl font-black tracking-tight text-violet-950">
                 Créditos
               </p>
-              <p className="text-xl font-medium tracking-tight text-violet-700">
+              <p className="text-base font-medium tracking-tight text-violet-700">
                 Lopest
               </p>
             </div>
@@ -83,7 +86,7 @@ export function DashboardSidebar() {
             "border-b border-violet-100",
           ].join(" ")}
         >
-          <p className="mb-3 px-3 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             Crear
           </p>
 
@@ -113,7 +116,7 @@ export function DashboardSidebar() {
         ].join(" ")}
       >
         {!isDenseRoute ? (
-          <p className="mb-4 px-3 text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+          <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             Navegación
           </p>
         ) : null}
@@ -131,7 +134,7 @@ export function DashboardSidebar() {
                 title={item.label}
                 className={[
                   styles.navItem,
-                  "group flex items-center rounded-2xl text-sm font-semibold transition",
+                  "group flex items-center rounded-2xl text-sm font-medium transition",
                   isDenseRoute ? styles.navItemDense : "gap-3 px-4",
                   isActive
                     ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-100"
@@ -178,7 +181,7 @@ function QuickAction({ href, label, icon: Icon, active }: QuickActionProps) {
       href={href}
       className={[
         styles.quickAction,
-        "flex flex-col justify-between rounded-2xl border text-sm font-semibold transition",
+        "flex flex-col justify-between rounded-2xl border text-sm font-medium transition",
         active
           ? "border-violet-200 bg-violet-600 text-white shadow-lg shadow-violet-100"
           : "border-violet-100 bg-violet-50/70 text-violet-950 hover:border-violet-200 hover:bg-violet-100",

@@ -81,7 +81,6 @@ export default async function EditarCreditoPage({
         creditoId={credito.id}
         canEditFinancial={canEditFinancial}
         initialForm={initialForm}
-        observaciones={credito.observaciones ?? ""}
         nota={credito.nota ?? ""}
       />
     </main>

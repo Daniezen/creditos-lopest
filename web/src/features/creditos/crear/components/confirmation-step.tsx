@@ -8,6 +8,7 @@ import {
   Hash,
   Percent,
   UserRound,
+  StickyNote,
 } from "lucide-react";
 
 import type { ClienteSelectorOption } from "@/features/clientes/types";
@@ -30,6 +31,8 @@ interface ConfirmationStepProps {
   cliente: ClienteSelectorOption | null;
   form: SimulatorFormState;
   resultado: SimulationResult;
+  nota: string;
+  onNotaChange: (value: string) => void;
   error: string | null;
 }
 
@@ -37,6 +40,8 @@ export function ConfirmationStep({
   cliente,
   form,
   resultado,
+  nota,
+  onNotaChange,
   error,
 }: ConfirmationStepProps) {
 
@@ -124,6 +129,28 @@ export function ConfirmationStep({
             </div>
           </ReviewCard>
         </div>
+
+
+        <label className="mt-5 block rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+          <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+            <StickyNote className="h-4 w-4 text-violet-600" />
+            Nota opcional
+          </span>
+          <span className="mt-1 block text-xs leading-5 text-slate-500">
+            Información útil para el seguimiento del crédito. Podrás editarla después.
+          </span>
+          <textarea
+            value={nota}
+            maxLength={1000}
+            rows={3}
+            onChange={(event) => onNotaChange(event.target.value)}
+            placeholder="Ej.: Paga quincenal $150.000. Inicia pagos el 15/02/2026."
+            className="mt-3 w-full resize-y rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+          />
+          <span className="mt-1 block text-right text-[11px] text-slate-400">
+            {nota.length}/1000
+          </span>
+        </label>
 
         {error ? (
           <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
