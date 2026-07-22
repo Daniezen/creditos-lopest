@@ -166,7 +166,7 @@ model DocumentoCliente {
 
   url String
 
-  driveFileId   String?
+  driveFileId   String? @unique
   driveFolderId String?
 
   proveedor ProveedorArchivo @default(GOOGLE_DRIVE)

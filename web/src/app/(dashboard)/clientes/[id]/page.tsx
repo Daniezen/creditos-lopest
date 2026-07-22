@@ -21,6 +21,7 @@ import {
 import { ClienteCreditOwnerTransferPanel } from "@/features/clientes/components/cliente-credit-owner-transfer-panel";
 import { ClienteOwnerTransferCard } from "@/features/clientes/components/cliente-owner-transfer-card";
 import { obtenerUsuariosOperadoresActivos } from "@/features/clientes/admin-queries";
+import { ClientDocumentsPanel } from "@/features/clientes/documentos/components/client-documents-panel";
 import { obtenerClienteDetalle } from "@/features/clientes/queries";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 import { getCurrentUser, hasRole } from "@/server/auth/guards";
@@ -160,9 +161,11 @@ export default async function ClienteDetallePage({
           icon={FileText}
           label="Documentos"
           value={
-            cliente.estadoDocumentos === "DOCUMENTOS_CARGADOS"
-              ? "Cargados"
-              : "Pendientes"
+            cliente.documentos.length > 0
+              ? `${cliente.documentos.length} archivo(s)`
+              : cliente.carpetaAdjuntosUrl
+                ? "Carpeta vinculada"
+                : "Sin archivos"
           }
         />
         <MetricCard
@@ -194,19 +197,16 @@ export default async function ClienteDetallePage({
           <InfoItem icon={UserRound} label="Recomienda" value={cliente.recomienda || "-"} />
         </div>
 
-        {cliente.carpetaAdjuntosUrl ? (
-          <div className="mt-5 border-t border-violet-100 pt-4">
-            <a
-              href={cliente.carpetaAdjuntosUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Ver carpeta
-            </a>
-          </div>
-        ) : null}
+        <ClientDocumentsPanel
+          clienteId={cliente.id}
+          clienteNombre={cliente.nombre}
+          clienteCedula={cliente.cedula}
+          carpetaUrl={cliente.carpetaAdjuntosUrl}
+          documentos={cliente.documentos}
+          canUpload={Boolean(user && (hasRole(user, "ADMIN") || hasRole(user, "OPERADOR")))}
+          maxFiles={Number(process.env.DOCUMENT_UPLOAD_MAX_FILES || 10)}
+          maxBytes={Number(process.env.DOCUMENT_UPLOAD_MAX_BYTES || 10485760)}
+        />
       </section>
 
       <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
