@@ -5,6 +5,7 @@ import {
   reversarPagoCuota,
 } from "@/features/creditos/pagos/actions";
 import { EditPaymentDate } from "@/features/creditos/pagos/components/edit-payment-date";
+import { AbonoReversalButton } from "@/features/creditos/abonos/components/abono-reversal-button";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 interface CreditMovementEvent {
@@ -20,6 +21,7 @@ interface CreditMovementEvent {
   saldoCapitalPost: unknown | null;
   estado: string;
   creadoEn: Date;
+  abonoPuedeRevertirse?: boolean;
 }
 
 interface CreditMovementsProps {
@@ -274,7 +276,14 @@ function MovementRow({
 
       <TableCell className="text-center">
         {esAbono ? (
-          <StaticPaidIndicator />
+          evento.abonoPuedeRevertirse ? (
+            <AbonoReversalButton
+              creditoId={creditoId}
+              abonoEventoId={evento.id}
+            />
+          ) : (
+            <StaticPaidIndicator />
+          )
         ) : (
           <form action={action}>
             <input type="hidden" name="eventoId" value={evento.id} />

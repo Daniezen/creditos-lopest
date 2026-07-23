@@ -8,6 +8,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/server/auth/guards";
 import { buildCreditoVisibilityWhere } from "@/server/auth/scope";
+import { isAbonoReversible } from "@/features/creditos/abonos/reversibility";
 
 interface ObtenerCreditosParaListadoParams {
   query?: string;
@@ -51,13 +52,10 @@ export interface CreditoListadoItem {
  */
 export async function obtenerCreditoDetalle(id: string) {
   const user = await requireUser();
-
-  return prisma.credito.findFirst({
+  const credito = await prisma.credito.findFirst({
     where: {
       AND: [
-        {
-          id,
-        },
+        { id },
         buildCreditoVisibilityWhere(user),
       ],
     },
@@ -71,19 +69,33 @@ export async function obtenerCreditoDetalle(id: string) {
         },
       },
       eventos: {
+        include: {
+          abonoSnapshot: true,
+        },
         orderBy: [
-          {
-            numeroCuota: "asc",
-          },
-          {
-            creadoEn: "asc",
-          },
+          { numeroCuota: "asc" },
+          { creadoEn: "asc" },
         ],
       },
     },
   });
-}
 
+  if (!credito) return null;
+
+  return {
+    ...credito,
+    eventos: credito.eventos.map((evento) => ({
+      ...evento,
+      abonoPuedeRevertirse:
+        evento.tipo === "ABONO_CAPITAL" && evento.abonoSnapshot
+          ? isAbonoReversible({
+              eventosDespues: evento.abonoSnapshot.eventosDespues,
+              currentEvents: credito.eventos,
+            })
+          : false,
+    })),
+  };
+}
 /**
  * Obtiene creditos para la vista principal de cartera.
  *

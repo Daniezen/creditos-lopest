@@ -12,6 +12,7 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { financialImageChanged, toFinancialEventImage, toSnapshotJson } from "./snapshot";
 
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
@@ -200,6 +201,12 @@ export async function registrarAbonoCapital(formData: FormData): Promise<void> {
       throw new Error("No se puede abonar a un crédito cancelado.");
     }
 
+    const eventosAntesPorId = new Map(
+      credito.eventos
+        .filter((evento) => evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA)
+        .map((evento) => [evento.id, toFinancialEventImage(evento)]),
+    );
+
     const cuotasOperativas = credito.eventos.filter((evento) => {
       return (
         evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
@@ -223,7 +230,7 @@ export async function registrarAbonoCapital(formData: FormData): Promise<void> {
 
     const saldoPosteriorAbono = Math.max(0, saldoCapitalOperativo - montoAbono);
 
-    await tx.eventoFinanciero.create({
+    const abonoCreado = await tx.eventoFinanciero.create({
       data: {
         codigo: `${credito.codigo}-ABX-${Date.now()}`,
         creditoId: credito.id,
@@ -262,6 +269,43 @@ export async function registrarAbonoCapital(formData: FormData): Promise<void> {
 
     await recalcularSaldosCapitalPost(tx, credito.id);
     await sincronizarEstadoCredito(tx, credito.id, user.id);
+
+    const eventosDespues = await tx.eventoFinanciero.findMany({
+      where: {
+        creditoId: credito.id,
+        tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+      },
+      orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }],
+    });
+    const imagenesDespues = eventosDespues.map(toFinancialEventImage);
+    const imagenesAfectadasDespues = imagenesDespues.filter((after) => {
+      const before = eventosAntesPorId.get(after.id);
+      return before ? financialImageChanged(before, after) : true;
+    });
+    const idsAfectados = new Set(imagenesAfectadasDespues.map((event) => event.id));
+    const imagenesAfectadasAntes = [...eventosAntesPorId.values()].filter((event) =>
+      idsAfectados.has(event.id),
+    );
+
+    if (imagenesAfectadasDespues.length === 0) {
+      throw new Error("El abono no produjo cambios financieros verificables.");
+    }
+
+    await tx.abonoSnapshot.create({
+      data: {
+        creditoId: credito.id,
+        abonoEventoId: abonoCreado.id,
+        versionAlgoritmo: 2,
+        creditoAntes: {
+          estado: credito.estado,
+          fechaCancelacion: credito.fechaCancelacion?.toISOString() ?? null,
+        },
+        eventosAntes: toSnapshotJson(imagenesAfectadasAntes),
+        eventosDespues: toSnapshotJson(imagenesAfectadasDespues),
+        aplicadoEn: new Date(),
+        creadoPor: user.id,
+      },
+    });
   });
 
   revalidatePath("/creditos");

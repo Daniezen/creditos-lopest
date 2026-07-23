@@ -86,7 +86,8 @@ model Credito {
   actualizadoEn DateTime @updatedAt
   accionPor     String?
 
-  eventos EventoFinanciero[]
+  eventos          EventoFinanciero[]
+  abonoSnapshots   AbonoSnapshot[]
 
   @@index([clienteId])
   @@index([ownerUserId])
@@ -139,7 +140,31 @@ model EventoFinanciero {
   @@index([fechaProgramada])
   @@index([fechaPago])
   @@index([creditoId, numeroCuota])
+  abonoSnapshot AbonoSnapshot? @relation("AbonoSnapshotEvent")
+
   @@map("eventos_financieros")
+}
+
+model AbonoSnapshot {
+  id String @id @default(cuid())
+
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Cascade)
+
+  abonoEventoId String @unique
+  abonoEvento   EventoFinanciero @relation("AbonoSnapshotEvent", fields: [abonoEventoId], references: [id], onDelete: Cascade)
+
+  versionAlgoritmo Int @default(1)
+  creditoAntes    Json
+  eventosAntes    Json
+  eventosDespues  Json
+  aplicadoEn      DateTime
+  creadoEn        DateTime @default(now())
+  creadoPor       String
+
+  @@index([creditoId])
+  @@index([aplicadoEn])
+  @@map("abono_snapshots")
 }
 
 model SecuenciaCredito {
