@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { reconcileClientDocuments } from "@/server/drive/client-documents-reconciliation.service";
 import {
   trashDriveFile,
   uploadClientDocumentToDrive,
@@ -124,6 +125,25 @@ export async function POST(request: Request, context: RouteContext) {
 
       return created;
     });
+
+    // PostgreSQL already committed the uploaded file. From this point on,
+    // Drive compensation must be disabled because reconciliation is secondary.
+    uploadedDriveFileId = null;
+
+    // Best-effort reconciliation makes legacy files visible immediately. A
+    // transient Drive listing failure must not invalidate the successful upload.
+    try {
+      await reconcileClientDocuments({
+        clienteId,
+        actorId: user.id,
+        reason: "UPLOAD",
+      });
+    } catch (reconciliationError) {
+      console.error("Drive post-upload reconciliation failed", {
+        clienteId,
+        error: reconciliationError,
+      });
+    }
 
     return NextResponse.json({
       ok: true,

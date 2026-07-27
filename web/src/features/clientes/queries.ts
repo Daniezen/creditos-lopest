@@ -221,6 +221,9 @@ export async function obtenerClienteDetalle(id: string) {
     },
     include: {
       documentos: {
+        where: {
+          driveDisponible: true,
+        },
         orderBy: {
           creadoEn: "desc",
         },

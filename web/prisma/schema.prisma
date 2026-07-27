@@ -194,6 +194,12 @@ model DocumentoCliente {
   driveFileId   String? @unique
   driveFolderId String?
 
+  // Drive reconciliation state. Records remain auditable when files are
+  // removed externally instead of being silently deleted from PostgreSQL.
+  driveDisponible         Boolean  @default(true)
+  driveUltimaVerificacion DateTime?
+  driveEliminadoEn        DateTime?
+
   proveedor ProveedorArchivo @default(GOOGLE_DRIVE)
 
   creadoEn      DateTime @default(now())
@@ -203,6 +209,7 @@ model DocumentoCliente {
   @@index([clienteId])
   @@index([driveFileId])
   @@index([driveFolderId])
+  @@index([driveDisponible])
   @@map("documentos_cliente")
 }
 

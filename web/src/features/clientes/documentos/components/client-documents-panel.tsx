@@ -31,17 +31,19 @@ interface QueueItem {
   error?: string;
 }
 
-/** Client document inventory and multi-file upload modal. */
+/** Shows the complete synchronized Drive inventory and upload workflow. */
 export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [summary, setSummary] = useState<string | null>(null);
 
   function selectFiles(files: FileList | null) {
     if (!files) return;
     const selected = Array.from(files).slice(0, props.maxFiles);
+    setSummary(null);
     setQueue(
       selected.map((file) => ({
         id: `${file.name}-${file.size}-${file.lastModified}`,
@@ -54,10 +56,8 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
   async function uploadAll() {
     if (queue.length === 0 || uploading) return;
     setUploading(true);
-
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-    };
+    const finalStatuses = new Map(queue.map((item) => [item.id, item.status]));
+    const beforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", beforeUnload);
 
     try {
@@ -66,14 +66,14 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
 
       async function worker() {
         while (cursor < work.length) {
-          const index = cursor++;
-          const item = work[index];
-
+          const item = work[cursor++];
           if (item.file.size > props.maxBytes) {
-            updateStatus(item.id, "error", "Supera el tamaño permitido.");
+            finalStatuses.set(item.id, "error");
+            updateStatus(item.id, "error", "Supera el tamano permitido.");
             continue;
           }
 
+          finalStatuses.set(item.id, "uploading");
           updateStatus(item.id, "uploading");
           const formData = new FormData();
           formData.set("file", item.file);
@@ -87,13 +87,13 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
               ok: boolean;
               error?: string;
             };
-
             if (!response.ok || !result.ok) {
               throw new Error(result.error || "No se pudo subir el archivo.");
             }
-
+            finalStatuses.set(item.id, "success");
             updateStatus(item.id, "success");
           } catch (error) {
+            finalStatuses.set(item.id, "error");
             updateStatus(
               item.id,
               "error",
@@ -104,7 +104,17 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
       }
 
       await Promise.all([worker(), worker()]);
-      router.refresh();
+      const successful = [...finalStatuses.values()].filter(
+        (status) => status === "success",
+      ).length;
+      const failed = [...finalStatuses.values()].filter(
+        (status) => status === "error",
+      ).length;
+      setSummary(
+        failed === 0
+          ? `${successful} archivo(s) subido(s) correctamente.`
+          : `${successful} archivo(s) subido(s), ${failed} con error.`,
+      );
     } finally {
       window.removeEventListener("beforeunload", beforeUnload);
       setUploading(false);
@@ -123,17 +133,29 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
     );
   }
 
+  function closeModal() {
+    if (uploading) return;
+    setOpen(false);
+    setQueue([]);
+    setSummary(null);
+    router.refresh();
+  }
+
+  function uploadMore() {
+    setQueue([]);
+    setSummary(null);
+    inputRef.current?.click();
+  }
+
   return (
     <section className="mt-5 border-t border-violet-100 pt-5">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h4 className="font-semibold text-slate-950">Documentos del cliente</h4>
           <p className="mt-1 text-sm text-slate-500">
-            {props.documentos.length > 0
-              ? `${props.documentos.length} archivo(s) inventariado(s) en Lopest.`
-              : props.carpetaUrl
-                ? "Carpeta histórica vinculada; archivos anteriores aún no inventariados."
-                : "Sin archivos registrados."}
+            {props.documentos.length === 1
+              ? "1 archivo en Drive."
+              : `${props.documentos.length} archivos en Drive.`}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -201,7 +223,7 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
               <button
                 type="button"
                 disabled={uploading}
-                onClick={() => setOpen(false)}
+                onClick={closeModal}
                 className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-40"
               >
                 <X className="h-5 w-5" />
@@ -219,7 +241,7 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
                 Seleccionar archivos
               </span>
               <span className="mt-1 text-xs text-slate-500">
-                PDF, JPG, PNG o WEBP · máximo {formatFileSize(props.maxBytes)}
+                PDF, JPG, PNG o WEBP · maximo {formatFileSize(props.maxBytes)}
               </span>
             </button>
             <input
@@ -234,10 +256,7 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
             {queue.length > 0 ? (
               <div className="mt-4 space-y-2">
                 {queue.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-slate-200 px-3 py-2"
-                  >
+                  <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2">
                     <div className="flex items-center justify-between gap-3">
                       <span className="min-w-0 truncate text-sm text-slate-800">
                         {item.file.name}
@@ -262,23 +281,40 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
               </div>
             ) : null}
 
-            <div className="mt-5 flex justify-end gap-2">
+            {summary ? (
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                {summary}
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              {summary ? (
+                <button
+                  type="button"
+                  onClick={uploadMore}
+                  className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50"
+                >
+                  Subir mas archivos
+                </button>
+              ) : null}
               <button
                 type="button"
                 disabled={uploading}
-                onClick={() => setOpen(false)}
+                onClick={closeModal}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-40"
               >
                 Cerrar
               </button>
-              <button
-                type="button"
-                disabled={queue.length === 0 || uploading}
-                onClick={uploadAll}
-                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:bg-slate-300"
-              >
-                {uploading ? "Subiendo..." : "Subir archivos"}
-              </button>
+              {!summary ? (
+                <button
+                  type="button"
+                  disabled={queue.length === 0 || uploading}
+                  onClick={uploadAll}
+                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:bg-slate-300"
+                >
+                  {uploading ? "Subiendo..." : "Subir archivos"}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -288,7 +324,7 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
 }
 
 function formatFileSize(bytes: number | null): string {
-  if (bytes === null) return "Tamaño no registrado";
+  if (bytes === null) return "Tamano no registrado";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
