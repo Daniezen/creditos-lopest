@@ -29,7 +29,7 @@ export function MobileBottomNav() {
   const gridClass = hasOverflow ? "grid-cols-5" : "grid-cols-4";
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-100 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_40px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-violet-100 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_40px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
       <div className={`grid ${gridClass} gap-2`}>
         {visibleItems.map((item) => {
           const Icon = item.icon;
@@ -41,9 +41,9 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={[
-                "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-black transition",
+                "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-medium transition",
                 isActive
-                  ? "bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-100"
+                  ? "bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-violet-100"
                   : "text-slate-500 hover:bg-violet-50 hover:text-violet-700",
               ].join(" ")}
             >
@@ -57,10 +57,10 @@ export function MobileBottomNav() {
           <Link
             href={overflowItem.href}
             className={[
-              "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-black transition",
+              "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-medium transition",
               pathname === overflowItem.href ||
               pathname.startsWith(`${overflowItem.href}/`)
-                ? "bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-100"
+                ? "bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-violet-100"
                 : "text-slate-500 hover:bg-violet-50 hover:text-violet-700",
             ].join(" ")}
           >

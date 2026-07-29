@@ -1,0 +1,10 @@
+/* The menu trigger belongs exclusively to the tablet/compact-desktop mode. */
+.tabletMenuButton {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .tabletMenuButton {
+    display: flex;
+  }
+}

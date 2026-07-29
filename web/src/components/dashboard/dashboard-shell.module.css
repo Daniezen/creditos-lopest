@@ -1,0 +1,41 @@
+.desktopSidebar {
+  display: none;
+}
+
+.drawerLayer {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .drawerLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: block;
+  }
+
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgb(15 23 42 / 62%);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .drawer {
+    position: relative;
+    z-index: 1;
+    width: min(320px, 88vw);
+    height: 100dvh;
+    overflow: hidden;
+    border-right: 1px solid rgb(124 58 237 / 14%);
+  }
+}
+
+@media (min-width: 1200px) {
+  .desktopSidebar {
+    display: block;
+    flex: 0 0 auto;
+  }
+}
