@@ -1,10 +1,11 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-
-import styles from "./dashboard-topbar.module.css";
 import {
+  ArrowLeft,
   ArrowRightLeft,
   BarChart3,
   Bell,
@@ -16,11 +17,14 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import styles from "./dashboard-topbar.module.css";
 
 interface DashboardTopbarUser {
   nombre: string;
   email: string;
+  image: string | null;
   roles: string[];
+  roleNames: string[];
 }
 
 interface DashboardTopbarProps {
@@ -33,77 +37,107 @@ interface SectionMetadata {
   title: string;
   description: string;
   icon: LucideIcon;
+  backHref?: string;
+  backLabel?: string;
 }
 
-/** Compact global topbar with a tablet-only drawer trigger. */
-export function DashboardTopbar({ user, drawerOpen, onMenuClick }: DashboardTopbarProps) {
+/** Contextual topbar with Lopest identity and database-backed user labels. */
+export function DashboardTopbar({
+  user,
+  drawerOpen,
+  onMenuClick,
+}: DashboardTopbarProps) {
   const pathname = usePathname();
   const section = useMemo(() => getSectionMetadata(pathname), [pathname]);
-  const primaryRole = getPrimaryRole(user.roles);
+  const roleLabel = user.roleNames.length > 0
+    ? user.roleNames.join(" · ")
+    : "Usuario";
   const initials = getInitials(user.nombre || user.email);
-  const SectionIcon = section.icon;
   const MenuIcon = drawerOpen ? X : Menu;
+  const SectionIcon = section.icon;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-violet-100 bg-white/95 backdrop-blur">
-      <div className="flex min-h-[62px] items-center justify-between gap-3 bg-[radial-gradient(circle_at_top_left,#f3e8ff_0%,#fff7ed_46%,#ffffff_88%)] px-4 py-2 lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <button
-            type="button"
-            onClick={onMenuClick}
-            aria-label={drawerOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={drawerOpen}
-            aria-controls="dashboard-navigation-drawer"
-            className={`${styles.tabletMenuButton} h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-100 bg-white/85 text-violet-700 shadow-sm shadow-violet-100 ring-1 ring-violet-100`}
+    <header className={styles.topbar}>
+      <div className={styles.contextArea}>
+        <button
+          type="button"
+          className={`${styles.tabletMenuButton} ${styles.iconButton}`}
+          onClick={onMenuClick}
+          aria-label={drawerOpen ? "Cerrar navegación" : "Abrir navegación"}
+          aria-expanded={drawerOpen}
+          aria-controls="dashboard-navigation-drawer"
+        >
+          <MenuIcon className="h-5 w-5" aria-hidden="true" />
+        </button>
+
+        {section.backHref ? (
+          <Link
+            href={section.backHref}
+            className={styles.backButton}
+            aria-label={section.backLabel ?? "Volver"}
+            title={section.backLabel ?? "Volver"}
           >
-            <MenuIcon className="h-5 w-5" />
-          </button>
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        ) : null}
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/85 text-violet-700 shadow-sm shadow-violet-100 ring-1 ring-violet-100">
-            <SectionIcon className="h-5 w-5" />
-          </div>
-
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.22em] text-violet-800">{section.title}</p>
-            <p className="mt-1 max-w-4xl truncate text-xs font-medium text-slate-500">{section.description}</p>
-          </div>
+        <div className={styles.sectionIcon} aria-hidden="true">
+          <SectionIcon className="h-5 w-5" />
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <button type="button" className="hidden h-9 w-9 items-center justify-center rounded-xl border border-violet-100 bg-white text-slate-500 shadow-sm transition hover:bg-violet-50 hover:text-violet-700 sm:flex" aria-label="Notificaciones">
-            <Bell className="h-4 w-4" />
-          </button>
-          <div className="h-8 w-px bg-violet-100" />
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="max-w-[180px] truncate text-xs font-semibold uppercase tracking-wide text-violet-950">{user.nombre || user.email}</p>
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">{primaryRole}</p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 via-fuchsia-600 to-violet-700 text-sm font-black text-white shadow-lg shadow-violet-100">{initials}</div>
-          </div>
+        <div className={styles.sectionText}>
+          <h1>{section.title}</h1>
+          <p>{section.description}</p>
+          <span className={styles.titleAccent} aria-hidden="true" />
         </div>
       </div>
-      <div className="h-1 bg-[linear-gradient(90deg,#7c3aed_0%,#a855f7_42%,#d946ef_72%,#f59e0b_100%)]" />
+
+      <div className={styles.accountArea}>
+        <button type="button" className={styles.notificationButton} aria-label="Notificaciones">
+          <Bell className="h-5 w-5" aria-hidden="true" />
+        </button>
+
+        <div className={styles.accountIdentity} aria-label={`Cuenta: ${user.nombre || user.email}. ${roleLabel}`}>
+          <span className={styles.accountText}>
+            <strong>{user.nombre || user.email}</strong>
+            <span>{roleLabel}</span>
+          </span>
+          <span className={styles.avatar}>
+            {user.image ? (
+              <Image
+                src={user.image}
+                alt=""
+                fill
+                sizes="44px"
+                className="object-cover"
+              />
+            ) : (
+              initials
+            )}
+          </span>
+        </div>
+      </div>
     </header>
   );
 }
 
 function getSectionMetadata(pathname: string): SectionMetadata {
-  if (pathname.startsWith("/transferencias")) return { title: "Transferencias de cartera", description: "Mueve clientes completos o créditos individuales entre cuentas.", icon: ArrowRightLeft };
-  if (pathname.startsWith("/creditos/nuevo")) return { title: "Nuevo crédito", description: "Creación formal de créditos y cronograma inicial.", icon: PlusCircle };
-  if (pathname.startsWith("/creditos")) return { title: "Créditos", description: "Consulta, seguimiento y administración de créditos.", icon: CreditCard };
-  if (pathname.startsWith("/clientes")) return { title: "Clientes", description: "Gestión de clientes, contacto y cartera asociada.", icon: Users };
-  if (pathname.startsWith("/simulador")) return { title: "Simulador", description: "Evaluación de condiciones y cronogramas de crédito.", icon: Calculator };
+  const clientEdit = pathname.match(/^\/clientes\/([^/]+)\/editar/);
+  if (clientEdit) return { title: "Editar cliente", description: "Actualiza la información principal y de contacto.", icon: Users, backHref: `/clientes/${clientEdit[1]}`, backLabel: "Volver al cliente" };
+  if (pathname.startsWith("/clientes/nuevo")) return { title: "Nuevo cliente", description: "Registra un cliente y su información principal.", icon: PlusCircle, backHref: "/clientes", backLabel: "Volver a clientes" };
+  const clientDetail = pathname.match(/^\/clientes\/([^/]+)$/);
+  if (clientDetail) return { title: "Detalle del cliente", description: "Información, cartera y documentos asociados.", icon: Users, backHref: "/clientes", backLabel: "Volver a clientes" };
+  const creditEdit = pathname.match(/^\/creditos\/([^/]+)\/editar/);
+  if (creditEdit) return { title: "Editar crédito", description: "Ajusta la información permitida del crédito.", icon: CreditCard, backHref: `/creditos/${creditEdit[1]}`, backLabel: "Volver al crédito" };
+  if (pathname.startsWith("/creditos/nuevo")) return { title: "Nuevo crédito", description: "Define las condiciones y el cronograma inicial.", icon: PlusCircle, backHref: "/creditos", backLabel: "Volver a créditos" };
+  const creditDetail = pathname.match(/^\/creditos\/([^/]+)$/);
+  if (creditDetail) return { title: "Detalle del crédito", description: "Consulta cronograma, pagos, abonos y movimientos.", icon: CreditCard, backHref: "/creditos", backLabel: "Volver a créditos" };
+  if (pathname.startsWith("/transferencias")) return { title: "Transferencias de cartera", description: "Mueve clientes o créditos entre cuentas autorizadas.", icon: ArrowRightLeft };
+  if (pathname.startsWith("/creditos")) return { title: "Créditos", description: "Consulta y administra la cartera de créditos.", icon: CreditCard };
+  if (pathname.startsWith("/clientes")) return { title: "Clientes", description: "Gestiona clientes, contacto y cartera asociada.", icon: Users };
+  if (pathname.startsWith("/simulador")) return { title: "Simulador", description: "Evalúa condiciones y cronogramas de crédito.", icon: Calculator };
   if (pathname.startsWith("/reportes")) return { title: "Reportes", description: "Indicadores y reportes financieros.", icon: BarChart3 };
-  return { title: "Dashboard", description: "Resumen operativo de Créditos Lopest.", icon: BarChart3 };
-}
-
-function getPrimaryRole(roles: string[]): string {
-  if (roles.includes("ADMIN")) return "ADMIN";
-  if (roles.includes("TRANSFERENCIAS_CARTERA")) return "TRANSFERENCIAS";
-  if (roles.includes("OPERADOR")) return "OPERADOR";
-  if (roles.includes("LECTURA")) return "LECTURA";
-  return "USUARIO";
+  return { title: "Dashboard", description: "Resumen operativo de Lopest.", icon: BarChart3 };
 }
 
 function getInitials(value: string): string {

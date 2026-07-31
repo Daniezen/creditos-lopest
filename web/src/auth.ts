@@ -166,7 +166,7 @@ export const authOptions: NextAuthOptions = {
       token.name = user.nombre;
       token.picture = user.photoUrl ?? token.picture;
       token.roles = user.roles.map((item) => item.role.code);
-
+      token.roleNames = user.roles.map((item) => item.role.name);
       return token;
     },
 
@@ -180,7 +180,12 @@ export const authOptions: NextAuthOptions = {
       session.user.roles = Array.isArray(token.roles)
         ? token.roles.map(String)
         : [];
-
+      session.user.roleNames = Array.isArray(token.roleNames)
+        ? token.roleNames.map(String)
+        : [];
+      session.user.image = typeof token.picture === "string"
+        ? token.picture
+        : session.user.image;
       return session;
     },
   },

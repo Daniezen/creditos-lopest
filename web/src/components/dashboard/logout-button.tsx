@@ -4,20 +4,13 @@ import { useTransition } from "react";
 import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 
-/**
- * Acción inferior del sidebar.
- *
- * Se parece estructuralmente a “Volver a Conecta” de Impulsa, pero cumple una
- * función distinta: cerrar sesión OAuth y volver a /login.
- */
+/** Session action isolated at the bottom of the sidebar. */
 export function LogoutButton() {
   const [isPending, startTransition] = useTransition();
 
   function handleLogout() {
     startTransition(() => {
-      void signOut({
-        callbackUrl: "/login",
-      });
+      void signOut({ callbackUrl: "/login" });
     });
   }
 
@@ -26,9 +19,11 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isPending}
-      className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-violet-950 transition hover:bg-violet-50 hover:text-violet-700 disabled:cursor-wait disabled:opacity-60"
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-violet-50/80 hover:text-violet-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 disabled:cursor-wait disabled:opacity-60"
     >
-      <LogOut className="h-5 w-5" />
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500">
+        <LogOut className="h-[1.125rem] w-[1.125rem]" />
+      </span>
       {isPending ? "Saliendo..." : "Cerrar sesión"}
     </button>
   );

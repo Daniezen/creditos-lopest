@@ -10,7 +10,9 @@ import styles from "./dashboard-shell.module.css";
 interface DashboardShellUser {
   nombre: string;
   email: string;
+  image: string | null;
   roles: string[];
+  roleNames: string[];
 }
 
 interface DashboardShellProps {

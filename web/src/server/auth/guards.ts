@@ -21,7 +21,9 @@ export async function getCurrentUser() {
     id: session.user.id,
     email: session.user.email ?? "",
     nombre: session.user.name ?? "",
+    image: session.user.image ?? null,
     roles: session.user.roles as AppRole[],
+    roleNames: session.user.roleNames,
   };
 }
 
