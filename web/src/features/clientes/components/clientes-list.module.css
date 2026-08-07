@@ -308,8 +308,7 @@
 .filterHead { position: sticky; overflow: visible; }
 .filterHeadButton { display: inline-flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--ds-space-1); color: inherit; text-align: inherit; }
 .filterHeadActive { color: var(--color-selection-strong); }
-.columnFilterPopover { position: absolute; top: calc(100% + var(--ds-space-2)); left: 0; z-index: 60; width: 19rem; padding: var(--ds-space-3); border: 1px solid var(--color-border-default); border-radius: var(--ds-radius-lg); background: var(--color-surface-elevated); box-shadow: var(--ds-shadow-overlay); color: var(--color-text-primary); text-align: left; text-transform: none; letter-spacing: normal; }
-.filterHeadRight .columnFilterPopover { right: 0; left: auto; }
+.columnFilterPopover { position: fixed; z-index: 90; width: min(19rem, calc(100vw - var(--ds-space-4))); max-height: calc(100vh - var(--ds-space-4)); overflow-y: auto; padding: var(--ds-space-3); border: 1px solid var(--color-border-default); border-radius: var(--ds-radius-lg); background: var(--color-surface-elevated); box-shadow: var(--ds-shadow-overlay); color: var(--color-text-primary); text-align: left; text-transform: none; letter-spacing: normal; }
 .checkList { max-height: 16rem; overflow-y: auto; margin-top: var(--ds-space-2); border-block: 1px solid var(--color-border-subtle); padding-block: var(--ds-space-1); }
 .checkRow { display: flex; align-items: center; gap: var(--ds-space-2); padding: var(--ds-space-2); font-size: var(--text-sm); cursor: pointer; }
 .checkRow:hover { background: var(--color-selection); }

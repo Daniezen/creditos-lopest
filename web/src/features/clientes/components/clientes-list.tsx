@@ -1,7 +1,8 @@
 "use client";
 
-import type { ComponentType, KeyboardEvent, ReactNode } from "react";
+import type { ComponentType, CSSProperties, KeyboardEvent, ReactNode, RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -71,20 +72,41 @@ export function ClientesList({ clientes, query, estadoDocumentos }: ClientesList
 
   const normalizedSearch = searchValue.trim().toLocaleLowerCase("es-CO");
 
-  const filteredClients = useMemo(() => clientes.filter((client) => {
-    if (normalizedSearch && !client.nombre.toLocaleLowerCase("es-CO").includes(normalizedSearch)) return false;
-    if (portfolioState === "VENCIDA" && client.estadoCartera !== "ATRASADO" && client.estadoCartera !== "MORA") return false;
-    if (portfolioState && portfolioState !== "VENCIDA" && client.estadoCartera !== portfolioState) return false;
-    if (selectedIds.length && !selectedIds.includes(client.cedula)) return false;
-    if (selectedPhones.length && !selectedPhones.includes(client.telefono ?? "Sin teléfono")) return false;
-    if (selectedCompanies.length && !selectedCompanies.includes(client.empresa ?? "Sin empresa")) return false;
-    if (selectedReferrers.length && !selectedReferrers.includes(toReferrerFilterValue(client.recomienda))) return false;
-    if (selectedCredits.length && !selectedCredits.includes(client.creditosActivos)) return false;
-    if (selectedDocuments.length && !selectedDocuments.includes(client.estadoDocumentos)) return false;
-    if (selectedCapital.length && !selectedCapital.includes(client.saldoTotal)) return false;
-    if (selectedInterest.length && !selectedInterest.includes(client.interesPendienteTotal)) return false;
-    return withinRange(client.saldoTotal, capitalMin, capitalMax) && withinRange(client.interesPendienteTotal, interestMin, interestMax);
-  }), [capitalMax, capitalMin, clientes, interestMax, interestMin, normalizedSearch, portfolioState, selectedCapital, selectedCompanies, selectedCredits, selectedDocuments, selectedIds, selectedInterest, selectedPhones, selectedReferrers]);
+  const filterContext: ClientFilterContext = {
+    normalizedSearch,
+    portfolioState,
+    selectedIds,
+    selectedPhones,
+    selectedCompanies,
+    selectedReferrers,
+    selectedCredits,
+    selectedDocuments,
+    selectedCapital,
+    selectedInterest,
+    capitalMin,
+    capitalMax,
+    interestMin,
+    interestMax,
+  };
+
+  const filteredClients = clientes.filter((client) =>
+    matchesClientFilters(client, filterContext),
+  );
+
+  // Every facet applies all active criteria except its own. This makes option
+  // catalogs narrow with the current result set while preserving the ability
+  // to broaden or clear the facet currently being edited.
+  const facetClients = (omittedFacet: ClientFacet) =>
+    clientes.filter((client) => matchesClientFilters(client, filterContext, omittedFacet));
+
+  const idOptions = uniqueStrings([...facetClients("cedula").map((client) => client.cedula), ...selectedIds]);
+  const phoneOptions = uniqueStrings([...facetClients("telefono").map((client) => client.telefono ?? "Sin teléfono"), ...selectedPhones]);
+  const companyOptions = uniqueStrings([...facetClients("empresa").map((client) => client.empresa ?? "Sin empresa"), ...selectedCompanies]);
+  const referrerOptions = uniqueStrings([...facetClients("recomendadoPor").map((client) => toReferrerFilterValue(client.recomienda)), ...selectedReferrers]);
+  const creditOptions = uniqueNumbers([...facetClients("creditos").map((client) => client.creditosActivos), ...selectedCredits]);
+  const documentOptions = uniqueStrings([...facetClients("documentos").map((client) => client.estadoDocumentos), ...selectedDocuments]);
+  const capitalOptions = uniqueNumbers([...facetClients("capital").map((client) => client.saldoTotal), ...selectedCapital]);
+  const interestOptions = uniqueNumbers([...facetClients("interes").map((client) => client.interesPendienteTotal), ...selectedInterest]);
 
   const suggestions = useMemo(() => filteredClients.slice(0, 10), [filteredClients]);
   const profilesPending = filteredClients.filter((client) => client.perfilIncompleto);
@@ -94,14 +116,6 @@ export function ClientesList({ clientes, query, estadoDocumentos }: ClientesList
   const advancedFilterCount = [selectedIds.length, selectedPhones.length, selectedCompanies.length, selectedReferrers.length, selectedCredits.length, selectedDocuments.length, selectedCapital.length, selectedInterest.length, capitalMin, capitalMax, interestMin, interestMax].filter(Boolean).length;
   const activeFilterCount = [searchValue.trim(), portfolioState, advancedFilterCount].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
-  const idOptions = uniqueStrings(clientes.map((client) => client.cedula));
-  const phoneOptions = uniqueStrings(clientes.map((client) => client.telefono ?? "Sin teléfono"));
-  const companyOptions = uniqueStrings(clientes.map((client) => client.empresa ?? "Sin empresa"));
-  const referrerOptions = uniqueStrings(clientes.map((client) => toReferrerFilterValue(client.recomienda)));
-  const creditOptions = uniqueNumbers(clientes.map((client) => client.creditosActivos));
-  const capitalOptions = uniqueNumbers(clientes.map((client) => client.saldoTotal));
-  const interestOptions = uniqueNumbers(clientes.map((client) => client.interesPendienteTotal));
-
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -127,7 +141,10 @@ export function ClientesList({ clientes, query, estadoDocumentos }: ClientesList
 
   useEffect(() => {
     function closeColumnFilter(event: MouseEvent) {
-      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) setOpenColumnFilter(null);
+      const target = event.target as Element;
+      const insideHeader = filtersRef.current?.contains(target) ?? false;
+      const insidePortal = Boolean(target.closest("[data-client-filter-portal]"));
+      if (!insideHeader && !insidePortal) setOpenColumnFilter(null);
     }
     function closeColumnFilterWithKeyboard(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") setOpenColumnFilter(null);
@@ -394,7 +411,7 @@ export function ClientesList({ clientes, query, estadoDocumentos }: ClientesList
               <button type="button" className={actionRecipes.entityDetailIcon} onClick={() => setMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X className="h-4 w-4" /></button>
             </header>
             <div className={styles.responsiveFilterBody}>
-              <ResponsiveFilters clients={clientes} selectedIds={selectedIds} setSelectedIds={setSelectedIds} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} selectedCompanies={selectedCompanies} setSelectedCompanies={setSelectedCompanies} selectedReferrers={selectedReferrers} setSelectedReferrers={setSelectedReferrers} selectedCredits={selectedCredits} setSelectedCredits={setSelectedCredits} selectedDocuments={selectedDocuments} setSelectedDocuments={setSelectedDocuments} capitalMin={capitalMin} setCapitalMin={setCapitalMin} capitalMax={capitalMax} setCapitalMax={setCapitalMax} interestMin={interestMin} setInterestMin={setInterestMin} interestMax={interestMax} setInterestMax={setInterestMax} />
+              <ResponsiveFilters idOptions={idOptions} phoneOptions={phoneOptions} companyOptions={companyOptions} referrerOptions={referrerOptions} creditOptions={creditOptions} documentOptions={documentOptions} selectedIds={selectedIds} setSelectedIds={setSelectedIds} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} selectedCompanies={selectedCompanies} setSelectedCompanies={setSelectedCompanies} selectedReferrers={selectedReferrers} setSelectedReferrers={setSelectedReferrers} selectedCredits={selectedCredits} setSelectedCredits={setSelectedCredits} selectedDocuments={selectedDocuments} setSelectedDocuments={setSelectedDocuments} capitalMin={capitalMin} setCapitalMin={setCapitalMin} capitalMax={capitalMax} setCapitalMax={setCapitalMax} interestMin={interestMin} setInterestMin={setInterestMin} interestMax={interestMax} setInterestMax={setInterestMax} />
             </div>
             <footer className={styles.responsiveFilterFooter}>
               {advancedFilterCount ? <button type="button" className={actionRecipes.secondary} onClick={clearAdvancedFilters}>Limpiar filtros</button> : <span />}
@@ -424,7 +441,7 @@ export function ClientesList({ clientes, query, estadoDocumentos }: ClientesList
                   <col className={styles.interestColumn} />
                   <col className={styles.documentsColumn} />
                 </colgroup>
-                <thead ref={filtersRef} className="bg-[var(--color-surface-subtle)] text-xs uppercase tracking-wide text-[var(--color-text-secondary)]"><tr><TableHead className={styles.stickyClientHead}>Cliente</TableHead><ExcelHead label="Cédula" name="cedula" values={idOptions} selected={selectedIds} setSelected={setSelectedIds} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Teléfono" name="telefono" values={phoneOptions} selected={selectedPhones} setSelected={setSelectedPhones} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Empresa" name="empresa" values={companyOptions} selected={selectedCompanies} setSelected={setSelectedCompanies} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label={<>Recomendado<br />por</>} name="recomendadoPor" values={referrerOptions} selected={selectedReferrers} setSelected={setSelectedReferrers} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatReferrerValue} /><ExcelHead label={<>Créditos<br />activos</>} name="creditos" values={creditOptions} selected={selectedCredits} setSelected={setSelectedCredits} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Capital<br />pendiente</>} name="capital" values={capitalOptions} selected={selectedCapital} setSelected={setSelectedCapital} min={capitalMin} setMin={setCapitalMin} max={capitalMax} setMax={setCapitalMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Interés<br />pendiente</>} name="interes" values={interestOptions} selected={selectedInterest} setSelected={setSelectedInterest} min={interestMin} setMin={setInterestMin} max={interestMax} setMax={setInterestMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Documentos" name="documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={selectedDocuments} setSelected={setSelectedDocuments} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatDocumentValue} align="right" /></tr></thead>
+                <thead ref={filtersRef} className="bg-[var(--color-surface-subtle)] text-xs uppercase tracking-wide text-[var(--color-text-secondary)]"><tr><TableHead className={styles.stickyClientHead}>Cliente</TableHead><ExcelHead label="Cédula" name="cedula" values={idOptions} selected={selectedIds} setSelected={setSelectedIds} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Teléfono" name="telefono" values={phoneOptions} selected={selectedPhones} setSelected={setSelectedPhones} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Empresa" name="empresa" values={companyOptions} selected={selectedCompanies} setSelected={setSelectedCompanies} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label={<>Recomendado<br />por</>} name="recomendadoPor" values={referrerOptions} selected={selectedReferrers} setSelected={setSelectedReferrers} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatReferrerValue} /><ExcelHead label={<>Créditos<br />activos</>} name="creditos" values={creditOptions} selected={selectedCredits} setSelected={setSelectedCredits} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Capital<br />pendiente</>} name="capital" values={capitalOptions} selected={selectedCapital} setSelected={setSelectedCapital} min={capitalMin} setMin={setCapitalMin} max={capitalMax} setMax={setCapitalMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Interés<br />pendiente</>} name="interes" values={interestOptions} selected={selectedInterest} setSelected={setSelectedInterest} min={interestMin} setMin={setInterestMin} max={interestMax} setMax={setInterestMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Documentos" name="documentos" values={documentOptions} selected={selectedDocuments} setSelected={setSelectedDocuments} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatDocumentValue} align="right" /></tr></thead>
                 <tbody className="divide-y divide-[var(--color-border-subtle)]">
                   {filteredClients.length === 0 ? <tr><td colSpan={9}><EmptyFilters /></td></tr> : filteredClients.map((client) => (
                     <tr key={client.id} role="link" tabIndex={0} onClick={() => openClient(client.id)} onKeyDown={(event) => handleRowKeyDown(event, client.id)} className={dataDisplayRecipes.operationalRow}>
@@ -479,12 +496,63 @@ type SetValues<T> = (values: T[]) => void;
 
 function ExcelHead<T extends string | number>({ label, name, values, selected, setSelected, open, setOpen, format, align }: { label: ReactNode; name: string; values: T[]; selected: T[]; setSelected: SetValues<T>; open: string | null; setOpen: (value: string | null) => void; format?: (value: T) => string; align?: "right" }) {
   const visible = open === name;
-  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, align ? styles.filterHeadRight : ""].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)} aria-expanded={visible}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={format} /></div> : null}</th>;
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, align ? styles.filterHeadRight : ""].join(" ")}><button ref={anchorRef} type="button" className={[styles.filterHeadButton, selected.length ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)} aria-expanded={visible}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <ColumnFilterPortal anchorRef={anchorRef} align={align}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={format} /></ColumnFilterPortal> : null}</th>;
 }
 
 function HybridHead({ label, name, values, selected, setSelected, min, setMin, max, setMax, open, setOpen }: { label: ReactNode; name: string; values: number[]; selected: number[]; setSelected: SetValues<number>; min: string; setMin: (value: string) => void; max: string; setMax: (value: string) => void; open: string | null; setOpen: (value: string | null) => void }) {
   const visible = open === name;
-  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, styles.filterHeadRight].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length || min || max ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={(value) => formatCurrencyCOP(value)} /><div className={styles.rangeSection}><span className={formRecipes.label}>Rango personalizado</span><div className={styles.rangeGrid}><input type="number" placeholder="Desde" className={formRecipes.control} value={min} onChange={(event) => setMin(event.target.value)} /><input type="number" placeholder="Hasta" className={formRecipes.control} value={max} onChange={(event) => setMax(event.target.value)} /></div></div></div> : null}</th>;
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, styles.filterHeadRight].join(" ")}><button ref={anchorRef} type="button" className={[styles.filterHeadButton, selected.length || min || max ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <ColumnFilterPortal anchorRef={anchorRef} align="right"><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={(value) => formatCurrencyCOP(value)} /><div className={styles.rangeSection}><span className={formRecipes.label}>Rango personalizado</span><div className={styles.rangeGrid}><input type="number" placeholder="Desde" className={formRecipes.control} value={min} onChange={(event) => setMin(event.target.value)} /><input type="number" placeholder="Hasta" className={formRecipes.control} value={max} onChange={(event) => setMax(event.target.value)} /></div></div></ColumnFilterPortal> : null}</th>;
+}
+
+function ColumnFilterPortal({ anchorRef, align = "left", children }: { anchorRef: RefObject<HTMLButtonElement | null>; align?: "left" | "right"; children: ReactNode }) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
+
+  useEffect(() => {
+    let frame = 0;
+    let previous = "";
+
+    function positionPanel() {
+      const anchor = anchorRef.current;
+      const panel = panelRef.current;
+      if (!anchor || !panel) {
+        frame = requestAnimationFrame(positionPanel);
+        return;
+      }
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const panelWidth = panel.offsetWidth;
+      const panelHeight = panel.offsetHeight;
+      const viewportPadding = 8;
+      const gap = 8;
+      const preferredLeft = align === "right" ? anchorRect.right - panelWidth : anchorRect.left;
+      const left = Math.min(Math.max(viewportPadding, preferredLeft), window.innerWidth - panelWidth - viewportPadding);
+      const fitsBelow = anchorRect.bottom + gap + panelHeight <= window.innerHeight - viewportPadding;
+      const top = fitsBelow
+        ? anchorRect.bottom + gap
+        : Math.max(viewportPadding, anchorRect.top - panelHeight - gap);
+      const signature = `${left}:${top}:${panelWidth}:${panelHeight}`;
+
+      if (signature !== previous) {
+        previous = signature;
+        setStyle({ left, top, visibility: "visible" });
+      }
+      frame = requestAnimationFrame(positionPanel);
+    }
+
+    frame = requestAnimationFrame(positionPanel);
+    return () => cancelAnimationFrame(frame);
+  }, [align, anchorRef]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div ref={panelRef} data-client-filter-portal className={styles.columnFilterPopover} style={style}>
+      {children}
+    </div>,
+    document.body,
+  );
 }
 
 function ValueChecklist<T extends string | number>({ values, selected, setSelected, format = (value) => String(value) }: { values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) {
@@ -495,8 +563,8 @@ function ValueChecklist<T extends string | number>({ values, selected, setSelect
   return <div><input autoFocus className={formRecipes.control} placeholder="Buscar valores..." value={term} onChange={(event) => setTerm(event.target.value)} /><label className={`${styles.checkRow} ${formRecipes.filterSelectAll}`}><input type="checkbox" checked={allShownSelected} onChange={() => setSelected(allShownSelected ? selected.filter((value) => !shown.includes(value)) : unique([...selected, ...shown]))} /><span>Seleccionar todos</span></label><div className={styles.checkList}>{shown.map((value) => <label key={String(value)} className={`${styles.checkRow} ${formRecipes.filterOption}`}><input type="checkbox" checked={selected.includes(value)} onChange={() => toggle(value)} /><span>{format(value)}</span></label>)}{shown.length === 0 ? <p className={styles.noValues}>Sin valores coincidentes.</p> : null}</div><button type="button" className={`${styles.clearColumn} ${formRecipes.filterAction}`} onClick={() => setSelected([])}>Limpiar filtro</button></div>;
 }
 
-function ResponsiveFilters(props: { clients: ClienteListadoItem[]; selectedIds: string[]; setSelectedIds: SetValues<string>; selectedPhones: string[]; setSelectedPhones: SetValues<string>; selectedCompanies: string[]; setSelectedCompanies: SetValues<string>; selectedReferrers: string[]; setSelectedReferrers: SetValues<string>; selectedCredits: number[]; setSelectedCredits: SetValues<number>; selectedDocuments: string[]; setSelectedDocuments: SetValues<string>; capitalMin: string; setCapitalMin: (v: string) => void; capitalMax: string; setCapitalMax: (v: string) => void; interestMin: string; setInterestMin: (v: string) => void; interestMax: string; setInterestMax: (v: string) => void }) {
-  return <div className={styles.advancedFilterGrid}><MobileChecklist label="Cédula" values={uniqueStrings(props.clients.map((client) => client.cedula))} selected={props.selectedIds} setSelected={props.setSelectedIds} /><MobileChecklist label="Teléfono" values={uniqueStrings(props.clients.map((client) => client.telefono ?? "Sin teléfono"))} selected={props.selectedPhones} setSelected={props.setSelectedPhones} /><MobileChecklist label="Empresa" values={uniqueStrings(props.clients.map((client) => client.empresa ?? "Sin empresa"))} selected={props.selectedCompanies} setSelected={props.setSelectedCompanies} /><MobileChecklist label="Recomendado por" values={uniqueStrings(props.clients.map((client) => toReferrerFilterValue(client.recomienda)))} selected={props.selectedReferrers} setSelected={props.setSelectedReferrers} format={formatReferrerValue} /><MobileChecklist label="Créditos activos" values={uniqueNumbers(props.clients.map((client) => client.creditosActivos))} selected={props.selectedCredits} setSelected={props.setSelectedCredits} /><MobileChecklist label="Documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={props.selectedDocuments} setSelected={props.setSelectedDocuments} format={formatDocumentValue} /><RangeFilter label="Capital pendiente" min={props.capitalMin} max={props.capitalMax} onMin={props.setCapitalMin} onMax={props.setCapitalMax} /><RangeFilter label="Interés pendiente" min={props.interestMin} max={props.interestMax} onMin={props.setInterestMin} onMax={props.setInterestMax} /></div>;
+function ResponsiveFilters(props: { idOptions: string[]; phoneOptions: string[]; companyOptions: string[]; referrerOptions: string[]; creditOptions: number[]; documentOptions: string[]; selectedIds: string[]; setSelectedIds: SetValues<string>; selectedPhones: string[]; setSelectedPhones: SetValues<string>; selectedCompanies: string[]; setSelectedCompanies: SetValues<string>; selectedReferrers: string[]; setSelectedReferrers: SetValues<string>; selectedCredits: number[]; setSelectedCredits: SetValues<number>; selectedDocuments: string[]; setSelectedDocuments: SetValues<string>; capitalMin: string; setCapitalMin: (v: string) => void; capitalMax: string; setCapitalMax: (v: string) => void; interestMin: string; setInterestMin: (v: string) => void; interestMax: string; setInterestMax: (v: string) => void }) {
+  return <div className={styles.advancedFilterGrid}><MobileChecklist label="Cédula" values={props.idOptions} selected={props.selectedIds} setSelected={props.setSelectedIds} /><MobileChecklist label="Teléfono" values={props.phoneOptions} selected={props.selectedPhones} setSelected={props.setSelectedPhones} /><MobileChecklist label="Empresa" values={props.companyOptions} selected={props.selectedCompanies} setSelected={props.setSelectedCompanies} /><MobileChecklist label="Recomendado por" values={props.referrerOptions} selected={props.selectedReferrers} setSelected={props.setSelectedReferrers} format={formatReferrerValue} /><MobileChecklist label="Créditos activos" values={props.creditOptions} selected={props.selectedCredits} setSelected={props.setSelectedCredits} /><MobileChecklist label="Documentos" values={props.documentOptions} selected={props.selectedDocuments} setSelected={props.setSelectedDocuments} format={formatDocumentValue} /><RangeFilter label="Capital pendiente" min={props.capitalMin} max={props.capitalMax} onMin={props.setCapitalMin} onMax={props.setCapitalMax} /><RangeFilter label="Interés pendiente" min={props.interestMin} max={props.interestMax} onMin={props.setInterestMin} onMax={props.setInterestMax} /></div>;
 }
 
 function MobileChecklist<T extends string | number>(props: { label: string; values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) { return <details className={styles.mobileDetails}><summary className={formRecipes.filterSummary}>{props.label}{props.selected.length ? ` (${props.selected.length})` : ""}</summary><ValueChecklist values={props.values} selected={props.selected} setSelected={props.setSelected} format={props.format} /></details>; }
@@ -512,6 +580,45 @@ function uniqueStrings(values: string[]) { return unique(values).sort((left, rig
 function uniqueNumbers(values: number[]) { return unique(values).sort((left, right) => left - right); }
 function normalize(value: string) { return value.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function withinRange(value: number, minRaw: string, maxRaw: string) { const min = minRaw === "" ? null : Number(minRaw); const max = maxRaw === "" ? null : Number(maxRaw); return (min === null || !Number.isFinite(min) || value >= min) && (max === null || !Number.isFinite(max) || value <= max); }
+
+type ClientFacet = "cedula" | "telefono" | "empresa" | "recomendadoPor" | "creditos" | "documentos" | "capital" | "interes";
+interface ClientFilterContext {
+  normalizedSearch: string;
+  portfolioState: string;
+  selectedIds: string[];
+  selectedPhones: string[];
+  selectedCompanies: string[];
+  selectedReferrers: string[];
+  selectedCredits: number[];
+  selectedDocuments: string[];
+  selectedCapital: number[];
+  selectedInterest: number[];
+  capitalMin: string;
+  capitalMax: string;
+  interestMin: string;
+  interestMax: string;
+}
+
+function matchesClientFilters(client: ClienteListadoItem, filters: ClientFilterContext, omittedFacet?: ClientFacet) {
+  if (filters.normalizedSearch && !client.nombre.toLocaleLowerCase("es-CO").includes(filters.normalizedSearch)) return false;
+  if (filters.portfolioState === "VENCIDA" && client.estadoCartera !== "ATRASADO" && client.estadoCartera !== "MORA") return false;
+  if (filters.portfolioState && filters.portfolioState !== "VENCIDA" && client.estadoCartera !== filters.portfolioState) return false;
+  if (omittedFacet !== "cedula" && filters.selectedIds.length && !filters.selectedIds.includes(client.cedula)) return false;
+  if (omittedFacet !== "telefono" && filters.selectedPhones.length && !filters.selectedPhones.includes(client.telefono ?? "Sin teléfono")) return false;
+  if (omittedFacet !== "empresa" && filters.selectedCompanies.length && !filters.selectedCompanies.includes(client.empresa ?? "Sin empresa")) return false;
+  if (omittedFacet !== "recomendadoPor" && filters.selectedReferrers.length && !filters.selectedReferrers.includes(toReferrerFilterValue(client.recomienda))) return false;
+  if (omittedFacet !== "creditos" && filters.selectedCredits.length && !filters.selectedCredits.includes(client.creditosActivos)) return false;
+  if (omittedFacet !== "documentos" && filters.selectedDocuments.length && !filters.selectedDocuments.includes(client.estadoDocumentos)) return false;
+  if (omittedFacet !== "capital") {
+    if (filters.selectedCapital.length && !filters.selectedCapital.includes(client.saldoTotal)) return false;
+    if (!withinRange(client.saldoTotal, filters.capitalMin, filters.capitalMax)) return false;
+  }
+  if (omittedFacet !== "interes") {
+    if (filters.selectedInterest.length && !filters.selectedInterest.includes(client.interesPendienteTotal)) return false;
+    if (!withinRange(client.interesPendienteTotal, filters.interestMin, filters.interestMax)) return false;
+  }
+  return true;
+}
 const EMPTY_REFERRER = "__EMPTY__";
 function toReferrerFilterValue(value: string | null) { return value?.trim() || EMPTY_REFERRER; }
 function formatReferrerValue(value: string) { return value === EMPTY_REFERRER ? "Sin recomendador" : value; }
