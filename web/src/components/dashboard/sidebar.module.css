@@ -4,48 +4,65 @@
 }
 
 .brand {
-  padding: 0.875rem 1rem;
+  padding: var(--ds-space-3) var(--ds-space-4);
 }
 
 .createSection {
-  padding: 0.75rem;
+  padding: var(--ds-space-3);
 }
 
 .sectionLabel {
-  margin: 0 0 0.375rem;
-  padding: 0 0.75rem;
-  color: rgb(100 116 139);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  margin: 0 0 var(--ds-space-1);
+  padding: 0 var(--ds-space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.12em;
-  line-height: 1.25rem;
+  line-height: var(--leading-tight);
   text-transform: uppercase;
 }
 
+.quickActionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-2);
+}
+
 .quickAction {
-  min-height: 2.75rem;
-  padding: 0.375rem 0.75rem;
+  min-width: 0;
+}
+
+.quickActionLabel {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.quickActionActive {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .nav {
-  padding: 0.75rem;
+  padding: var(--ds-space-3);
   scrollbar-width: thin;
 }
 
 .navList {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--ds-space-1);
 }
 
 .navItem {
   min-height: 2.875rem;
-  padding-top: 0.375rem;
-  padding-bottom: 0.375rem;
+  padding-top: var(--ds-space-1);
+  padding-bottom: var(--ds-space-1);
 }
 
 .logout {
-  padding: 0.75rem;
+  padding: var(--ds-space-3);
 }
 
 @media (max-width: 1440px) {
@@ -56,21 +73,21 @@
 
 @media (max-height: 700px) and (min-width: 768px) {
   .brand {
-    padding-top: 0.625rem;
-    padding-bottom: 0.625rem;
+    padding-top: var(--ds-space-2);
+    padding-bottom: var(--ds-space-2);
   }
 
   .createSection,
   .nav,
   .logout {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding-top: var(--ds-space-2);
+    padding-bottom: var(--ds-space-2);
   }
 
   .quickAction,
   .navItem {
     min-height: 2.5rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
+    padding-top: var(--ds-space-1);
+    padding-bottom: var(--ds-space-1);
   }
 }

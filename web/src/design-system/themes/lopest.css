@@ -17,11 +17,20 @@
   --lopest-color-selection: #f1ecff;
   --lopest-color-selection-strong: #7e22ce;
   --lopest-color-focus: #8b5cf6;
+  --lopest-color-focus-soft: rgb(139 92 246 / 15%);
+  --lopest-color-overlay-backdrop: rgb(15 23 42 / 58%);
 
   --lopest-color-success: #15803d;
   --lopest-color-warning: #b45309;
   --lopest-color-danger: #b91c1c;
   --lopest-color-info: #1d4ed8;
+  --lopest-color-success-surface: #ecfdf5;
+  --lopest-color-success-border: #a7f3d0;
+  --lopest-color-warning-surface: #fffbeb;
+  --lopest-color-warning-border: #fde68a;
+  --lopest-color-danger-surface: #fef2f2;
+  --lopest-color-danger-border: #fecaca;
+  --lopest-color-danger-soft: rgb(185 28 28 / 12%);
 
   --lopest-accent-violet: #7c3aed;
   --lopest-accent-magenta: #d946ef;

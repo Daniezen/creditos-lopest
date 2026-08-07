@@ -1,24 +1,33 @@
 "use client";
 
 import type { ComponentType, KeyboardEvent, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
-  CreditCard,
   Eye,
   FileText,
+  Filter,
+  SlidersHorizontal,
   Plus,
   Search,
   UserRound,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP } from "@/lib/formatters";
 
 import type { ClienteListadoItem } from "../queries";
+import styles from "./clientes-list.module.css";
 
 interface ClientesListProps {
   clientes: ClienteListadoItem[];
@@ -26,405 +35,490 @@ interface ClientesListProps {
   estadoDocumentos: string;
 }
 
-export function ClientesList({
-  clientes,
-  query,
-  estadoDocumentos,
-}: ClientesListProps) {
+export function ClientesList({ clientes, query, estadoDocumentos }: ClientesListProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = useState(query);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null);
+  const filtersRef = useRef<HTMLTableSectionElement | null>(null);
+  const tableViewportRef = useRef<HTMLDivElement | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const tableScrollbarRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollbarSpacerRef = useRef<HTMLDivElement | null>(null);
+  const [portfolioState, setPortfolioState] = useState(() => searchParams.get("cartera") ?? "");
+  const [selectedIds, setSelectedIds] = useState(() => parseList(searchParams.get("cedulas")));
+  const [selectedPhones, setSelectedPhones] = useState(() => parseList(searchParams.get("telefonos")));
+  const [selectedCompanies, setSelectedCompanies] = useState(() => parseList(searchParams.get("empresas")));
+  const [selectedReferrers, setSelectedReferrers] = useState(() => parseList(searchParams.get("recomendadosPor")));
+  const [selectedCredits, setSelectedCredits] = useState(() => parseNumberList(searchParams.get("creditos")));
+  const [selectedDocuments, setSelectedDocuments] = useState(() => {
+    const currentValues = parseList(searchParams.get("documentos"));
+    return currentValues.length > 0 || !estadoDocumentos
+      ? currentValues
+      : [estadoDocumentos];
+  });
+  const [selectedCapital, setSelectedCapital] = useState(() => parseNumberList(searchParams.get("capitalValores")));
+  const [selectedInterest, setSelectedInterest] = useState(() => parseNumberList(searchParams.get("interesValores")));
+  const [capitalMin, setCapitalMin] = useState(() => searchParams.get("capitalMin") ?? "");
+  const [capitalMax, setCapitalMax] = useState(() => searchParams.get("capitalMax") ?? "");
+  const [interestMin, setInterestMin] = useState(() => searchParams.get("interesMin") ?? "");
+  const [interestMax, setInterestMax] = useState(() => searchParams.get("interesMax") ?? "");
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function openCliente(id: string) {
+  const normalizedSearch = searchValue.trim().toLocaleLowerCase("es-CO");
+
+  const filteredClients = useMemo(() => clientes.filter((client) => {
+    if (normalizedSearch && !client.nombre.toLocaleLowerCase("es-CO").includes(normalizedSearch)) return false;
+    if (portfolioState === "VENCIDA" && client.estadoCartera !== "ATRASADO" && client.estadoCartera !== "MORA") return false;
+    if (portfolioState && portfolioState !== "VENCIDA" && client.estadoCartera !== portfolioState) return false;
+    if (selectedIds.length && !selectedIds.includes(client.cedula)) return false;
+    if (selectedPhones.length && !selectedPhones.includes(client.telefono ?? "Sin teléfono")) return false;
+    if (selectedCompanies.length && !selectedCompanies.includes(client.empresa ?? "Sin empresa")) return false;
+    if (selectedReferrers.length && !selectedReferrers.includes(toReferrerFilterValue(client.recomienda))) return false;
+    if (selectedCredits.length && !selectedCredits.includes(client.creditosActivos)) return false;
+    if (selectedDocuments.length && !selectedDocuments.includes(client.estadoDocumentos)) return false;
+    if (selectedCapital.length && !selectedCapital.includes(client.saldoTotal)) return false;
+    if (selectedInterest.length && !selectedInterest.includes(client.interesPendienteTotal)) return false;
+    return withinRange(client.saldoTotal, capitalMin, capitalMax) && withinRange(client.interesPendienteTotal, interestMin, interestMax);
+  }), [capitalMax, capitalMin, clientes, interestMax, interestMin, normalizedSearch, portfolioState, selectedCapital, selectedCompanies, selectedCredits, selectedDocuments, selectedIds, selectedInterest, selectedPhones, selectedReferrers]);
+
+  const suggestions = useMemo(() => filteredClients.slice(0, 10), [filteredClients]);
+  const profilesPending = filteredClients.filter((client) => client.perfilIncompleto);
+  const documentsPending = filteredClients.filter((client) => client.estadoDocumentos === "FALTAN_DOCUMENTOS");
+  const activeCredits = filteredClients.reduce((total, client) => total + client.creditosActivos, 0);
+  const clientsWithActiveCredit = filteredClients.filter((client) => client.creditosActivos > 0).length;
+  const advancedFilterCount = [selectedIds.length, selectedPhones.length, selectedCompanies.length, selectedReferrers.length, selectedCredits.length, selectedDocuments.length, selectedCapital.length, selectedInterest.length, capitalMin, capitalMax, interestMin, interestMax].filter(Boolean).length;
+  const activeFilterCount = [searchValue.trim(), portfolioState, advancedFilterCount].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+  const idOptions = uniqueStrings(clientes.map((client) => client.cedula));
+  const phoneOptions = uniqueStrings(clientes.map((client) => client.telefono ?? "Sin teléfono"));
+  const companyOptions = uniqueStrings(clientes.map((client) => client.empresa ?? "Sin empresa"));
+  const referrerOptions = uniqueStrings(clientes.map((client) => toReferrerFilterValue(client.recomienda)));
+  const creditOptions = uniqueNumbers(clientes.map((client) => client.creditosActivos));
+  const capitalOptions = uniqueNumbers(clientes.map((client) => client.saldoTotal));
+  const interestOptions = uniqueNumbers(clientes.map((client) => client.interesPendienteTotal));
+
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams();
+      syncParam(params, "q", searchValue);
+      syncParam(params, "cartera", portfolioState);
+      syncList(params, "cedulas", selectedIds);
+      syncList(params, "telefonos", selectedPhones);
+      syncList(params, "empresas", selectedCompanies);
+      syncList(params, "recomendadosPor", selectedReferrers);
+      syncNumberList(params, "creditos", selectedCredits);
+      syncList(params, "documentos", selectedDocuments);
+      syncNumberList(params, "capitalValores", selectedCapital);
+      syncNumberList(params, "interesValores", selectedInterest);
+      syncParam(params, "capitalMin", capitalMin);
+      syncParam(params, "capitalMax", capitalMax);
+      syncParam(params, "interesMin", interestMin);
+      syncParam(params, "interesMax", interestMax);
+      router.replace(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [capitalMax, capitalMin, interestMax, interestMin, pathname, portfolioState, router, searchValue, selectedCapital, selectedCompanies, selectedCredits, selectedDocuments, selectedIds, selectedInterest, selectedPhones, selectedReferrers]);
+
+  useEffect(() => {
+    function closeColumnFilter(event: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) setOpenColumnFilter(null);
+    }
+    function closeColumnFilterWithKeyboard(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setOpenColumnFilter(null);
+    }
+    document.addEventListener("mousedown", closeColumnFilter);
+    window.addEventListener("keydown", closeColumnFilterWithKeyboard);
+    return () => {
+      document.removeEventListener("mousedown", closeColumnFilter);
+      window.removeEventListener("keydown", closeColumnFilterWithKeyboard);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function closeResponsiveFilters(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setMobileFiltersOpen(false);
+    }
+
+    window.addEventListener("keydown", closeResponsiveFilters);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeResponsiveFilters);
+    };
+  }, [mobileFiltersOpen]);
+
+  useEffect(() => {
+    const viewport = tableViewportRef.current;
+    const table = tableRef.current;
+    const scrollbar = tableScrollbarRef.current;
+    const spacer = tableScrollbarSpacerRef.current;
+    if (!viewport || !table || !scrollbar || !spacer) return;
+
+    // Stable non-null aliases are required because TypeScript does not carry
+    // ref narrowing into callbacks that may execute after the current frame.
+    const activeViewport: HTMLDivElement = viewport;
+    const activeTable: HTMLTableElement = table;
+    const activeScrollbar: HTMLDivElement = scrollbar;
+    const activeSpacer: HTMLDivElement = spacer;
+    let syncing = false;
+
+    function updateGeometry() {
+      const tableWidth = activeTable.scrollWidth;
+      activeSpacer.style.width = `${tableWidth}px`;
+      activeScrollbar.hidden = tableWidth <= activeViewport.clientWidth;
+      const maximum = Math.max(0, tableWidth - activeViewport.clientWidth);
+      if (activeScrollbar.scrollLeft > maximum) activeScrollbar.scrollLeft = maximum;
+      activeTable.style.setProperty("--table-scroll-left", `${activeScrollbar.scrollLeft}px`);
+    }
+
+    function syncTableFromScrollbar() {
+      if (syncing) return;
+      syncing = true;
+      activeTable.style.setProperty("--table-scroll-left", `${activeScrollbar.scrollLeft}px`);
+      requestAnimationFrame(() => { syncing = false; });
+    }
+
+    function handleHorizontalWheel(event: WheelEvent) {
+      const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+        ? event.deltaX
+        : event.shiftKey
+          ? event.deltaY
+          : 0;
+      if (!horizontalDelta || activeScrollbar.hidden) return;
+      event.preventDefault();
+      activeScrollbar.scrollLeft += horizontalDelta;
+      syncTableFromScrollbar();
+    }
+
+    const resizeObserver = new ResizeObserver(updateGeometry);
+    resizeObserver.observe(activeViewport);
+    resizeObserver.observe(activeTable);
+    activeScrollbar.addEventListener("scroll", syncTableFromScrollbar, { passive: true });
+    activeViewport.addEventListener("wheel", handleHorizontalWheel, { passive: false });
+    updateGeometry();
+
+    return () => {
+      resizeObserver.disconnect();
+      activeScrollbar.removeEventListener("scroll", syncTableFromScrollbar);
+      activeViewport.removeEventListener("wheel", handleHorizontalWheel);
+    };
+  }, [filteredClients.length]);
+
+  function clearAdvancedFilters() {
+    setSelectedIds([]);
+    setSelectedPhones([]);
+    setSelectedCompanies([]);
+    setSelectedReferrers([]);
+    setSelectedCredits([]);
+    setSelectedDocuments([]);
+    setSelectedCapital([]);
+    setSelectedInterest([]);
+    setCapitalMin("");
+    setCapitalMax("");
+    setInterestMin("");
+    setInterestMax("");
+  }
+
+  function clearFilters() {
+    setSearchValue("");
+    setPortfolioState("");
+    setSelectedIds([]);
+    setSelectedPhones([]);
+    setSelectedCompanies([]);
+    setSelectedReferrers([]);
+    setSelectedCredits([]);
+    setSelectedDocuments([]);
+    setSelectedCapital([]);
+    setSelectedInterest([]);
+    setCapitalMin("");
+    setCapitalMax("");
+    setInterestMin("");
+    setInterestMax("");
+    setOpenColumnFilter(null);
+    setSuggestionsOpen(false);
+    setActiveSuggestion(-1);
+    router.replace(pathname, { scroll: false });
+  }
+
+
+  function openClient(id: string) {
     router.push(`/clientes/${id}`);
   }
 
-  function handleClienteKeyDown(
-    event: KeyboardEvent<HTMLElement>,
-    id: string,
-  ) {
+  function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, id: string) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      openCliente(id);
+      openClient(id);
     }
   }
-  const perfilesPendientes = clientes.filter(
-    (cliente) => cliente.perfilIncompleto,
-  );
 
-  const documentosPendientes = clientes.filter(
-    (cliente) => cliente.estadoDocumentos === "FALTAN_DOCUMENTOS",
-  );
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSuggestionsOpen(true);
+      setActiveSuggestion((current) => Math.min(current + 1, suggestions.length - 1));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestion((current) => Math.max(current - 1, 0));
+      return;
+    }
+    if (event.key === "Enter" && activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+      event.preventDefault();
+      openClient(suggestions[activeSuggestion].id);
+    }
+  }
 
-  const creditosActivos = clientes.reduce(
-    (total, cliente) => total + cliente.creditosActivos,
-    0,
-  );
+  function handleSearchBlur() {
+    blurTimeoutRef.current = setTimeout(() => {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+    }, 150);
+  }
 
-  const clientesConCreditoActivo = clientes.filter(
-    (cliente) => cliente.creditosActivos > 0,
-  ).length;
+  function selectSuggestion(id: string) {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    openClient(id);
+  }
 
   return (
-    <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div className="grid flex-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-            <PortfolioMetric
-              icon={Users}
-              label="Clientes"
-              value={String(clientes.length)}
-            />
-
-            <PortfolioMetric
-              icon={AlertTriangle}
-              label="Perfiles pendientes"
-              value={String(perfilesPendientes.length)}
-            />
-
-            <PortfolioMetric
-              icon={FileText}
-              label="Documentos pendientes"
-              value={String(documentosPendientes.length)}
-            />
-
-            <PortfolioMetric
-              icon={WalletCards}
-              label="Clientes con crédito activo"
-              value={String(clientesConCreditoActivo)}
-              helper={`${creditosActivos} crédito(s) activo(s)`}
-            />
+    <main className={styles.page}>
+      <section className={surfaceRecipes.sectionSpacious}>
+        <div className={styles.metricsLayout}>
+          <div className={styles.metricsGrid}>
+            <PortfolioMetric icon={Users} label="Clientes" value={String(filteredClients.length)} />
+            <PortfolioMetric icon={AlertTriangle} label="Perfiles pendientes" value={String(profilesPending.length)} />
+            <PortfolioMetric icon={FileText} label="Documentos pendientes" value={String(documentsPending.length)} />
+            <PortfolioMetric icon={WalletCards} label="Clientes con crédito activo" value={String(clientsWithActiveCredit)} helper={`${activeCredits} crédito(s) activo(s)`} />
           </div>
-
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Link
-              href="/clientes/nuevo"
-              className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo cliente
-            </Link>
-
-            <Link
-              href="/creditos/nuevo"
-              className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-violet-100 bg-white px-5 py-3 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-            >
-              <CreditCard className="h-4 w-4" />
-              Crear crédito
-            </Link>
+          <div className={styles.primaryActions}>
+            <Link href="/clientes/nuevo" className={actionRecipes.primaryLarge}><Plus className="h-4 w-4" />Nuevo cliente</Link>
           </div>
         </div>
       </section>
 
-      <section className="mb-5 rounded-[1.75rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <form
-          action="/clientes"
-          className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto]"
-        >
-          <label className="block">
-            <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700">
-              <Search className="h-4 w-4 text-violet-600" />
-              Buscar cliente
-            </span>
+      <section className={`${surfaceRecipes.sectionCompact} ${styles.filterSection}`}>
+        <div className={styles.filterLayout}>
+          <div className={styles.searchWrapper}>
+            <span className={formRecipes.labelWithIcon}><Search className="h-4 w-4 text-[var(--color-action-primary)]" />Buscar cliente por nombre</span>
+            <div className="relative">
+              <Search className={styles.searchIcon} aria-hidden="true" />
+              <input
+                value={searchValue}
+                placeholder="Nombre del cliente"
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={suggestionsOpen}
+                aria-controls="client-search-suggestions"
+                aria-activedescendant={activeSuggestion >= 0 ? `client-suggestion-${suggestions[activeSuggestion]?.id}` : undefined}
+                className={formRecipes.searchControl}
+                onChange={(event) => {
+                  setSearchValue(event.target.value);
+                  setSuggestionsOpen(true);
+                  setActiveSuggestion(-1);
+                }}
+                onFocus={() => setSuggestionsOpen(true)}
+                onBlur={handleSearchBlur}
+                onKeyDown={handleSearchKeyDown}
+              />
+              {searchValue ? (
+                <button type="button" className={styles.clearSearch} onMouseDown={(event) => event.preventDefault()} onClick={() => setSearchValue("")} aria-label="Limpiar búsqueda"><X className="h-4 w-4" /></button>
+              ) : null}
 
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder="Nombre, cédula, teléfono, empresa o contacto"
-              className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Documentos
-            </span>
-
-            <select
-              name="estadoDocumentos"
-              defaultValue={estadoDocumentos}
-              className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-2.5 text-sm text-slate-950 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
-            >
-              <option value="">Todos</option>
-              <option value="FALTAN_DOCUMENTOS">Faltan documentos</option>
-              <option value="DOCUMENTOS_CARGADOS">Documentos cargados</option>
-            </select>
-          </label>
-
-          <div className="flex items-end gap-2">
-            <button
-              type="submit"
-              className="rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700"
-            >
-              Buscar
-            </button>
-
-            <Link
-              href="/clientes"
-              className="rounded-2xl border border-violet-100 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-            >
-              Limpiar
-            </Link>
-          </div>
-        </form>
-      </section>
-
-      <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
-          <div>
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Clientes
-            </h3>
-
-            <p className="mt-1 text-sm text-slate-500">
-              {clientes.length} registro(s)
-            </p>
-          </div>
-        </div>
-
-        {clientes.length === 0 ? (
-          <div className="p-10 text-center">
-            <p className="text-sm font-semibold text-slate-950">
-              No hay clientes para los filtros seleccionados.
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Ajusta la búsqueda o crea un nuevo cliente.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="divide-y divide-violet-100 2xl:hidden">
-              {clientes.map((cliente) => (
-                <ClienteCompactCard key={cliente.id} cliente={cliente} />
-              ))}
+              {suggestionsOpen ? (
+                <div id="client-search-suggestions" role="listbox" className={formRecipes.comboboxPanel}>
+                  {suggestions.length > 0 ? (
+                    <ul className="py-2">
+                      {suggestions.map((client, index) => (
+                        <li key={client.id}>
+                          <button
+                            id={`client-suggestion-${client.id}`}
+                            type="button"
+                            role="option"
+                            aria-selected={activeSuggestion === index}
+                            className={[formRecipes.comboboxOption, activeSuggestion === index ? formRecipes.comboboxOptionActive : ""].join(" ")}
+                            onMouseDown={(event) => { event.preventDefault(); selectSuggestion(client.id); }}
+                          >
+                            <div className="flex gap-3">
+                              <div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div>
+                              <div className="min-w-0">
+                                <p className={dataDisplayRecipes.suggestionTitle}>{client.nombre}</p>
+                                <p className="mt-1 truncate text-xs text-[var(--color-text-secondary)]">C.C. {client.cedula}{client.telefono ? ` · Tel. ${client.telefono}` : ""}{client.empresa ? ` · ${client.empresa}` : ""}</p>
+                              </div>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="px-4 py-5 text-sm text-[var(--color-text-secondary)]">No hay clientes para ese criterio.</div>
+                  )}
+                </div>
+              ) : null}
             </div>
+          </div>
 
-            <div className="hidden overflow-x-auto 2xl:block">
-              <table className="min-w-[1080px] w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Cédula</TableHead>
-                    <TableHead>Teléfono</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Créditos activos</TableHead>
-                    <TableHead className="text-right">Capital pendiente</TableHead>
-                    <TableHead>Documentos</TableHead>
-                    <TableHead className="text-right">Acción</TableHead>
-                  </tr>
-                </thead>
+          <div className={styles.filterControls}>
+            <label className={styles.portfolioFilter}><span className={formRecipes.label}>Estado de cartera</span><select value={portfolioState} className={formRecipes.control} onChange={(event) => setPortfolioState(event.target.value)}><option value="">Todos</option><option value="AL_DIA">Al día</option><option value="VENCIDA">Con cuotas vencidas</option><option value="SIN_CREDITOS_ACTIVOS">Sin créditos activos</option></select></label>
+            <button type="button" className={[actionRecipes.secondary, styles.mobileFilterButton].join(" ")} onClick={() => setMobileFiltersOpen(true)} aria-expanded={mobileFiltersOpen} aria-controls="client-responsive-filters">
+              <Filter className="h-4 w-4" />
+              Filtros{advancedFilterCount ? ` (${advancedFilterCount})` : ""}
+            </button>
+            {hasActiveFilters ? <button type="button" className={actionRecipes.secondary} onClick={clearFilters}>Limpiar</button> : null}
+          </div>
+        </div>
+      </section>
 
-                <tbody className="divide-y divide-slate-100">
-                  {clientes.map((cliente) => (
-                    <tr
-                      key={cliente.id}
-                      role="link"
-                      tabIndex={0}
-                      onClick={() => openCliente(cliente.id)}
-                      onKeyDown={(event) => handleClienteKeyDown(event, cliente.id)}
-                      className="cursor-pointer transition hover:bg-violet-50/45"
-                    >
-                      <TableCell>
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-                            <UserRound className="h-4 w-4" />
-                          </div>
+      {mobileFiltersOpen ? (
+        <div className={styles.responsiveFilterLayer}>
+          <button type="button" className={styles.responsiveFilterBackdrop} aria-label="Cerrar filtros" onClick={() => setMobileFiltersOpen(false)} />
+          <section id="client-responsive-filters" className={[surfaceRecipes.filterOverlayPanel, styles.responsiveFilterPanel].join(" ")} role="dialog" aria-modal="true" aria-labelledby="client-responsive-filters-title">
+            <header className={styles.responsiveFilterHeader}>
+              <div><h2 id="client-responsive-filters-title">Filtros</h2><p>{advancedFilterCount ? `${advancedFilterCount} criterio(s) activo(s)` : "Selecciona criterios adicionales"}</p></div>
+              <button type="button" className={actionRecipes.entityDetailIcon} onClick={() => setMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X className="h-4 w-4" /></button>
+            </header>
+            <div className={styles.responsiveFilterBody}>
+              <ResponsiveFilters clients={clientes} selectedIds={selectedIds} setSelectedIds={setSelectedIds} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} selectedCompanies={selectedCompanies} setSelectedCompanies={setSelectedCompanies} selectedReferrers={selectedReferrers} setSelectedReferrers={setSelectedReferrers} selectedCredits={selectedCredits} setSelectedCredits={setSelectedCredits} selectedDocuments={selectedDocuments} setSelectedDocuments={setSelectedDocuments} capitalMin={capitalMin} setCapitalMin={setCapitalMin} capitalMax={capitalMax} setCapitalMax={setCapitalMax} interestMin={interestMin} setInterestMin={setInterestMin} interestMax={interestMax} setInterestMax={setInterestMax} />
+            </div>
+            <footer className={styles.responsiveFilterFooter}>
+              {advancedFilterCount ? <button type="button" className={actionRecipes.secondary} onClick={clearAdvancedFilters}>Limpiar filtros</button> : <span />}
+              <button type="button" className={actionRecipes.primary} onClick={() => setMobileFiltersOpen(false)}>Cerrar</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
-                          <div>
-                            <Link
-                              href={`/clientes/${cliente.id}`}
-                              className="font-black text-violet-700 hover:text-fuchsia-700 hover:underline"
-                            >
-                              {cliente.nombre}
-                            </Link>
+      <section className={surfaceRecipes.stickyDataPanel}>
+        <div className={surfaceRecipes.dataPanelHeader}>
+          <div><h3 className={dataDisplayRecipes.sectionTitle}>Clientes</h3><p className="mt-1 text-sm text-[var(--color-text-secondary)]">{filteredClients.length} registro(s)</p></div>
+        </div>
 
-                            {cliente.perfilIncompleto ? (
-                              <p className="mt-1 text-xs font-medium text-amber-700">
-                                Perfil pendiente
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>{cliente.cedula}</TableCell>
-                      <TableCell>{cliente.telefono || "-"}</TableCell>
-                      <TableCell>{cliente.empresa || "-"}</TableCell>
-                      <TableCell>{cliente.creditosActivos}</TableCell>
-
-                      <TableCell className="text-right font-bold text-slate-950">
-                        {formatCurrencyCOP(cliente.saldoTotal)}
-                      </TableCell>
-
-                      <TableCell>
-                        <EstadoDocumentosBadge estado={cliente.estadoDocumentos} />
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/clientes/${cliente.id}`}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Ver
-                        </Link>
-                      </TableCell>
+        <div className={styles.compactList}>{filteredClients.length ? filteredClients.map((client) => <ClientCompactRow key={client.id} client={client} onOpen={openClient} onKeyDown={handleRowKeyDown} />) : <EmptyFilters />}</div>
+        <div className={styles.desktopTable}>
+          <div ref={tableViewportRef} className={styles.tableViewport}>
+              <table ref={tableRef} className={styles.clientTable}>
+                <colgroup>
+                  <col className={styles.clientColumn} />
+                  <col className={styles.idColumn} />
+                  <col className={styles.phoneColumn} />
+                  <col className={styles.companyColumn} />
+                  <col className={styles.referrerColumn} />
+                  <col className={styles.creditsColumn} />
+                  <col className={styles.capitalColumn} />
+                  <col className={styles.interestColumn} />
+                  <col className={styles.documentsColumn} />
+                </colgroup>
+                <thead ref={filtersRef} className="bg-[var(--color-surface-subtle)] text-xs uppercase tracking-wide text-[var(--color-text-secondary)]"><tr><TableHead className={styles.stickyClientHead}>Cliente</TableHead><ExcelHead label="Cédula" name="cedula" values={idOptions} selected={selectedIds} setSelected={setSelectedIds} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Teléfono" name="telefono" values={phoneOptions} selected={selectedPhones} setSelected={setSelectedPhones} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Empresa" name="empresa" values={companyOptions} selected={selectedCompanies} setSelected={setSelectedCompanies} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label={<>Recomendado<br />por</>} name="recomendadoPor" values={referrerOptions} selected={selectedReferrers} setSelected={setSelectedReferrers} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatReferrerValue} /><ExcelHead label={<>Créditos<br />activos</>} name="creditos" values={creditOptions} selected={selectedCredits} setSelected={setSelectedCredits} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Capital<br />pendiente</>} name="capital" values={capitalOptions} selected={selectedCapital} setSelected={setSelectedCapital} min={capitalMin} setMin={setCapitalMin} max={capitalMax} setMax={setCapitalMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Interés<br />pendiente</>} name="interes" values={interestOptions} selected={selectedInterest} setSelected={setSelectedInterest} min={interestMin} setMin={setInterestMin} max={interestMax} setMax={setInterestMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Documentos" name="documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={selectedDocuments} setSelected={setSelectedDocuments} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatDocumentValue} align="right" /></tr></thead>
+                <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                  {filteredClients.length === 0 ? <tr><td colSpan={9}><EmptyFilters /></td></tr> : filteredClients.map((client) => (
+                    <tr key={client.id} role="link" tabIndex={0} onClick={() => openClient(client.id)} onKeyDown={(event) => handleRowKeyDown(event, client.id)} className={dataDisplayRecipes.operationalRow}>
+                      <TableCell className={styles.stickyClientCell}><div className={styles.clientIdentityCell}><div className="flex min-w-0 items-start gap-3"><div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div><div className="min-w-0"><Link href={`/clientes/${client.id}`} className={dataDisplayRecipes.entityLink} onClick={(event) => event.stopPropagation()}>{client.nombre}</Link>{client.perfilIncompleto ? <p className={`mt-1 ${dataDisplayRecipes.supportingWarning}`}>Perfil pendiente</p> : null}</div></div><Link href={`/clientes/${client.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del cliente" aria-label={`Ver detalle de ${client.nombre}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link></div></TableCell>
+                      <TableCell className={styles.atomicValue}>{client.cedula}</TableCell><TableCell className={styles.atomicValue}>{client.telefono || "-"}</TableCell><TableCell>{client.empresa || "-"}</TableCell><TableCell>{formatReferrerDisplay(client.recomienda)}</TableCell><TableCell className={`${styles.atomicValue} text-center tabular-nums`}>{client.creditosActivos}</TableCell>
+                      <TableCell className={`${styles.atomicValue} ${dataDisplayRecipes.numericCell} text-right`}>{formatCurrencyCOP(client.saldoTotal)}</TableCell>
+                      <TableCell className={`${styles.atomicValue} ${dataDisplayRecipes.numericCell} text-right`}>{formatCurrencyCOP(client.interesPendienteTotal)}</TableCell>
+                      <TableCell><DocumentStatus status={client.estadoDocumentos} /></TableCell>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </>
-        )}
+          </div>
+          <div ref={tableScrollbarRef} className={styles.stickyHorizontalScrollbar} aria-label="Desplazamiento horizontal de la tabla" tabIndex={0}>
+            <div ref={tableScrollbarSpacerRef} className={styles.horizontalScrollbarSpacer} />
+          </div>
+        </div>
       </section>
     </main>
   );
 }
 
-function ClienteCompactCard({ cliente }: { cliente: ClienteListadoItem }) {
-  const router = useRouter();
+interface CompactRowProps {
+  client: ClienteListadoItem;
+  onOpen: (id: string) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>, id: string) => void;
+}
 
-  function openCliente(id: string) {
-    router.push(`/clientes/${id}`);
-  }
-
-  function handleClienteKeyDown(
-    event: KeyboardEvent<HTMLElement>,
-    id: string,
-  ) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openCliente(id);
-    }
-  }
-
+function ClientCompactRow({ client, onOpen, onKeyDown }: CompactRowProps) {
   return (
-    <article
-      role="link"
-      tabIndex={0}
-      onClick={() => openCliente(cliente.id)}
-      onKeyDown={(event) => handleClienteKeyDown(event, cliente.id)}
-      className="cursor-pointer p-3 transition hover:bg-violet-50/40 sm:p-4"
-    >
+    <article role="link" tabIndex={0} onClick={() => onOpen(client.id)} onKeyDown={(event) => onKeyDown(event, client.id)} className={dataDisplayRecipes.compactRow}>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-              <UserRound className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <Link
-                href={`/clientes/${cliente.id}`}
-                className="block truncate font-black text-violet-700 hover:underline"
-              >
-                {cliente.nombre}
-              </Link>
-              <p className="text-xs text-slate-500">C.C. {cliente.cedula}</p>
-              {cliente.perfilIncompleto ? (
-                <p className="mt-1 text-xs font-medium text-amber-700">
-                  Perfil pendiente
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <Link
-          href={`/clientes/${cliente.id}`}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          Ver
-        </Link>
+        <div className="flex min-w-0 items-start gap-3"><div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div><div className="min-w-0"><Link href={`/clientes/${client.id}`} className={dataDisplayRecipes.compactEntityLink}>{client.nombre}</Link><p className="text-xs text-[var(--color-text-secondary)]">C.C. {client.cedula}</p>{client.perfilIncompleto ? <p className={`mt-1 ${dataDisplayRecipes.supportingWarning}`}>Perfil pendiente</p> : null}</div></div>
+        <Link href={`/clientes/${client.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del cliente" aria-label={`Ver detalle de ${client.nombre}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link>
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-        <CompactDatum label="Teléfono" value={cliente.telefono || "-"} />
-        <CompactDatum label="Empresa" value={cliente.empresa || "-"} />
-        <CompactDatum label="Créditos" value={String(cliente.creditosActivos)} />
-        <CompactDatum label="Capital pendiente" value={formatCurrencyCOP(cliente.saldoTotal)} />
-      </div>
-
-      <div className="mt-2">
-        <EstadoDocumentosBadge estado={cliente.estadoDocumentos} />
-      </div>
+      <dl className={styles.flatDataGrid}><FlatDatum label="Teléfono" value={client.telefono || "-"} /><FlatDatum label="Empresa" value={client.empresa || "-"} /><FlatDatum label="Recomendado por" value={formatReferrerDisplay(client.recomienda)} /><FlatDatum label="Créditos" value={String(client.creditosActivos)} /><FlatDatum label="Capital pendiente" value={formatCurrencyCOP(client.saldoTotal)} /><FlatDatum label="Interés pendiente" value={formatCurrencyCOP(client.interesPendienteTotal)} /><div className="min-w-0"><dt className={dataDisplayRecipes.flatDatumLabel}>Documentos</dt><dd className={styles.compactStatus}><DocumentStatus status={client.estadoDocumentos} /></dd></div></dl>
     </article>
   );
 }
 
-function CompactDatum({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 truncate font-black text-slate-950">{value}</p>
-    </div>
-  );
+function FlatDatum({ label, value }: { label: string; value: string }) { return <div className="min-w-0"><dt className={dataDisplayRecipes.flatDatumLabel}>{label}</dt><dd className={dataDisplayRecipes.flatDatumValue}>{value}</dd></div>; }
+
+interface PortfolioMetricProps { icon: ComponentType<{ className?: string }>; label: string; value: string; helper?: string; }
+function PortfolioMetric({ icon: Icon, label, value, helper }: PortfolioMetricProps) { return <div className={dataDisplayRecipes.metricCompact}><p className={dataDisplayRecipes.metricCompactLabel}><Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)]" />{label}</p><p className={dataDisplayRecipes.metricCompactValue}>{value}</p>{helper ? <p className={dataDisplayRecipes.metricCompactHelper}>{helper}</p> : null}</div>; }
+
+interface TableCellProps { className?: string; children: ReactNode; }
+function TableCell({ className = "", children }: TableCellProps) { return <td className={`${dataDisplayRecipes.tableCell} ${className}`}>{children}</td>; }
+interface TableHeadProps { className?: string; children: ReactNode; }
+function TableHead({ className = "", children }: TableHeadProps) { return <th className={`${dataDisplayRecipes.tableHead} ${className}`}>{children}</th>; }
+
+type SetValues<T> = (values: T[]) => void;
+
+function ExcelHead<T extends string | number>({ label, name, values, selected, setSelected, open, setOpen, format, align }: { label: ReactNode; name: string; values: T[]; selected: T[]; setSelected: SetValues<T>; open: string | null; setOpen: (value: string | null) => void; format?: (value: T) => string; align?: "right" }) {
+  const visible = open === name;
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, align ? styles.filterHeadRight : ""].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)} aria-expanded={visible}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={format} /></div> : null}</th>;
 }
 
-interface PortfolioMetricProps {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  helper?: string;
+function HybridHead({ label, name, values, selected, setSelected, min, setMin, max, setMax, open, setOpen }: { label: ReactNode; name: string; values: number[]; selected: number[]; setSelected: SetValues<number>; min: string; setMin: (value: string) => void; max: string; setMax: (value: string) => void; open: string | null; setOpen: (value: string | null) => void }) {
+  const visible = open === name;
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, styles.filterHeadRight].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length || min || max ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={(value) => formatCurrencyCOP(value)} /><div className={styles.rangeSection}><span className={formRecipes.label}>Rango personalizado</span><div className={styles.rangeGrid}><input type="number" placeholder="Desde" className={formRecipes.control} value={min} onChange={(event) => setMin(event.target.value)} /><input type="number" placeholder="Hasta" className={formRecipes.control} value={max} onChange={(event) => setMax(event.target.value)} /></div></div></div> : null}</th>;
 }
 
-function PortfolioMetric({ icon: Icon, label, value, helper }: PortfolioMetricProps) {
-  return (
-    <div className="rounded-2xl border border-violet-100 bg-white/85 p-4 shadow-sm shadow-violet-100/40">
-      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        <Icon className="h-3.5 w-3.5 text-violet-600" />
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-        {value}
-      </p>
-      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
-    </div>
-  );
+function ValueChecklist<T extends string | number>({ values, selected, setSelected, format = (value) => String(value) }: { values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) {
+  const [term, setTerm] = useState("");
+  const shown = values.filter((value) => normalize(format(value)).includes(normalize(term)));
+  const allShownSelected = shown.length > 0 && shown.every((value) => selected.includes(value));
+  function toggle(value: T) { setSelected(selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value]); }
+  return <div><input autoFocus className={formRecipes.control} placeholder="Buscar valores..." value={term} onChange={(event) => setTerm(event.target.value)} /><label className={`${styles.checkRow} ${formRecipes.filterSelectAll}`}><input type="checkbox" checked={allShownSelected} onChange={() => setSelected(allShownSelected ? selected.filter((value) => !shown.includes(value)) : unique([...selected, ...shown]))} /><span>Seleccionar todos</span></label><div className={styles.checkList}>{shown.map((value) => <label key={String(value)} className={`${styles.checkRow} ${formRecipes.filterOption}`}><input type="checkbox" checked={selected.includes(value)} onChange={() => toggle(value)} /><span>{format(value)}</span></label>)}{shown.length === 0 ? <p className={styles.noValues}>Sin valores coincidentes.</p> : null}</div><button type="button" className={`${styles.clearColumn} ${formRecipes.filterAction}`} onClick={() => setSelected([])}>Limpiar filtro</button></div>;
 }
 
-interface TableCellProps {
-  className?: string;
-  children: ReactNode;
+function ResponsiveFilters(props: { clients: ClienteListadoItem[]; selectedIds: string[]; setSelectedIds: SetValues<string>; selectedPhones: string[]; setSelectedPhones: SetValues<string>; selectedCompanies: string[]; setSelectedCompanies: SetValues<string>; selectedReferrers: string[]; setSelectedReferrers: SetValues<string>; selectedCredits: number[]; setSelectedCredits: SetValues<number>; selectedDocuments: string[]; setSelectedDocuments: SetValues<string>; capitalMin: string; setCapitalMin: (v: string) => void; capitalMax: string; setCapitalMax: (v: string) => void; interestMin: string; setInterestMin: (v: string) => void; interestMax: string; setInterestMax: (v: string) => void }) {
+  return <div className={styles.advancedFilterGrid}><MobileChecklist label="Cédula" values={uniqueStrings(props.clients.map((client) => client.cedula))} selected={props.selectedIds} setSelected={props.setSelectedIds} /><MobileChecklist label="Teléfono" values={uniqueStrings(props.clients.map((client) => client.telefono ?? "Sin teléfono"))} selected={props.selectedPhones} setSelected={props.setSelectedPhones} /><MobileChecklist label="Empresa" values={uniqueStrings(props.clients.map((client) => client.empresa ?? "Sin empresa"))} selected={props.selectedCompanies} setSelected={props.setSelectedCompanies} /><MobileChecklist label="Recomendado por" values={uniqueStrings(props.clients.map((client) => toReferrerFilterValue(client.recomienda)))} selected={props.selectedReferrers} setSelected={props.setSelectedReferrers} format={formatReferrerValue} /><MobileChecklist label="Créditos activos" values={uniqueNumbers(props.clients.map((client) => client.creditosActivos))} selected={props.selectedCredits} setSelected={props.setSelectedCredits} /><MobileChecklist label="Documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={props.selectedDocuments} setSelected={props.setSelectedDocuments} format={formatDocumentValue} /><RangeFilter label="Capital pendiente" min={props.capitalMin} max={props.capitalMax} onMin={props.setCapitalMin} onMax={props.setCapitalMax} /><RangeFilter label="Interés pendiente" min={props.interestMin} max={props.interestMax} onMin={props.setInterestMin} onMax={props.setInterestMax} /></div>;
 }
 
-function TableCell({ className = "", children }: TableCellProps) {
-  return (
-    <td className={`whitespace-nowrap px-5 py-3.5 text-slate-700 ${className}`}>
-      {children}
-    </td>
-  );
-}
+function MobileChecklist<T extends string | number>(props: { label: string; values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) { return <details className={styles.mobileDetails}><summary className={formRecipes.filterSummary}>{props.label}{props.selected.length ? ` (${props.selected.length})` : ""}</summary><ValueChecklist values={props.values} selected={props.selected} setSelected={props.setSelected} format={props.format} /></details>; }
+function RangeFilter({ label, min, max, onMin, onMax }: { label: string; min: string; max: string; onMin: (value: string) => void; onMax: (value: string) => void }) { return <fieldset><legend className={formRecipes.label}>{label}</legend><div className={styles.rangeGrid}><input type="number" placeholder="Desde" value={min} className={formRecipes.control} onChange={(event) => onMin(event.target.value)} /><input type="number" placeholder="Hasta" value={max} className={formRecipes.control} onChange={(event) => onMax(event.target.value)} /></div></fieldset>; }
+function EmptyFilters() { return <div className={styles.emptyBody}><p>No hay clientes para esta combinación de filtros.</p><span>Modifica el filtro abierto o usa Limpiar.</span></div>; }
+function parseList(value: string | null) { return value ? value.split("|").map(decodeURIComponent).filter(Boolean) : []; }
+function parseNumberList(value: string | null) { return parseList(value).map(Number).filter(Number.isFinite); }
+function syncParam(params: URLSearchParams, key: string, value: string) { const clean = value.trim(); if (clean) params.set(key, clean); }
+function syncList(params: URLSearchParams, key: string, values: string[]) { if (values.length) params.set(key, values.map(encodeURIComponent).join("|")); }
+function syncNumberList(params: URLSearchParams, key: string, values: number[]) { if (values.length) params.set(key, values.join("|")); }
+function unique<T>(values: T[]) { return [...new Set(values)]; }
+function uniqueStrings(values: string[]) { return unique(values).sort((left, right) => left.localeCompare(right, "es")); }
+function uniqueNumbers(values: number[]) { return unique(values).sort((left, right) => left - right); }
+function normalize(value: string) { return value.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+function withinRange(value: number, minRaw: string, maxRaw: string) { const min = minRaw === "" ? null : Number(minRaw); const max = maxRaw === "" ? null : Number(maxRaw); return (min === null || !Number.isFinite(min) || value >= min) && (max === null || !Number.isFinite(max) || value <= max); }
+const EMPTY_REFERRER = "__EMPTY__";
+function toReferrerFilterValue(value: string | null) { return value?.trim() || EMPTY_REFERRER; }
+function formatReferrerValue(value: string) { return value === EMPTY_REFERRER ? "Sin recomendador" : value; }
+function formatReferrerDisplay(value: string | null) { return value?.trim() || "—"; }
+function formatDocumentValue(value: string) { return value === "DOCUMENTOS_CARGADOS" ? "Cargados" : "Pendientes"; }
 
-interface TableHeadProps {
-  className?: string;
-  children: ReactNode;
-}
-
-function TableHead({ className = "", children }: TableHeadProps) {
-  return (
-    <th
-      className={`whitespace-nowrap px-5 py-3 text-left font-black ${className}`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function EstadoDocumentosBadge({ estado }: { estado: string }) {
-  if (estado === "DOCUMENTOS_CARGADOS") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        Cargados
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-      <AlertTriangle className="h-3.5 w-3.5" />
-      Pendientes
-    </span>
-  );
+function DocumentStatus({ status }: { status: string }) {
+  if (status === "DOCUMENTOS_CARGADOS") return <span className={statusRecipes.success}><CheckCircle2 className="h-3.5 w-3.5" />Cargados</span>;
+  return <span className={statusRecipes.warning}><AlertTriangle className="h-3.5 w-3.5" />Pendientes</span>;
 }

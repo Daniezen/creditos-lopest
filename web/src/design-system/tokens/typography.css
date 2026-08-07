@@ -8,6 +8,14 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  /* Semantic roles. Product views and recipes consume roles, not primitives. */
+  --font-weight-body: var(--font-weight-regular);
+  --font-weight-data: var(--font-weight-regular);
+  --font-weight-data-emphasis: var(--font-weight-medium);
+  --font-weight-label: var(--font-weight-medium);
+  --font-weight-heading: var(--font-weight-semibold);
+  --font-weight-action: var(--font-weight-medium);
+
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;

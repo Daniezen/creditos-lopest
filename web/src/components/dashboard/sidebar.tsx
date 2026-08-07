@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CreditCard, UserPlus, X } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
 import { dashboardNavigation } from "@/config/navigation";
 import lopestLogo from "@/assets/lopest-logo.png";
 
@@ -25,7 +26,7 @@ interface DashboardSidebarProps {
  * - Lopest is the primary brand name; Créditos is its descriptor.
  * - Color remains part of the identity, but active and hover states use restrained
  *   surfaces instead of gradients and colored shadows.
- * - Creation actions behave as compact navigation rows rather than promotional cards.
+ * - Creation actions are compact, button-like quick actions backed by the design contract.
  */
 export function DashboardSidebar({
   mode = "desktop",
@@ -82,11 +83,12 @@ export function DashboardSidebar({
 
       <section className={[styles.createSection, "border-b border-slate-200"].join(" ")}>
         <p className={styles.sectionLabel}>Crear</p>
-        <div className="space-y-1">
+        <div className={styles.quickActionGrid}>
           <QuickAction
             href="/creditos/nuevo"
             label="Nuevo crédito"
             icon={CreditCard}
+            variant="primary"
             active={pathname.startsWith("/creditos/nuevo")}
             onNavigate={onNavigate}
           />
@@ -94,6 +96,7 @@ export function DashboardSidebar({
             href="/clientes/nuevo"
             label="Nuevo cliente"
             icon={UserPlus}
+            variant="secondary"
             active={pathname.startsWith("/clientes/nuevo")}
             onNavigate={onNavigate}
           />
@@ -154,6 +157,7 @@ interface QuickActionProps {
   href: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
+  variant: "primary" | "secondary";
   active: boolean;
   onNavigate?: () => void;
 }
@@ -162,9 +166,12 @@ function QuickAction({
   href,
   label,
   icon: Icon,
+  variant,
   active,
   onNavigate,
 }: QuickActionProps) {
+  const isPrimary = variant === "primary";
+
   return (
     <Link
       href={href}
@@ -172,23 +179,22 @@ function QuickAction({
       aria-current={active ? "page" : undefined}
       className={[
         styles.quickAction,
-        "group flex items-center gap-3 rounded-xl text-sm font-medium transition",
-        active
-          ? "bg-violet-100/75 text-violet-950"
-          : "text-slate-700 hover:bg-violet-50/80 hover:text-violet-900",
+        isPrimary
+          ? actionRecipes.quickActionPrimary
+          : actionRecipes.quickActionSecondary,
+        active ? styles.quickActionActive : "",
       ].join(" ")}
     >
       <span
-        className={[
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition",
-          active
-            ? "bg-white/80 text-violet-700"
-            : "text-slate-500 group-hover:text-violet-700",
-        ].join(" ")}
+        className={
+          isPrimary
+            ? actionRecipes.quickActionIconPrimary
+            : actionRecipes.quickActionIconSecondary
+        }
       >
         <Icon className="h-[1.125rem] w-[1.125rem]" />
       </span>
-      <span>{label}</span>
+      <span className={styles.quickActionLabel}>{label}</span>
     </Link>
   );
 }

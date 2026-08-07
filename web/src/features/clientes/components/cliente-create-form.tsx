@@ -98,7 +98,7 @@ export function ClienteCreateForm() {
         />
 
         <Input
-          label="Recomienda"
+          label="Recomendado por"
           value={form.recomienda}
           onChange={(value) => updateField("recomienda", value)}
         />

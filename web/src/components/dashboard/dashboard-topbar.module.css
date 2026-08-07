@@ -1,8 +1,9 @@
 .topbar {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
   display: flex;
-  min-height: 78px;
+  min-height: var(--layout-topbar-height);
   align-items: center;
   justify-content: space-between;
   gap: 1rem;

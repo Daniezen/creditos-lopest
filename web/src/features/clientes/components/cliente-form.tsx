@@ -103,7 +103,7 @@ export function ClienteForm({ cliente }: ClienteFormProps) {
         <Input label="Teléfono" value={form.telefono} onChange={(value) => updateField("telefono", value)} />
         <Input label="Dirección" value={form.direccion} onChange={(value) => updateField("direccion", value)} />
         <Input label="Empresa" value={form.empresa} onChange={(value) => updateField("empresa", value)} />
-        <Input label="Recomienda" value={form.recomienda} onChange={(value) => updateField("recomienda", value)} />
+        <Input label="Recomendado por" value={form.recomienda} onChange={(value) => updateField("recomienda", value)} />
         <Input label="Contacto" value={form.contacto} onChange={(value) => updateField("contacto", value)} />
         <Input label="Contacto 2" value={form.contacto2} onChange={(value) => updateField("contacto2", value)} />
         <Input

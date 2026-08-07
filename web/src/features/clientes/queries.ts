@@ -11,6 +11,7 @@ import {
   buildCreditoVisibilityWhere,
 } from "@/server/auth/scope";
 
+import { calcularResumenCarteraCliente, type EstadoCarteraCliente } from "./portfolio-summary";
 import type { ClienteSelectorOption } from "./types";
 
 interface ObtenerClientesParaListadoParams {
@@ -35,6 +36,8 @@ export interface ClienteListadoItem {
   creditosTotal: number;
   creditosActivos: number;
   saldoTotal: number;
+  interesPendienteTotal: number;
+  estadoCartera: EstadoCarteraCliente;
   proximaCuota: {
     creditoId: string;
     codigoCredito: string;
@@ -143,7 +146,9 @@ export async function obtenerClientesParaListado({
             ],
             select: {
               fechaProgramada: true,
+              tipo: true,
               valorProgramado: true,
+              interesProgramado: true,
               saldoCapitalPost: true,
               estado: true,
             },
@@ -168,6 +173,9 @@ export async function obtenerClientesParaListado({
     const saldoTotal = creditosActivos.reduce((total, credito) => {
       return total + calcularSaldoCapitalVigente(credito);
     }, 0);
+
+    const { interesPendienteTotal, estadoCartera } =
+      calcularResumenCarteraCliente(cliente.creditos);
 
     const proximaCuota =
       creditosActivos
@@ -202,6 +210,8 @@ export async function obtenerClientesParaListado({
       creditosTotal: cliente.creditos.length,
       creditosActivos: creditosActivos.length,
       saldoTotal,
+      interesPendienteTotal,
+      estadoCartera,
       proximaCuota,
     };
   });

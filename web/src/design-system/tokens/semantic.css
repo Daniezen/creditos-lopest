@@ -1,5 +1,6 @@
 /* Universal semantic contract. Product themes assign concrete values. */
 :root {
+  --layout-topbar-height: 78px;
   --color-canvas: var(--lopest-color-canvas);
   --color-surface-primary: var(--lopest-color-surface-primary);
   --color-surface-subtle: var(--lopest-color-surface-subtle);
@@ -17,14 +18,28 @@
   --color-selection: var(--lopest-color-selection);
   --color-selection-strong: var(--lopest-color-selection-strong);
   --color-focus: var(--lopest-color-focus);
+  --color-focus-soft: var(--lopest-color-focus-soft);
+  --color-overlay-backdrop: var(--lopest-color-overlay-backdrop);
 
   --color-success: var(--lopest-color-success);
   --color-warning: var(--lopest-color-warning);
   --color-danger: var(--lopest-color-danger);
   --color-info: var(--lopest-color-info);
+  --color-success-surface: var(--lopest-color-success-surface);
+  --color-success-border: var(--lopest-color-success-border);
+  --color-warning-surface: var(--lopest-color-warning-surface);
+  --color-warning-border: var(--lopest-color-warning-border);
+  --color-danger-surface: var(--lopest-color-danger-surface);
+  --color-danger-border: var(--lopest-color-danger-border);
+  --color-danger-soft: var(--lopest-color-danger-soft);
 
   --surface-section: var(--color-surface-primary);
   --surface-overlay: var(--color-surface-elevated);
   --border-section: 1px solid var(--color-border-subtle);
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-focus) 24%, transparent);
+}
+@media (max-width: 767px) {
+  :root {
+    --layout-topbar-height: 64px;
+  }
 }
