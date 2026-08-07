@@ -4,6 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, UserRound } from "lucide-react";
 
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+
 export interface CreditSearchItem {
   id: string;
   codigo: string;
@@ -104,8 +107,8 @@ export function CreditSearchCombobox({
   return (
     <div className="relative">
       <label className="block">
-        <span className="mb-1.5 flex items-center gap-2 text-sm font-medium text-slate-700">
-          <Search className="h-4 w-4 text-violet-600" />
+        <span className={formRecipes.labelWithIcon}>
+          <Search className="h-4 w-4 text-[var(--color-action-primary)]" />
           Buscar cliente
         </span>
 
@@ -117,14 +120,14 @@ export function CreditSearchCombobox({
           onChange={(event) => handleChange(event.target.value)}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+          className={formRecipes.control}
         />
       </label>
 
       {open ? (
         <div
           onScroll={handleScroll}
-          className="absolute z-30 mt-2 max-h-96 w-full overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          className={formRecipes.comboboxPanel}
         >
           {visibleItems.length > 0 ? (
             <ul className="py-2">
@@ -136,19 +139,19 @@ export function CreditSearchCombobox({
                       event.preventDefault();
                       handleSelect(item.id);
                     }}
-                    className="w-full px-4 py-3 text-left transition hover:bg-violet-50"
+                    className={formRecipes.comboboxOption}
                   >
                     <div className="flex gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                      <div className={dataDisplayRecipes.entityAvatar}>
                         <UserRound className="h-5 w-5" />
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-950">
+                        <p className={dataDisplayRecipes.suggestionTitle}>
                           {item.clienteNombre}
                         </p>
 
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                           {item.codigo} · C.C. {item.clienteCedula}
                           {item.clienteTelefono
                             ? ` · Tel. ${item.clienteTelefono}`
@@ -161,13 +164,13 @@ export function CreditSearchCombobox({
               ))}
             </ul>
           ) : (
-            <div className="px-4 py-5 text-sm text-slate-500">
+            <div className="px-4 py-5 text-sm text-[var(--color-text-secondary)]">
               No hay resultados para esa búsqueda.
             </div>
           )}
 
           {visibleCount < filteredItems.length ? (
-            <div className="border-t border-slate-100 px-4 py-3 text-center text-xs font-medium text-slate-400">
+            <div className="border-t border-[var(--color-border-subtle)] px-4 py-3 text-center text-xs font-[var(--font-weight-label)] text-[var(--color-text-muted)]">
               Desplázate para ver más resultados
             </div>
           ) : null}

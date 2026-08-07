@@ -1,14 +1,21 @@
 "use client";
 
 import type { ComponentType, KeyboardEvent, ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, CreditCard, Eye, PencilLine, Plus, ShieldCheck, WalletCards } from "lucide-react";
+import { CalendarDays, CreditCard, Eye, Plus, ShieldCheck, WalletCards } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP, formatDateCO, formatPercent } from "@/lib/formatters";
 
 import { CreditSearchCombobox } from "./credit-search-combobox";
 import type { CreditoListadoItem } from "../queries";
+import styles from "./creditos-list.module.css";
 
 interface CreditosListProps {
   creditos: CreditoListadoItem[];
@@ -18,6 +25,69 @@ interface CreditosListProps {
 
 export function CreditosList({ creditos, query, estado }: CreditosListProps) {
   const router = useRouter();
+  const tableViewportRef = useRef<HTMLDivElement | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const tableScrollbarRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollbarSpacerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const viewport = tableViewportRef.current;
+    const table = tableRef.current;
+    const scrollbar = tableScrollbarRef.current;
+    const spacer = tableScrollbarSpacerRef.current;
+    if (!viewport || !table || !scrollbar || !spacer) return;
+
+    // The table itself moves while the Code column compensates by the same
+    // distance. This preserves a single horizontal scroll source and keeps the
+    // identifying column visible, matching the proven Clients table pattern.
+    const activeViewport: HTMLDivElement = viewport;
+    const activeTable: HTMLTableElement = table;
+    const activeScrollbar: HTMLDivElement = scrollbar;
+    const activeSpacer: HTMLDivElement = spacer;
+    let syncing = false;
+
+    function updateGeometry() {
+      const tableWidth = activeTable.scrollWidth;
+      activeSpacer.style.width = `${tableWidth}px`;
+      activeScrollbar.hidden = tableWidth <= activeViewport.clientWidth;
+      const maximum = Math.max(0, tableWidth - activeViewport.clientWidth);
+      if (activeScrollbar.scrollLeft > maximum) activeScrollbar.scrollLeft = maximum;
+      activeTable.style.setProperty("--table-scroll-left", `${activeScrollbar.scrollLeft}px`);
+    }
+
+    function syncTableFromScrollbar() {
+      if (syncing) return;
+      syncing = true;
+      activeTable.style.setProperty("--table-scroll-left", `${activeScrollbar.scrollLeft}px`);
+      requestAnimationFrame(() => { syncing = false; });
+    }
+
+    function handleHorizontalWheel(event: WheelEvent) {
+      const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+        ? event.deltaX
+        : event.shiftKey
+          ? event.deltaY
+          : 0;
+      if (!horizontalDelta || activeScrollbar.hidden) return;
+      event.preventDefault();
+      activeScrollbar.scrollLeft += horizontalDelta;
+      syncTableFromScrollbar();
+    }
+
+    const resizeObserver = new ResizeObserver(updateGeometry);
+    resizeObserver.observe(activeViewport);
+    resizeObserver.observe(activeTable);
+    activeScrollbar.addEventListener("scroll", syncTableFromScrollbar, { passive: true });
+    activeViewport.addEventListener("wheel", handleHorizontalWheel, { passive: false });
+    updateGeometry();
+
+    return () => {
+      resizeObserver.disconnect();
+      activeScrollbar.removeEventListener("scroll", syncTableFromScrollbar);
+      activeViewport.removeEventListener("wheel", handleHorizontalWheel);
+    };
+  }, [creditos.length]);
+
 
   function openCredito(id: string) {
     router.push(`/creditos/${id}`);
@@ -50,43 +120,43 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
   }));
 
   return (
-    <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div className="grid flex-1 gap-3 sm:grid-cols-3">
+    <main className={styles.page}>
+      <section className={surfaceRecipes.sectionSpacious}>
+        <div className={styles.metricsLayout}>
+          <div className={styles.metricsGrid}>
             <PortfolioMetric label="Capital pendiente activo" value={formatCurrencyCOP(saldoTotal)} helper={`${creditosActivos.length} crédito(s) activo(s) · saldo tras último pago`} strong />
             <PortfolioMetric label="Créditos activos" value={String(creditosActivos.length)} />
             <PortfolioMetric label="Próxima cuota" value={proximaCuota ? formatCurrencyCOP(proximaCuota.valorProgramado) : "-"} helper={proximaCuota ? formatDateCO(proximaCuota.fechaProgramada) : undefined} />
           </div>
-          <Link href="/creditos/nuevo" className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700">
+          <Link href="/creditos/nuevo" className={`${actionRecipes.primaryLarge} ${styles.primaryAction}`}>
             <Plus className="h-4 w-4" /> Nuevo crédito
           </Link>
         </div>
       </section>
 
-      <section className="mb-5 rounded-[1.75rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 backdrop-blur">
-        <form action="/creditos" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+      <section className={`${surfaceRecipes.sectionCompact} ${styles.filterSection}`}>
+        <form action="/creditos" className={styles.filterLayout}>
           <CreditSearchCombobox name="q" initialValue={query} items={searchItems} />
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">Estado</span>
-            <select name="estado" defaultValue={estado} className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-2.5 text-sm text-slate-950 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15">
+            <span className={formRecipes.label}>Estado</span>
+            <select name="estado" defaultValue={estado} className={formRecipes.control}>
               <option value="">Todos</option>
               <option value="ACTIVO">Activos</option>
               <option value="CANCELADO">Cancelados</option>
             </select>
           </label>
-          <div className="flex items-end gap-2">
-            <button type="submit" className="rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700">Buscar</button>
-            <Link href="/creditos" className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900">Limpiar</Link>
+          <div className={styles.filterActions}>
+            <button type="submit" className={actionRecipes.primary}>Buscar</button>
+            <Link href="/creditos" className={actionRecipes.secondary}>Limpiar</Link>
           </div>
         </form>
       </section>
 
-      <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
+      <section className={surfaceRecipes.stickyDataPanel}>
+        <div className={surfaceRecipes.dataPanelHeader}>
           <div>
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">Créditos</h3>
-            <p className="mt-1 text-sm text-slate-500">{creditos.length} registro(s)</p>
+            <h3 className={dataDisplayRecipes.sectionTitle}>Créditos</h3>
+            <p className={styles.supportingText}>{creditos.length} registro(s)</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <SmallPill icon={CreditCard} label={`${creditos.length} créditos`} />
@@ -95,50 +165,76 @@ export function CreditosList({ creditos, query, estado }: CreditosListProps) {
           </div>
         </div>
 
-        {creditos.length === 0 ? (
-          <div className="p-10 text-center">
-            <p className="text-sm font-semibold text-slate-950">No hay créditos para los filtros seleccionados.</p>
-            <p className="mt-2 text-sm text-slate-500">Ajusta la búsqueda o crea un nuevo crédito.</p>
-          </div>
-        ) : (
-          <>
-            <div className="divide-y divide-violet-100 2xl:hidden">
-              {creditos.map((credito) => <CreditoCompactCard key={credito.id} credito={credito} />)}
-            </div>
-            <div className="hidden overflow-x-auto 2xl:block">
-              <table className="min-w-[1040px] w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
+        <div className={styles.compactList}>
+          {creditos.length === 0 ? (
+            <EmptyCredits />
+          ) : (
+            creditos.map((credito) => <CreditoCompactCard key={credito.id} credito={credito} />)
+          )}
+        </div>
+            <div className={styles.desktopTable}>
+              <div ref={tableViewportRef} className={styles.tableViewport}>
+              <table ref={tableRef} className={styles.creditTable}>
+                  <colgroup>
+                    <col className={styles.codeColumn} />
+                    <col className={styles.clientColumn} />
+                    <col className={styles.amountColumn} />
+                    <col className={styles.balanceColumn} />
+                    <col className={styles.nextPaymentColumn} />
+                    <col className={styles.rateColumn} />
+                    <col className={styles.statusColumn} />
+                  </colgroup>
+                <thead className={styles.tableHeader}>
                   <tr>
-                    <TableHead>Código</TableHead><TableHead>Cliente</TableHead><TableHead className="text-right">Monto</TableHead><TableHead className="text-right">Capital pendiente</TableHead><TableHead>Próxima cuota</TableHead><TableHead className="text-right">Tasa</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acción</TableHead>
+                    <TableHead className={styles.stickyCodeHead}>Código</TableHead><TableHead>Cliente</TableHead><TableHead className={styles.alignRight}>Monto</TableHead><TableHead className={styles.alignRight}>Capital pendiente</TableHead><TableHead>Próxima cuota</TableHead><TableHead className={styles.alignRight}>Tasa</TableHead><TableHead>Estado</TableHead>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {creditos.map((credito) => (
+                <tbody className={styles.tableBody}>
+                  {creditos.length === 0 ? (
+                    <tr>
+                      <td colSpan={7}>
+                        <EmptyCredits />
+                      </td>
+                    </tr>
+                  ) : creditos.map((credito) => (
                     <tr
                       key={credito.id}
                       role="link"
                       tabIndex={0}
                       onClick={() => openCredito(credito.id)}
                       onKeyDown={(event) => handleCreditoKeyDown(event, credito.id)}
-                      className="cursor-pointer transition hover:bg-violet-50/45"
+                      className={dataDisplayRecipes.operationalRow}
                     >
-                      <TableCell><Link href={`/creditos/${credito.id}`} className="font-bold text-violet-700 hover:underline">{credito.codigo}</Link></TableCell>
-                      <TableCell><div><p className="font-semibold text-slate-950">{credito.cliente.nombre}</p><p className="mt-1 text-xs text-slate-500">C.C. {credito.cliente.cedula}</p></div></TableCell>
-                      <TableCell className="text-right font-semibold text-slate-950">{formatCurrencyCOP(credito.monto)}</TableCell>
-                      <TableCell className="text-right font-bold text-slate-950">{formatCurrencyCOP(credito.saldoCapital)}</TableCell>
-                      <TableCell>{credito.proximaCuota ? <div><p className="font-semibold text-slate-950">{formatCurrencyCOP(credito.proximaCuota.valorProgramado)}</p><p className="mt-1 flex items-center gap-1 text-xs text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{formatDateCO(credito.proximaCuota.fechaProgramada)}</p></div> : "-"}</TableCell>
-                      <TableCell className="text-right">{formatPercent(credito.tasaMensual)}</TableCell>
+                      <TableCell className={styles.stickyCodeCell}><div className={styles.codeIdentityCell}><Link href={`/creditos/${credito.id}`} className={dataDisplayRecipes.entityLink} onClick={(event) => event.stopPropagation()}>{credito.codigo}</Link><Link href={`/creditos/${credito.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del crédito" aria-label={`Ver detalle de ${credito.codigo}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link></div></TableCell>
+                      <TableCell><div><p className={dataDisplayRecipes.numericCell}>{credito.cliente.nombre}</p><p className="mt-1 text-xs text-[var(--color-text-secondary)]">C.C. {credito.cliente.cedula}</p></div></TableCell>
+                      <TableCell className={`text-right ${dataDisplayRecipes.numericCell} ${styles.atomicValue}`}>{formatCurrencyCOP(credito.monto)}</TableCell>
+                      <TableCell className={`text-right ${dataDisplayRecipes.numericCell} ${styles.atomicValue}`}>{formatCurrencyCOP(credito.saldoCapital)}</TableCell>
+                      <TableCell>{credito.proximaCuota ? <div><p className={dataDisplayRecipes.numericCell}>{formatCurrencyCOP(credito.proximaCuota.valorProgramado)}</p><p className={styles.nextDate}><CalendarDays className="h-3.5 w-3.5" />{formatDateCO(credito.proximaCuota.fechaProgramada)}</p></div> : "-"}</TableCell>
+                      <TableCell className={styles.alignRight}>{formatPercent(credito.tasaMensual)}</TableCell>
                       <TableCell><EstadoCreditoBadge estado={credito.estado} /></TableCell>
-                      <TableCell className="text-right"><div className="flex justify-end gap-2"><Link href={`/creditos/${credito.id}/editar`} className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-100 hover:text-fuchsia-700"><PencilLine className="h-3.5 w-3.5" />Editar</Link><Link href={`/creditos/${credito.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"><Eye className="h-3.5 w-3.5" />Ver</Link></div></TableCell>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
+              <div ref={tableScrollbarRef} className={styles.stickyHorizontalScrollbar} aria-label="Desplazamiento horizontal de la tabla de créditos" tabIndex={0}>
+                <div ref={tableScrollbarSpacerRef} className={styles.horizontalScrollbarSpacer} />
+              </div>
             </div>
-          </>
-        )}
+
       </section>
     </main>
+  );
+}
+
+function EmptyCredits() {
+  return (
+    <div className={styles.emptyState}>
+      <p className={styles.emptyTitle}>No hay créditos para los filtros seleccionados.</p>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+        Ajusta la búsqueda o usa Limpiar para recuperar el listado.
+      </p>
+    </div>
   );
 }
 
@@ -165,20 +261,20 @@ function CreditoCompactCard({ credito }: { credito: CreditoListadoItem }) {
       tabIndex={0}
       onClick={() => openCredito(credito.id)}
       onKeyDown={(event) => handleCreditoKeyDown(event, credito.id)}
-      className="cursor-pointer p-3 transition hover:bg-violet-50/40 sm:p-4"
+      className={dataDisplayRecipes.compactRow}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/creditos/${credito.id}`} className="font-black text-violet-700 hover:underline">{credito.codigo}</Link>
+            <Link href={`/creditos/${credito.id}`} className={dataDisplayRecipes.entityLink}>{credito.codigo}</Link>
             <EstadoCreditoBadge estado={credito.estado} />
           </div>
-          <p className="mt-1 truncate text-sm font-bold text-slate-950">{credito.cliente.nombre}</p>
-          <p className="text-xs text-slate-500">C.C. {credito.cliente.cedula}</p>
+          <p className={styles.clientName}>{credito.cliente.nombre}</p>
+          <p className={styles.supportingTextSmall}>C.C. {credito.cliente.cedula}</p>
         </div>
-        <Link href={`/creditos/${credito.id}`} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-violet-100 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"><Eye className="h-3.5 w-3.5" />Ver</Link>
+        <Link href={`/creditos/${credito.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del crédito" aria-label={`Ver detalle de ${credito.codigo}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+      <div className={styles.flatDataGrid}>
         <CompactDatum label="Monto" value={formatCurrencyCOP(credito.monto)} />
         <CompactDatum label="Capital pendiente" value={formatCurrencyCOP(credito.saldoCapital)} />
         <CompactDatum label="Tasa" value={formatPercent(credito.tasaMensual)} />
@@ -190,27 +286,27 @@ function CreditoCompactCard({ credito }: { credito: CreditoListadoItem }) {
 
 function CompactDatoProximaCuota({ credito }: { credito: CreditoListadoItem }) {
   if (!credito.proximaCuota) return <CompactDatum label="Próxima" value="-" />;
-  return <div className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Próxima</p><p className="mt-1 truncate font-black text-slate-950">{formatCurrencyCOP(credito.proximaCuota.valorProgramado)}</p><p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500"><CalendarDays className="h-3 w-3" />{formatDateCO(credito.proximaCuota.fechaProgramada)}</p></div>;
+  return <div className={`${dataDisplayRecipes.compactDatum} ${styles.compactDatum}`}><p className={dataDisplayRecipes.compactDatumLabel}>Próxima</p><p className={dataDisplayRecipes.compactDatumValue}>{formatCurrencyCOP(credito.proximaCuota.valorProgramado)}</p><p className={styles.compactDate}><CalendarDays className="h-3 w-3" />{formatDateCO(credito.proximaCuota.fechaProgramada)}</p></div>;
 }
 
 function CompactDatum({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 truncate font-black text-slate-950">{value}</p></div>;
+  return <div className={`${dataDisplayRecipes.compactDatum} ${styles.compactDatum}`}><p className={dataDisplayRecipes.compactDatumLabel}>{label}</p><p className={dataDisplayRecipes.compactDatumValue}>{value}</p></div>;
 }
 
 interface PortfolioMetricProps { label: string; value: string; helper?: string; strong?: boolean; }
-function PortfolioMetric({ label, value, helper, strong }: PortfolioMetricProps) { return <div className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm shadow-violet-100/40 backdrop-blur"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className={["mt-2 tracking-tight", strong ? "text-3xl font-bold text-slate-950" : "text-xl font-bold text-slate-950"].join(" ")}>{value}</p>{helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}</div>; }
+function PortfolioMetric({ label, value, helper, strong }: PortfolioMetricProps) { return <div className={[dataDisplayRecipes.metricCompact, strong ? styles.primaryMetricCard : ""].join(" ")}><p className={dataDisplayRecipes.metricCompactLabel}>{label}</p><p className={[dataDisplayRecipes.metricCompactValue, strong ? styles.primaryMetricValue : ""].join(" ")}>{value}</p>{helper ? <p className={dataDisplayRecipes.metricCompactHelper}>{helper}</p> : null}</div>; }
 
 interface SmallPillProps { icon: ComponentType<{ className?: string }>; label: string; }
-function SmallPill({ icon: Icon, label }: SmallPillProps) { return <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-xs font-bold text-slate-700 shadow-sm"><Icon className="h-3.5 w-3.5 text-violet-600" />{label}</span>; }
+function SmallPill({ icon: Icon, label }: SmallPillProps) { return <span className={styles.summaryPill}><Icon className={styles.summaryPillIcon} />{label}</span>; }
 
 interface TableCellProps { className?: string; children: ReactNode; }
-function TableCell({ className = "", children }: TableCellProps) { return <td className={`whitespace-nowrap px-5 py-3.5 text-slate-700 ${className}`}>{children}</td>; }
+function TableCell({ className = "", children }: TableCellProps) { return <td className={`${dataDisplayRecipes.tableCell} ${className}`}>{children}</td>; }
 
 interface TableHeadProps { className?: string; children: ReactNode; }
-function TableHead({ className = "", children }: TableHeadProps) { return <th className={`whitespace-nowrap px-5 py-3 text-left font-black ${className}`}>{children}</th>; }
+function TableHead({ className = "", children }: TableHeadProps) { return <th className={`${dataDisplayRecipes.tableHead} ${className}`}>{children}</th>; }
 
 function EstadoCreditoBadge({ estado }: { estado: string }) {
-  if (estado === "ACTIVO") return <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Activo</span>;
-  if (estado === "CANCELADO") return <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Cancelado</span>;
-  return <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{estado}</span>;
+  if (estado === "ACTIVO") return <span className={statusRecipes.success}>Activo</span>;
+  if (estado === "CANCELADO") return <span className={statusRecipes.neutral}>Cancelado</span>;
+  return <span className={statusRecipes.neutral}>{estado}</span>;
 }
