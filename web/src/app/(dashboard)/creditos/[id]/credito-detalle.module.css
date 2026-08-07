@@ -1,0 +1,21 @@
+.page { min-width: 0; padding: var(--ds-space-6) var(--ds-space-4); }
+.summary { margin-bottom: var(--ds-space-6); }
+.identityBand { border-bottom: 1px solid var(--color-border-subtle); padding: var(--ds-space-5) var(--ds-space-6); }
+.identityLayout, .actionLayout { display: flex; flex-direction: column; justify-content: space-between; gap: var(--ds-space-4); }
+.identityBadges, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3); }
+.clientName { margin-top: var(--ds-space-4); color: var(--color-text-primary); font-size: var(--text-2xl); font-weight: var(--font-weight-heading); letter-spacing: -.025em; }
+.identityMeta, .actionHelp { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.metricsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); padding: var(--ds-space-5); }
+.operationalGrid { display: grid; gap: var(--ds-space-3); border-top: 1px solid var(--color-border-subtle); padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-5); }
+.operationalInfo { min-width: 0; }
+.operationalValue { display: -webkit-box; margin-top: var(--ds-space-2); overflow: hidden; color: var(--color-text-primary); font-size: var(--text-sm); line-height: var(--leading-normal); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.muted { color: var(--color-text-muted); }
+.semanticIcon, .metricIcon { width: .875rem; height: .875rem; color: var(--color-action-primary); }
+.featuredMetric { border-color: var(--color-border-default); background: var(--color-selection); }
+.featuredMetricLabel { color: var(--color-selection-strong); }
+.actionSection { margin-bottom: var(--ds-space-5); padding: var(--ds-space-5); }
+.abonoForm, .extensionForm { display: flex; width: 100%; flex-direction: column; gap: var(--ds-space-2); }
+.formField { min-width: 0; flex: 1; }
+@media (min-width: 640px) { .page { padding-inline: var(--ds-space-6); } .abonoForm, .extensionForm { width: auto; flex-direction: row; align-items: end; } .abonoForm { min-width: 22.5rem; } .extensionForm { min-width: 20rem; } }
+@media (min-width: 1024px) { .page { padding-inline: var(--ds-space-10); } .operationalGrid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
+@media (min-width: 1200px) { .identityLayout, .actionLayout { flex-direction: row; align-items: center; } .metricsGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

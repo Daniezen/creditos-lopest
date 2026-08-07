@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Check, PencilLine, X } from "lucide-react";
 
 import { actualizarFechaPagoCuota } from "../actions";
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { overlayRecipes } from "@/design-system/recipes/overlays";
 import type { UpdatePaymentDateState } from "../payment-date-state";
+
+import styles from "./edit-payment-date.module.css";
 
 interface EditPaymentDateProps {
   eventoId: string;
@@ -54,20 +60,20 @@ export function EditPaymentDate({
       <div
         className={
           compact
-            ? "relative min-w-0 rounded-2xl border border-violet-100 bg-white/80 px-3 py-2"
+            ? `${dataDisplayRecipes.compactDatum} ${styles.compact}`
             : "relative w-full min-w-0"
         }
       >
         {compact ? (
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+          <p className={dataDisplayRecipes.compactDatumLabel}>
             Fecha real
           </p>
         ) : null}
 
         <span
           className={[
-            "block whitespace-nowrap font-semibold text-slate-900",
-            compact ? "mt-1 text-xs" : "text-sm",
+            dataDisplayRecipes.numericCell,
+            compact ? styles.compactValue : styles.value,
           ].join(" ")}
         >
           {formattedDate}
@@ -77,7 +83,7 @@ export function EditPaymentDate({
           type="button"
           onClick={() => setEditing(true)}
           className={[
-            "absolute z-40 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-violet-100 bg-white text-violet-700 shadow-md shadow-slate-900/10 transition hover:bg-violet-50",
+            `${actionRecipes.entityDetailIcon} ${styles.editButton}`,
             compact
               ? "right-2 top-1/2 -translate-y-1/2"
               : "left-full top-1/2 ml-1 -translate-y-1/2",
@@ -96,7 +102,7 @@ export function EditPaymentDate({
       action={formAction}
       className={
         compact
-          ? "relative min-w-0 rounded-2xl border border-violet-200 bg-white/80 px-3 py-2"
+          ? `${dataDisplayRecipes.compactDatum} ${styles.compact}`
           : "relative w-full min-w-0"
       }
     >
@@ -104,7 +110,7 @@ export function EditPaymentDate({
       <input type="hidden" name="creditoId" value={creditoId} />
 
       {compact ? (
-        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+        <p className={dataDisplayRecipes.compactDatumLabel}>
           Fecha real
         </p>
       ) : null}
@@ -116,14 +122,15 @@ export function EditPaymentDate({
         required
         disabled={pending || state.ok}
         className={[
-          "block w-full min-w-0 max-w-full whitespace-nowrap border-0 bg-transparent p-0 font-semibold text-slate-900 outline-none disabled:opacity-60",
-          compact ? "mt-1 h-5 text-xs" : "h-5 text-xs",
+          formRecipes.control,
+          styles.dateInput,
+          compact ? styles.compactInput : "",
         ].join(" ")}
       />
 
       <div
         className={[
-          "absolute z-50 flex gap-1 rounded-xl border border-violet-100 bg-white p-1.5 shadow-lg shadow-slate-900/15",
+          styles.controls,
           compact
             ? "right-2 top-full mt-1"
             : "left-full top-1/2 ml-1 -translate-y-1/2",
@@ -133,7 +140,7 @@ export function EditPaymentDate({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className={`${actionRecipes.primary} ${styles.iconAction}`}
             aria-label="Guardar fecha real de pago"
             title="Guardar"
           >
@@ -145,7 +152,7 @@ export function EditPaymentDate({
           type="button"
           onClick={closeEditor}
           disabled={pending}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          className={`${actionRecipes.secondary} ${styles.iconAction}`}
           aria-label={state.ok ? "Cerrar edición" : "Cancelar edición"}
           title={state.ok ? "Cerrar" : "Cancelar"}
         >
@@ -156,7 +163,7 @@ export function EditPaymentDate({
       {pending || state.message ? (
         <div
           className={[
-            "absolute z-50 w-max max-w-[250px] rounded-xl border border-violet-100 bg-white px-3 py-2 shadow-lg shadow-slate-900/15",
+            `${overlayRecipes.tooltip} ${styles.feedback}`,
             compact
               ? "right-2 top-[calc(100%+3rem)]"
               : "left-full top-[calc(50%+2.35rem)] ml-1",
@@ -165,10 +172,10 @@ export function EditPaymentDate({
           <p
             className={
               pending
-                ? "text-xs text-slate-500"
+                ? styles.feedbackPending
                 : state.ok
-                  ? "text-xs font-semibold text-emerald-700"
-                  : "text-xs font-semibold text-red-700"
+                  ? styles.feedbackSuccess
+                  : styles.feedbackError
             }
           >
             {pending ? "Guardando..." : state.message}

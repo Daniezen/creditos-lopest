@@ -1,0 +1,12 @@
+.compact { position: relative; min-width: 0; }
+.value { font-size: var(--text-sm); }
+.compactValue { margin-top: var(--ds-space-1); font-size: var(--text-xs); }
+.editButton { position: absolute; z-index: 40; width: 1.75rem; height: 1.75rem; border-radius: var(--ds-radius-sm); }
+.dateInput { height: 2rem; border: 0; background: transparent; padding: 0; box-shadow: none; }
+.compactInput { margin-top: var(--ds-space-1); height: 1.25rem; font-size: var(--text-xs); }
+.controls { position: absolute; z-index: 50; display: flex; gap: var(--ds-space-1); border: 1px solid var(--color-border-default); border-radius: var(--ds-radius-md); background: var(--color-surface-elevated); padding: .375rem; box-shadow: var(--ds-shadow-overlay); }
+.iconAction { width: 2rem; height: 2rem; padding: 0; border-radius: var(--ds-radius-sm); }
+.feedback { z-index: 50; width: max-content; max-width: 15.625rem; }
+.feedbackPending { color: var(--color-text-secondary); }
+.feedbackSuccess { color: var(--color-success); font-weight: var(--font-weight-label); }
+.feedbackError { color: var(--color-danger); font-weight: var(--font-weight-label); }

@@ -1,0 +1,12 @@
+.trigger { border: 1px solid var(--color-danger-border); border-radius: var(--ds-radius-sm); background: var(--color-surface-primary); padding: .375rem .625rem; color: var(--color-danger); font-size: var(--text-xs); font-weight: var(--font-weight-action); }
+.trigger:hover { background: var(--color-danger-surface); }
+.backdrop { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--color-overlay-backdrop); padding: var(--ds-space-4); backdrop-filter: blur(4px); }
+.dialog { width: 100%; max-width: 28rem; padding: var(--ds-space-5); }
+.dialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ds-space-4); }
+.title { color: var(--color-text-primary); font-size: var(--text-lg); font-weight: var(--font-weight-heading); }
+.description { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.close { border-radius: var(--ds-radius-md); padding: var(--ds-space-2); color: var(--color-text-secondary); }
+.close:hover { background: var(--color-surface-subtle); }
+.form { margin-top: var(--ds-space-5); }
+.textarea { margin-top: var(--ds-space-2); resize: vertical; }
+.actions { display: flex; justify-content: flex-end; gap: var(--ds-space-2); margin-top: var(--ds-space-5); }

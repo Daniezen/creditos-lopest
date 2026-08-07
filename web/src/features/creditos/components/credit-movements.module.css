@@ -1,0 +1,24 @@
+.counts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); }
+.mobileList { display: block; }
+.mobileList > *:not(:last-child) { border-bottom: 1px solid var(--color-border-subtle); }
+.tableViewport { display: none; overflow-x: auto; }
+.table { width: 100%; min-width: 58rem; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
+.tableHead { background: var(--color-surface-subtle); color: var(--color-text-secondary); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .025em; }
+.table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--color-border-subtle); }
+.row { transition: background-color var(--ds-duration-normal) var(--ds-easing-standard); }
+.row:hover { background: color-mix(in srgb, var(--color-selection) 50%, transparent); }
+.successRow { background: var(--color-success-surface); }
+.overdueRow { background: var(--color-warning-surface); }
+.cancelledRow { background: var(--color-surface-subtle); color: var(--color-text-muted); }
+.abonoLabel { display: inline-flex; align-items: center; gap: var(--ds-space-2); color: var(--color-success); font-weight: var(--font-weight-label); }
+.card { padding: var(--ds-space-4); }
+.cardLabel { display: flex; align-items: center; gap: var(--ds-space-2); color: var(--color-selection-strong); font-size: var(--text-xs); font-weight: var(--font-weight-label); text-transform: uppercase; letter-spacing: .08em; }
+.cardGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-2); margin-top: var(--ds-space-3); font-size: var(--text-xs); }
+.cardStatus { margin-top: var(--ds-space-3); }
+.paidIndicator, .checkbox { display: inline-flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; border: 2px solid; border-radius: var(--ds-radius-sm); }
+.paidIndicator, .checkboxPaid { border-color: var(--color-success); background: var(--color-success); color: var(--color-text-on-accent); }
+.checkbox { transition: background-color var(--ds-duration-fast) var(--ds-easing-standard); }
+.checkboxPending { border-color: var(--color-danger); background: var(--color-surface-primary); color: transparent; }
+.tableCell { padding-inline: var(--ds-space-2); }
+.tableHeaderCell { padding-inline: var(--ds-space-2); white-space: normal; vertical-align: middle; line-height: var(--leading-tight); }
+@media (min-width: 768px) { .mobileList { display: none; } .tableViewport { display: block; } }

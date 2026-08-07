@@ -6,7 +6,13 @@ import {
 } from "@/features/creditos/pagos/actions";
 import { EditPaymentDate } from "@/features/creditos/pagos/components/edit-payment-date";
 import { AbonoReversalButton } from "@/features/creditos/abonos/components/abono-reversal-button";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
+import { resolverSaldoMostradoMovimiento } from "@/features/creditos/movement-balance-display";
+
+import styles from "./credit-movements.module.css";
 
 interface CreditMovementEvent {
   id: string;
@@ -34,6 +40,7 @@ interface DisplayMovement {
   evento: CreditMovementEvent;
   saldoMostrado: number | null;
 }
+
 
 /**
  * Builds the unified operational history used by the legacy Sheets view.
@@ -99,12 +106,11 @@ function buildDisplayMovements(
 
   return displayEvents.map((evento) => ({
     evento,
-    saldoMostrado:
-      evento.estado === "PAGADO"
-        ? (realizedBalanceByEventId.get(evento.id) ?? null)
-        : evento.saldoCapitalPost === null
-          ? null
-          : Number(evento.saldoCapitalPost),
+    saldoMostrado: resolverSaldoMostradoMovimiento({
+      estado: evento.estado,
+      saldoCapitalPost: evento.saldoCapitalPost,
+      saldoRealizado: realizedBalanceByEventId.get(evento.id) ?? null,
+    }),
   }));
 }
 
@@ -127,21 +133,21 @@ export function CreditMovements({
   ).length;
 
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
+    <section className={surfaceRecipes.dataPanel}>
+      <div className={surfaceRecipes.dataPanelHeader}>
         <div>
-          <h3 className="text-xl font-bold tracking-tight text-slate-950">
+          <h3 className={dataDisplayRecipes.sectionTitle}>
             Cronograma y movimientos
           </h3>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
+        <div className={styles.counts}>
+          <span className={statusRecipes.neutral}>
             <CalendarDays className="h-4 w-4" />
             {cuotasCount} cuota(s)
           </span>
           {abonosCount > 0 ? (
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 shadow-sm">
+            <span className={statusRecipes.success}>
               <Star className="h-4 w-4" />
               {abonosCount} abono(s)
             </span>
@@ -149,7 +155,7 @@ export function CreditMovements({
         </div>
       </div>
 
-      <div className="divide-y divide-violet-100 md:hidden">
+      <div className={styles.mobileList}>
         {movimientos.map(({ evento, saldoMostrado }) => (
           <MovementCard
             key={evento.id}
@@ -160,9 +166,9 @@ export function CreditMovements({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
-          <thead className="bg-violet-50/60 text-xs uppercase tracking-wide text-slate-600">
+      <div className={styles.tableViewport}>
+        <table className={styles.table}>
+          <thead className={styles.tableHead}>
             <tr>
               <TableHead className="w-[10%]">Movimiento</TableHead>
               <TableHead className="w-[12%]">
@@ -175,17 +181,17 @@ export function CreditMovements({
                 Valor
               </TableHead>
               <TableHead className="w-[17%] text-right">
-                <span className="font-black text-blue-700">Intereses</span>
+                <span>Intereses</span>
               </TableHead>
               <TableHead className="w-[17%] text-right">
-                <span className="font-black text-green-700">Saldo capital</span>
+                <span>Saldo capital</span>
               </TableHead>
               <TableHead className="w-[11%]">Estado</TableHead>
               <TableHead className="w-[9%] text-center">¿Pagado?</TableHead>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {movimientos.map(({ evento, saldoMostrado }) => (
               <MovementRow
                 key={evento.id}
@@ -218,23 +224,21 @@ function MovementRow({
   const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
 
   const rowClassName = [
-    "transition",
-    esAbono
-      ? "bg-emerald-50/70 hover:bg-emerald-50"
-      : estaPagado
-        ? "bg-emerald-50/80 hover:bg-emerald-50"
-        : estaAtrasado
-          ? "bg-red-50/80 hover:bg-red-50"
-          : estaCanceladoPorAbono
-            ? "bg-slate-50 text-slate-500"
-            : "hover:bg-violet-50/40",
+    styles.row,
+    esAbono || estaPagado
+      ? styles.successRow
+      : estaAtrasado
+        ? styles.overdueRow
+        : estaCanceladoPorAbono
+          ? styles.cancelledRow
+          : "",
   ].join(" ");
 
   return (
     <tr className={rowClassName}>
-      <TableCell className="font-semibold text-slate-950">
+      <TableCell className={dataDisplayRecipes.numericCell}>
         {esAbono ? (
-          <span className="inline-flex items-center gap-1.5 font-black text-emerald-800">
+          <span className={styles.abonoLabel}>
             <Star className="h-4 w-4 fill-amber-300 text-amber-500" />
             ABONO
           </span>
@@ -258,7 +262,7 @@ function MovementRow({
         )}
       </TableCell>
 
-      <TableCell className="text-right font-bold text-slate-950">
+      <TableCell className={`text-right ${dataDisplayRecipes.numericCell}`}>
         {formatCurrencyCOP(Number(evento.valorProgramado))}
       </TableCell>
 
@@ -266,7 +270,7 @@ function MovementRow({
         {formatCurrencyCOP(Number(evento.interesProgramado))}
       </TableCell>
 
-      <TableCell className="text-right font-semibold text-slate-950">
+      <TableCell className={`text-right ${dataDisplayRecipes.numericCell}`}>
         {saldoMostrado === null ? "-" : formatCurrencyCOP(saldoMostrado)}
       </TableCell>
 
@@ -320,16 +324,14 @@ function MovementCard({
   const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
 
   const cardClassName = [
-    "p-4 transition",
-    esAbono
-      ? "bg-emerald-50/70"
-      : estaPagado
-        ? "bg-emerald-50/80"
-        : estaAtrasado
-          ? "bg-red-50/80"
-          : estaCanceladoPorAbono
-            ? "bg-slate-50 text-slate-500"
-            : "bg-white",
+    styles.card,
+    esAbono || estaPagado
+      ? styles.successRow
+      : estaAtrasado
+        ? styles.overdueRow
+        : estaCanceladoPorAbono
+          ? styles.cancelledRow
+          : "",
   ].join(" ");
 
   return (
@@ -338,8 +340,8 @@ function MovementCard({
         <div>
           <p
             className={[
-              "flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.18em]",
-              esAbono ? "text-emerald-800" : "text-violet-700",
+              styles.cardLabel,
+              esAbono ? styles.abonoLabel : "",
             ].join(" ")}
           >
             {esAbono ? (
@@ -351,7 +353,7 @@ function MovementCard({
               `Cuota ${evento.numeroCuota ?? "-"}`
             )}
           </p>
-          <p className="mt-1 text-sm font-semibold text-slate-950">
+          <p className={dataDisplayRecipes.numericCell}>
             {formatCurrencyCOP(Number(evento.valorProgramado))}
           </p>
         </div>
@@ -374,7 +376,7 @@ function MovementCard({
         )}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+      <div className={styles.cardGrid}>
         <CompactField
           label="Fecha programada"
           value={formatDateCO(evento.fechaProgramada)}
@@ -407,7 +409,7 @@ function MovementCard({
         />
       </div>
 
-      <div className="mt-3">
+      <div className={styles.cardStatus}>
         <EstadoMovimientoBadge estado={evento.estado} esAbono={esAbono} />
       </div>
     </article>
@@ -417,7 +419,7 @@ function MovementCard({
 function StaticPaidIndicator() {
   return (
     <span
-      className="inline-flex h-6 w-6 items-center justify-center rounded border-2 border-emerald-600 bg-emerald-600 text-white"
+      className={styles.paidIndicator}
       aria-label="Abono aplicado"
       title="Abono aplicado"
     >
@@ -430,10 +432,8 @@ function PaidCheckbox({ paid }: { paid: boolean }) {
   return (
     <span
       className={[
-        "flex h-6 w-6 items-center justify-center rounded border-2 transition",
-        paid
-          ? "border-emerald-600 bg-emerald-600 text-white"
-          : "border-red-400 bg-white text-white",
+        styles.checkbox,
+        paid ? styles.checkboxPaid : styles.checkboxPending,
       ].join(" ")}
     >
       {paid ? <CheckCircle2 className="h-4 w-4" /> : null}
@@ -450,7 +450,7 @@ function EstadoMovimientoBadge({
 }) {
   if (esAbono && estado === "PAGADO") {
     return (
-      <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+      <span className={statusRecipes.success}>
         Pagado
       </span>
     );
@@ -458,7 +458,7 @@ function EstadoMovimientoBadge({
 
   if (estado === "PENDIENTE") {
     return (
-      <span className="inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+      <span className={statusRecipes.neutral}>
         Pendiente
       </span>
     );
@@ -466,7 +466,7 @@ function EstadoMovimientoBadge({
 
   if (estado === "PAGADO") {
     return (
-      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+      <span className={statusRecipes.success}>
         Pagado
       </span>
     );
@@ -474,7 +474,7 @@ function EstadoMovimientoBadge({
 
   if (estado === "ATRASADO" || estado === "MORA") {
     return (
-      <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+      <span className={statusRecipes.warning}>
         {formatEnumLabel(estado)}
       </span>
     );
@@ -482,14 +482,14 @@ function EstadoMovimientoBadge({
 
   if (estado === "CANCELADO_POR_ABONO") {
     return (
-      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+      <span className={statusRecipes.neutral}>
         Cancelado por abono
       </span>
     );
   }
 
   return (
-    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+    <span className={statusRecipes.neutral}>
       {formatEnumLabel(estado)}
     </span>
   );
@@ -497,11 +497,11 @@ function EstadoMovimientoBadge({
 
 function CompactField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-violet-100 bg-white/80 px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+    <div className={dataDisplayRecipes.compactDatum}>
+      <p className={dataDisplayRecipes.compactDatumLabel}>
         {label}
       </p>
-      <p className="mt-1 whitespace-nowrap font-semibold text-slate-900">
+      <p className={dataDisplayRecipes.compactDatumValue}>
         {value}
       </p>
     </div>
@@ -524,7 +524,7 @@ function TableCell({
   children: React.ReactNode;
 }) {
   return (
-    <td className={`whitespace-nowrap px-2 py-3 text-slate-700 xl:px-3 ${className}`}>
+    <td className={`${dataDisplayRecipes.tableCell} ${styles.tableCell} ${className}`}>
       {children}
     </td>
   );
@@ -539,7 +539,7 @@ function TableHead({
 }) {
   return (
     <th
-      className={`whitespace-normal px-2 py-3 text-left xl:px-3 align-middle font-semibold leading-tight ${className}`}
+      className={`${dataDisplayRecipes.tableHead} ${styles.tableHeaderCell} ${className}`}
     >
       {children}
     </th>

@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -16,15 +15,23 @@ import {
   StickyNote,
 } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { extenderPlazoSoloInteres } from "@/features/creditos/plazos/actions";
 import { registrarAbonoCapital } from "@/features/creditos/abonos/actions";
 import { CreditMovements } from "@/features/creditos/components/credit-movements";
+import { calcularSaldoCapitalActual } from "@/features/creditos/current-capital-balance";
 import { obtenerCreditoDetalle } from "@/features/creditos/queries";
 import {
   formatCurrencyCOP,
   formatDateCO,
   formatPercent,
 } from "@/lib/formatters";
+
+import styles from "./credito-detalle.module.css";
 
 interface CreditoDetallePageProps {
   params: Promise<{
@@ -64,23 +71,8 @@ export default async function CreditoDetallePage({
   const tasaMensual = Number(credito.tasaMensual);
   const plazoMeses = Number(credito.plazoMeses);
 
-  // The current balance must come from the latest effective paid event, not
-  // from the final projected installment. In Solo Interés schedules, the last
-  // future installment legitimately projects saldoCapitalPost = 0.
-  const ultimoEventoPagadoConSaldo = [...credito.eventos]
-    .filter(
-      (evento) =>
-        evento.estado === "PAGADO" && evento.saldoCapitalPost !== null,
-    )
-    .sort((a, b) => {
-      const fechaA = a.fechaPago ?? a.fechaProgramada;
-      const fechaB = b.fechaPago ?? b.fechaProgramada;
-      return fechaB.getTime() - fechaA.getTime();
-    })[0];
-
-  const saldoActual = ultimoEventoPagadoConSaldo
-    ? Number(ultimoEventoPagadoConSaldo.saldoCapitalPost)
-    : monto;
+  // Derive current balance from every realized principal movement.
+  const saldoActual = calcularSaldoCapitalActual(monto, credito.eventos);
 
   const cuotasEfectivas = credito.eventos.filter(
     (evento) =>
@@ -112,13 +104,13 @@ export default async function CreditoDetallePage({
     estadoOperativo;
 
   return (
-    <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <header className="mb-6 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-white px-6 py-5">
-          <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+    <main className={styles.page}>
+      <header className={`${surfaceRecipes.dataPanel} ${styles.summary}`}>
+        <div className={styles.identityBand}>
+          <div className={styles.identityLayout}>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-3 py-1 text-sm font-semibold text-violet-700">
+              <div className={styles.identityBadges}>
+                <span className={actionRecipes.tertiaryPill}>
                   <Hash className="h-3.5 w-3.5" />
                   {credito.codigo}
                 </span>
@@ -126,41 +118,35 @@ export default async function CreditoDetallePage({
                 <EstadoCreditoBadge estado={credito.estado} />
               </div>
 
-              <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
+              <h2 className={styles.clientName}>
                 {credito.cliente.nombre}
               </h2>
 
-              <p className="mt-2 text-sm text-slate-500">
+              <p className={styles.identityMeta}>
                 C.C. {credito.cliente.cedula} · Tel. {credito.cliente.telefono || "-"} · Crédito creado el {formatDateCO(credito.creadoEn)}
               </p>
             </div>
 
-                        <div className="flex flex-wrap gap-2">
+            <div className={styles.actions}>
               <Link
                 href={`/creditos/${credito.id}/editar`}
-                className="inline-flex w-fit items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+                className={actionRecipes.primaryLarge}
               >
                 <PencilLine className="h-4 w-4" />
                 Editar crédito
               </Link>
 
-<Link
-              href="/creditos"
-              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </Link>
             </div>
           </div>
         </div>
 
-        <section className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-6">
+        <section className={styles.metricsGrid}>
           <MetricCard
             icon={Landmark}
             label="Monto"
             value={formatCurrencyCOP(monto)}
             className="xl:col-span-2"
+            emphasis
           />
 
           <MetricCard
@@ -175,12 +161,14 @@ export default async function CreditoDetallePage({
             icon={Percent}
             label="Tasa mensual"
             value={formatPercent(tasaMensual)}
+            relevant
           />
 
           <MetricCard
             icon={Clock3}
             label="Plazo"
             value={`${formatPlainNumber(plazoMeses)} meses`}
+            relevant
           />
 
           <MetricCard
@@ -205,7 +193,7 @@ export default async function CreditoDetallePage({
           />
         </section>
 
-        <section className="grid gap-3 border-t border-violet-100 px-5 pb-5 pt-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <section className={styles.operationalGrid}>
           <OperationalInfo
             icon={Activity}
             label="Observación operativa"
@@ -221,34 +209,34 @@ export default async function CreditoDetallePage({
       </header>
 
 
-      <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+      <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
+        <div className={styles.actionLayout}>
           <div>
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">
+            <h3 className={dataDisplayRecipes.sectionTitle}>
               Abono extraordinario a capital
             </h3>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            <p className={styles.actionHelp}>
               En amortización fija reduce plazo atacando cuotas futuras desde la cola. En solo interés reduce la base de capital y recalcula intereses futuros.
             </p>
           </div>
 
-          <form action={registrarAbonoCapital} className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[360px] sm:flex-row sm:items-end">
+          <form action={registrarAbonoCapital} className={styles.abonoForm}>
             <input type="hidden" name="creditoId" value={credito.id} />
 
-            <label className="block min-w-0 flex-1">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label className={styles.formField}>
+              <span className={formRecipes.label}>
                 Valor del abono
               </span>
               <input
                 name="montoAbono"
                 placeholder="Ej: 100.000"
-                className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+                className={formRecipes.control}
               />
             </label>
 
             <button
               type="submit"
-              className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700"
+              className={actionRecipes.primary}
             >
               Aplicar abono
             </button>
@@ -258,32 +246,32 @@ export default async function CreditoDetallePage({
 
 
       {credito.tipoAmortizacion === "SOLO_INTERES" ? (
-        <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-          <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
+        <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
+          <div className={styles.actionLayout}>
             <div>
-              <h3 className="text-xl font-bold tracking-tight text-slate-950">
+              <h3 className={dataDisplayRecipes.sectionTitle}>
                 Extender plazo
               </h3>
             </div>
 
-            <form action={extenderPlazoSoloInteres} className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[320px] sm:flex-row sm:items-end">
+            <form action={extenderPlazoSoloInteres} className={styles.extensionForm}>
               <input type="hidden" name="creditoId" value={credito.id} />
 
-              <label className="block min-w-0 flex-1">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label className={styles.formField}>
+                <span className={formRecipes.label}>
                   Cuotas extra
                 </span>
                 <input
                   name="cuotasExtra"
                   inputMode="numeric"
                   placeholder="Ej: 2"
-                  className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+                  className={formRecipes.control}
                 />
               </label>
 
               <button
                 type="submit"
-                className="rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+                className={actionRecipes.secondary}
               >
                 Extender
               </button>
@@ -315,15 +303,15 @@ function OperationalInfo({
   muted = false,
 }: OperationalInfoProps) {
   return (
-    <article className="min-w-0 rounded-2xl border border-violet-100 bg-violet-50/35 px-4 py-3">
-      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        <Icon className="h-3.5 w-3.5 text-violet-600" />
+    <article className={`${dataDisplayRecipes.compactDatum} ${styles.operationalInfo}`}>
+      <p className={dataDisplayRecipes.compactDatumLabel}>
+        <Icon className={styles.semanticIcon} />
         {label}
       </p>
       <p
         className={[
-          "mt-1.5 line-clamp-2 text-sm leading-5",
-          muted ? "text-slate-400" : "font-medium text-slate-800",
+          styles.operationalValue,
+          muted ? styles.muted : "",
         ].join(" ")}
         title={value}
       >
@@ -338,6 +326,8 @@ interface MetricCardProps {
   label: string;
   value: string;
   featured?: boolean;
+  relevant?: boolean;
+  emphasis?: boolean;
   className?: string;
 }
 
@@ -346,32 +336,36 @@ function MetricCard({
   label,
   value,
   featured,
+  relevant = false,
+  emphasis = false,
   className = "",
 }: MetricCardProps) {
   return (
     <article
       className={[
-        "rounded-2xl border p-4",
-        featured
-          ? "border-violet-200 bg-violet-50"
-          : "border-violet-100 bg-white/80",
+        dataDisplayRecipes.metricCompact,
+        featured ? styles.featuredMetric : "",
         className,
       ].join(" ")}
     >
       <p
         className={[
-          "flex items-center gap-2 text-xs font-semibold uppercase tracking-wide",
-          featured ? "text-violet-700" : "text-slate-500",
+          dataDisplayRecipes.metricCompactLabel,
+          featured ? styles.featuredMetricLabel : "",
         ].join(" ")}
       >
-        <Icon className="h-3.5 w-3.5" />
+        <Icon className={styles.metricIcon} />
         {label}
       </p>
 
       <p
         className={[
-          "mt-2 text-xl font-bold tracking-tight",
-          featured ? "text-violet-950" : "text-slate-950",
+          dataDisplayRecipes.metricCompactValue,
+          featured || emphasis
+            ? dataDisplayRecipes.metricCompactValueEmphasis
+            : relevant
+              ? dataDisplayRecipes.metricCompactValueRelevant
+              : "",
         ].join(" ")}
       >
         {value}
@@ -383,7 +377,7 @@ function MetricCard({
 function EstadoCreditoBadge({ estado }: { estado: string }) {
   if (estado === "ACTIVO") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+      <span className={statusRecipes.success}>
         <CheckCircle2 className="h-3.5 w-3.5" />
         Activo
       </span>
@@ -391,7 +385,7 @@ function EstadoCreditoBadge({ estado }: { estado: string }) {
   }
 
   return (
-    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-semibold text-slate-700">
+    <span className={statusRecipes.neutral}>
       {formatEnumLabel(estado)}
     </span>
   );
@@ -444,4 +438,3 @@ function formatPlainNumber(value: number): string {
         maximumFractionDigits: 2,
       });
 }
-  

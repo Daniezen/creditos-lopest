@@ -4,6 +4,8 @@ import {
   type Prisma,
 } from "@prisma/client";
 
+import { obtenerCorteExclusivoCuotasVencidas } from "./overdue-policy";
+
 /**
  * Fecha calendario actual en Colombia.
  *
@@ -39,21 +41,23 @@ function calcularDiasAtraso(fechaProgramada: Date, fechaReferencia: Date): numbe
 /**
  * Marca como ATRASADO todas las cuotas PENDIENTE vencidas.
  *
- * Regla heredada de Sheets:
- * - PENDIENTE con fechaProgramada < hoy => ATRASADO.
+ * Regla operativa:
+ * - La cuota conserva PENDIENTE durante el día programado y el día siguiente.
+ * - Desde el segundo día posterior pasa a ATRASADO.
  * - MORA queda reservada hasta definir regla explícita de días/interés.
  */
 export async function actualizarCuotasVencidas(
   tx: Prisma.TransactionClient,
 ): Promise<number> {
   const hoy = obtenerHoyColombia();
+  const corteExclusivo = obtenerCorteExclusivoCuotasVencidas(hoy);
 
   const eventos = await tx.eventoFinanciero.findMany({
     where: {
       tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
       estado: EstadoEventoFinanciero.PENDIENTE,
       fechaProgramada: {
-        lt: hoy,
+        lt: corteExclusivo,
       },
     },
     select: {

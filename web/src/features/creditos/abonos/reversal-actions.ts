@@ -8,6 +8,7 @@ import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 
 import { isAbonoReversible } from "./reversibility";
+import { puedeRevertirAbonoRecalculando, recalcularSoloInteresTrasReversion } from "./recalculated-reversal-policy";
 import type { FinancialEventImage } from "./snapshot";
 
 interface SnapshotCredit {
@@ -28,44 +29,72 @@ export async function reversarAbonoCapital(formData: FormData): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const abono = await tx.eventoFinanciero.findUnique({
       where: { id: abonoEventoId },
-      include: { abonoSnapshot: true },
+      include: {
+        abonoSnapshot: true,
+        credito: { select: { tipoAmortizacion: true, frecuencia: true, tasaMensual: true } },
+      },
     });
     if (!abono || abono.creditoId !== creditoId || abono.tipo !== TipoEventoFinanciero.ABONO_CAPITAL) {
       throw new Error("El abono no existe o no pertenece al credito.");
     }
     if (!abono.abonoSnapshot) throw new Error("Este abono no tiene un snapshot seguro.");
 
-    const eventosActuales = await tx.eventoFinanciero.findMany({
-      where: { creditoId, tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA },
+    const todosLosEventos = await tx.eventoFinanciero.findMany({ where: { creditoId } });
+    const eventosActuales = todosLosEventos.filter((e) => e.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA);
+    const reversionExacta = isAbonoReversible({ eventosDespues: abono.abonoSnapshot.eventosDespues, currentEvents: eventosActuales });
+    const reversionRecalculada = !reversionExacta && puedeRevertirAbonoRecalculando({
+      abonoId: abono.id,
+      abonoCreadoEn: abono.creadoEn,
+      tipoAmortizacion: abono.credito.tipoAmortizacion,
+      eventos: todosLosEventos,
     });
-    if (!isAbonoReversible({
-      eventosDespues: abono.abonoSnapshot.eventosDespues,
-      currentEvents: eventosActuales,
-    })) {
-      throw new Error("El abono ya no puede revertirse porque una cuota afectada cambio posteriormente.");
+    if (!reversionExacta && !reversionRecalculada) {
+      throw new Error("El abono no puede revertirse porque existen cuotas pagadas, otro abono posterior o no admite recálculo seguro.");
     }
 
     const eventosAntes = abono.abonoSnapshot.eventosAntes as unknown as FinancialEventImage[];
     const creditoAntes = abono.abonoSnapshot.creditoAntes as unknown as SnapshotCredit;
 
-    for (const evento of eventosAntes) {
-      await tx.eventoFinanciero.update({
-        where: { id: evento.id },
-        data: {
-          fechaProgramada: new Date(evento.fechaProgramada),
-          fechaPago: evento.fechaPago ? new Date(evento.fechaPago) : null,
-          valorProgramado: evento.valorProgramado,
-          capitalProgramado: evento.capitalProgramado,
-          interesProgramado: evento.interesProgramado,
-          montoPagado: evento.montoPagado,
-          capitalPagado: evento.capitalPagado,
-          interesPagado: evento.interesPagado,
-          saldoCapitalPost: evento.saldoCapitalPost,
-          estado: evento.estado as EstadoEventoFinanciero,
-          diasAtraso: evento.diasAtraso,
-          accionPor: user.id,
-        },
+    if (reversionExacta) {
+      for (const evento of eventosAntes) {
+        await tx.eventoFinanciero.update({
+          where: { id: evento.id },
+          data: {
+            fechaProgramada: new Date(evento.fechaProgramada),
+            fechaPago: evento.fechaPago ? new Date(evento.fechaPago) : null,
+            valorProgramado: evento.valorProgramado,
+            capitalProgramado: evento.capitalProgramado,
+            interesProgramado: evento.interesProgramado,
+            montoPagado: evento.montoPagado,
+            capitalPagado: evento.capitalPagado,
+            interesPagado: evento.interesPagado,
+            saldoCapitalPost: evento.saldoCapitalPost,
+            estado: evento.estado as EstadoEventoFinanciero,
+            diasAtraso: evento.diasAtraso,
+            accionPor: user.id,
+          },
+        });
+      }
+    } else {
+      const saldoRestaurado = Number(abono.saldoCapitalPost ?? 0) + Number(abono.capitalPagado);
+      const recalculadas = recalcularSoloInteresTrasReversion({
+        saldoRestaurado,
+        tasaMensual: Number(abono.credito.tasaMensual),
+        frecuencia: abono.credito.frecuencia,
+        cuotas: eventosActuales,
       });
+      for (const cuota of recalculadas) {
+        await tx.eventoFinanciero.update({
+          where: { id: cuota.id },
+          data: {
+            valorProgramado: cuota.valorProgramado.toFixed(2),
+            capitalProgramado: cuota.capitalProgramado.toFixed(2),
+            interesProgramado: cuota.interesProgramado.toFixed(2),
+            saldoCapitalPost: cuota.saldoCapitalPost.toFixed(2),
+            accionPor: user.id,
+          },
+        });
+      }
     }
 
     await tx.credito.update({
@@ -90,7 +119,12 @@ export async function reversarAbonoCapital(formData: FormData): Promise<void> {
         monto: String(abono.capitalPagado),
         snapshotId: abono.abonoSnapshot.id,
       },
-      after: { restoredEventIds: eventosAntes.map((evento) => evento.id) },
+      after: {
+        restoredEventIds: reversionExacta
+          ? eventosAntes.map((evento) => evento.id)
+          : eventosActuales.map((evento) => evento.id),
+        reversionMode: reversionExacta ? "EXACT_SNAPSHOT" : "RECALCULATED_CURRENT_SCHEDULE",
+      },
       metadata: {
         creditoId,
         versionAlgoritmo: abono.abonoSnapshot.versionAlgoritmo,

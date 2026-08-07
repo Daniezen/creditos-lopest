@@ -4,7 +4,12 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { reversarAbonoCapital } from "../reversal-actions";
+
+import styles from "./abono-reversal-button.module.css";
 
 interface AbonoReversalButtonProps {
   creditoId: string;
@@ -23,62 +28,62 @@ export function AbonoReversalButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+        className={styles.trigger}
       >
         Revertir
       </button>
 
       {open
         ? createPortal(
-            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+            <div className={styles.backdrop}>
               <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="revertir-abono-title"
-                className="w-full max-w-md rounded-3xl border border-red-100 bg-white p-5 shadow-2xl"
+                className={`${surfaceRecipes.overlay} ${styles.dialog}`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className={styles.dialogHeader}>
                   <div>
-                    <h3 id="revertir-abono-title" className="text-lg font-semibold text-slate-950">
+                    <h3 id="revertir-abono-title" className={styles.title}>
                       Revertir abono
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                    <p className={styles.description}>
                       Se restaurara el credito al estado anterior a este abono.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                    className={styles.close}
                     aria-label="Cerrar confirmacion"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <form action={reversarAbonoCapital} className="mt-5">
+                <form action={reversarAbonoCapital} className={styles.form}>
                   <input type="hidden" name="creditoId" value={creditoId} />
                   <input type="hidden" name="abonoEventoId" value={abonoEventoId} />
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label className={formRecipes.label}>
                     Motivo opcional
                   </label>
                   <textarea
                     name="motivo"
                     maxLength={500}
                     rows={3}
-                    className="mt-2 w-full resize-y rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-950 outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100"
+                    className={`${formRecipes.control} ${styles.textarea}`}
                   />
-                  <div className="mt-5 flex justify-end gap-2">
+                  <div className={styles.actions}>
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className={actionRecipes.secondary}
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                      className={actionRecipes.destructive}
                     >
                       Confirmar reversion
                     </button>

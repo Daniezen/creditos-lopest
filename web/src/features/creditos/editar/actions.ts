@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { generarCronogramaSimulado } from "@/domain/creditos/simulador/calcular-cronograma";
 import { prisma } from "@/lib/prisma";
+import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
 import {
@@ -38,25 +39,6 @@ type CreditMutationResult =
       ok: false;
       error: string;
     };
-
-function eventoTieneActividadFinanciera(evento: {
-  tipo: string;
-  estado: string;
-  montoPagado: unknown;
-  capitalPagado: unknown;
-  interesPagado: unknown;
-  fechaPago: Date | null;
-}): boolean {
-  return (
-    evento.tipo === "ABONO_CAPITAL" ||
-    evento.estado === "PAGADO" ||
-    evento.estado === "CANCELADO_POR_ABONO" ||
-    Number(evento.montoPagado) > 0 ||
-    Number(evento.capitalPagado) > 0 ||
-    Number(evento.interesPagado) > 0 ||
-    evento.fechaPago !== null
-  );
-}
 
 function eventoPuedeRegenerarse(evento: {
   tipo: string;

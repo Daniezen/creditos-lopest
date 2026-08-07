@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
 function toMoneyDecimalString(value: number): string {
@@ -85,12 +86,6 @@ export async function extenderPlazoSoloInteres(formData: FormData): Promise<void
           },
         },
         eventos: {
-          where: {
-            tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
-            estado: {
-              not: EstadoEventoFinanciero.CANCELADO_POR_ABONO,
-            },
-          },
           orderBy: [
             {
               numeroCuota: "asc",
@@ -115,7 +110,16 @@ export async function extenderPlazoSoloInteres(formData: FormData): Promise<void
       throw new Error("Extender plazo solo aplica para créditos de Solo Interés.");
     }
 
-    const cuotas = credito.eventos.filter((evento) => evento.numeroCuota !== null);
+    if (credito.eventos.some(eventoTieneActividadFinanciera)) {
+      throw new Error("No se puede extender el plazo porque el crédito ya tiene movimientos financieros.");
+    }
+
+    const cuotas = credito.eventos.filter(
+      (evento) =>
+        evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
+        evento.estado !== EstadoEventoFinanciero.CANCELADO_POR_ABONO &&
+        evento.numeroCuota !== null,
+    );
 
     if (cuotas.length === 0) {
       throw new Error("El crédito no tiene cuotas programadas para extender.");
