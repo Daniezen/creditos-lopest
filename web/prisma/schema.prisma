@@ -82,6 +82,11 @@ model Credito {
 
   fechaCancelacion DateTime?
 
+  // User-facing deletion is a traceable soft delete, never a physical delete.
+  eliminadoEn DateTime?
+  eliminadoPor String?
+  motivoEliminacion String?
+
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
   accionPor     String?
@@ -94,6 +99,7 @@ model Credito {
   @@index([codigo])
   @@index([estado])
   @@index([fechaPrestamo])
+  @@index([eliminadoEn])
   @@map("creditos")
 }
 

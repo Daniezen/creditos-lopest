@@ -66,8 +66,8 @@ export async function transferirCreditoOwnerAction(
         },
       });
 
-      if (!credito) {
-        throw new Error("El credito no existe.");
+      if (!credito || credito.eliminadoEn) {
+        throw new Error("El credito no existe o fue eliminado.");
       }
 
       const targetOwner = await tx.user.findUnique({

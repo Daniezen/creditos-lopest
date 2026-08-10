@@ -110,6 +110,7 @@ export async function transferirClienteCompletoAction(
       const affectedCredits = await tx.credito.updateMany({
         where: {
           clienteId: cliente.id,
+          eliminadoEn: null,
         },
         data: {
           ownerUserId: targetOwner.id,
@@ -216,8 +217,8 @@ export async function transferirCreditoIndividualAction(
         },
       });
 
-      if (!credito) {
-        throw new Error("El crédito no existe.");
+      if (!credito || credito.eliminadoEn) {
+        throw new Error("El crédito no existe o fue eliminado.");
       }
 
       const targetOwner = await obtenerTargetOwner(tx, targetOwnerUserId);

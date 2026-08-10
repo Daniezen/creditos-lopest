@@ -82,6 +82,7 @@ export async function transferirClienteOwnerAction(
       const affectedCredits = await tx.credito.updateMany({
         where: {
           clienteId: cliente.id,
+          eliminadoEn: null,
         },
         data: {
           ownerUserId: targetOwner.id,

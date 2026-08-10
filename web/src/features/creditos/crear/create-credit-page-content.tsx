@@ -60,12 +60,45 @@ export function CreateCreditPageContent({
     setSaveError(null);
 
     startTransition(async () => {
-      const response = await crearCreditoDesdeWizard({
+      let response = await crearCreditoDesdeWizard({
         clienteId: selectedCliente.id,
         form,
         nota,
         idempotencyKey,
       });
+
+      if (!response.ok && response.possibleDuplicates?.length) {
+        const detalles = response.possibleDuplicates
+          .map(
+            (item) =>
+              `${item.codigo} · $${item.monto.toLocaleString("es-CO")} · ${item.fechaPrestamo.slice(0, 10)} · ${item.ownerNombre ?? item.ownerEmail ?? "Sin propietario"}`,
+          )
+          .join("\n");
+        const continuar = window.confirm(
+          `Este cliente ya tiene créditos similares en la cartera actual o en la otra cartera:\n\n${detalles}\n\n¿Confirmas que el nuevo crédito es diferente?`,
+        );
+
+        if (!continuar) {
+          return;
+        }
+
+        const motivoDuplicado = window.prompt(
+          "Explica por qué se trata de un crédito diferente:",
+        )?.trim();
+
+        if (!motivoDuplicado) {
+          return;
+        }
+
+        response = await crearCreditoDesdeWizard({
+          clienteId: selectedCliente.id,
+          form,
+          nota,
+          idempotencyKey,
+          confirmarPosibleDuplicado: true,
+          motivoDuplicado,
+        });
+      }
 
       if (!response.ok) {
         setSaveError(response.error);

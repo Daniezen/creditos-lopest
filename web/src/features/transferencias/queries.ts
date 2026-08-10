@@ -158,6 +158,7 @@ export async function obtenerTransferenciasContext(): Promise<TransferenciasCont
             creditos: {
               some: {
                 ownerUser: buildPairOwnerWhere(),
+                eliminadoEn: null,
               },
             },
           },
@@ -187,9 +188,10 @@ export async function obtenerTransferenciasContext(): Promise<TransferenciasCont
   });
 
   const creditoWhere = isAdmin
-    ? {}
+    ? { eliminadoEn: null }
     : {
         ownerUser: buildPairOwnerWhere(),
+        eliminadoEn: null,
       };
 
   const creditos = await prisma.credito.findMany({

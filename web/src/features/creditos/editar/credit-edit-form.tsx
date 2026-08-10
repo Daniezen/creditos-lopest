@@ -73,8 +73,16 @@ export function CreditEditForm({
   }
 
   function handleDelete() {
+    const motivo = window.prompt(
+      "Motivo del borrado. El crédito se ocultará, pero su historial se conservará:",
+    )?.trim();
+
+    if (!motivo) {
+      return;
+    }
+
     const confirmed = window.confirm(
-      "¿Eliminar este crédito? Solo se permitirá si no tiene pagos, abonos ni historial financiero real.",
+      "¿Borrar este crédito? Desaparecerá de la cartera y los reportes, pero conservará su trazabilidad.",
     );
 
     if (!confirmed) {
@@ -86,6 +94,7 @@ export function CreditEditForm({
     startTransition(async () => {
       const result = await eliminarCredito({
         id: creditoId,
+        motivo,
       });
 
       if (!result.ok) {
@@ -188,7 +197,7 @@ export function CreditEditForm({
           className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />
-          Eliminar crédito
+          Borrar crédito
         </button>
 
         <button

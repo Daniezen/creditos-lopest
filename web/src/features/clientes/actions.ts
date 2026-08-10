@@ -341,24 +341,10 @@ export async function eliminarCliente(
         );
       }
 
-      const creditoIds = cliente.creditos.map((credito) => credito.id);
-
-      if (creditoIds.length > 0) {
-        await tx.eventoFinanciero.deleteMany({
-          where: {
-            creditoId: {
-              in: creditoIds,
-            },
-          },
-        });
-
-        await tx.credito.deleteMany({
-          where: {
-            id: {
-              in: creditoIds,
-            },
-          },
-        });
+      if (cliente.creditos.length > 0) {
+        throw new Error(
+          "No se puede eliminar el cliente porque conserva créditos asociados. Borra primero cada crédito elegible para mantener su trazabilidad.",
+        );
       }
 
       await tx.cliente.delete({

@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
 
 import { reservarCodigoCredito } from "../codigos";
+import { esPosibleDuplicado } from "../deletion-policy";
+import { recordAuditLogTx } from "@/server/audit/audit-log";
 import {
   mapEstadoCuotaToPrisma,
   mapFrecuenciaPagoToPrisma,
@@ -24,6 +26,8 @@ interface CrearCreditoDesdeWizardInput {
   form: SimulatorFormState;
   nota?: string;
   idempotencyKey: string;
+  confirmarPosibleDuplicado?: boolean;
+  motivoDuplicado?: string;
 }
 
 type CrearCreditoDesdeWizardResult =
@@ -35,6 +39,13 @@ type CrearCreditoDesdeWizardResult =
   | {
       ok: false;
       error: string;
+      possibleDuplicates?: Array<{
+        codigo: string;
+        monto: number;
+        fechaPrestamo: string;
+        ownerNombre: string | null;
+        ownerEmail: string | null;
+      }>;
     };
 
 /**
@@ -87,10 +98,17 @@ export async function crearCreditoDesdeWizard(
           codigo: true,
           clienteId: true,
           ownerUserId: true,
+          eliminadoEn: true,
         },
       });
 
       if (creditoExistente) {
+        if (creditoExistente.eliminadoEn) {
+          throw new Error(
+            "La operación anterior corresponde a un crédito eliminado. Reinicia el flujo para generar una nueva operación.",
+          );
+        }
+
         if (creditoExistente.clienteId !== clienteId) {
           throw new Error("La operación idempotente no corresponde al cliente seleccionado.");
         }
@@ -126,6 +144,27 @@ export async function crearCreditoDesdeWizard(
 
       if (!cliente) {
         throw new Error("El cliente seleccionado no existe.");
+      }
+
+      const existentes = await tx.credito.findMany({
+        where: { clienteId, eliminadoEn: null },
+        include: { ownerUser: { select: { nombre: true, email: true } } },
+      });
+      const posiblesDuplicados = existentes.filter((existente) => esPosibleDuplicado({
+        fechaPrestamo: condiciones.fechaPrestamo,
+        tasaMensual: condiciones.tasaMensual,
+        frecuencia: mapFrecuenciaPagoToPrisma(condiciones.frecuencia),
+        tipoAmortizacion: mapTipoAmortizacionToPrisma(condiciones.tipoAmortizacion),
+        monto: condiciones.monto,
+      }, existente));
+      if (posiblesDuplicados.length > 0 && !input.confirmarPosibleDuplicado) {
+        const error = new Error("POSIBLE_DUPLICADO");
+        Object.assign(error, { posiblesDuplicados });
+        throw error;
+      }
+      const motivoDuplicado = input.motivoDuplicado?.trim() ?? "";
+      if (posiblesDuplicados.length > 0 && motivoDuplicado.length < 10) {
+        throw new Error("Indica por qué el nuevo crédito es diferente del existente.");
       }
 
       const cronograma = generarCronogramaSimulado({
@@ -173,6 +212,17 @@ export async function crearCreditoDesdeWizard(
         },
       });
 
+      if (posiblesDuplicados.length > 0) {
+        await recordAuditLogTx(tx, {
+          actorId: user.id,
+          action: "CREDITO_CREATE_DUPLICATE_OVERRIDE",
+          entityType: "Credito",
+          entityId: credito.id,
+          reason: motivoDuplicado,
+          after: { codigo: credito.codigo, clienteId },
+          metadata: { possibleDuplicateIds: posiblesDuplicados.map((item) => item.id) },
+        });
+      }
       await tx.eventoFinanciero.createMany({
         data: cronograma.map((cuota) => ({
           codigo: `${codigo}-C${cuota.numeroCuota}`,
@@ -207,13 +257,23 @@ export async function crearCreditoDesdeWizard(
     };
   } catch (error) {
     console.error("Error al crear crédito desde wizard:", error);
-
+    const possibleDuplicates = error && typeof error === "object" && "posiblesDuplicados" in error
+      ? (error.posiblesDuplicados as Array<{ codigo: string; monto: unknown; fechaPrestamo: Date; ownerUser: { nombre: string; email: string } | null }>).map((item) => ({
+          codigo: item.codigo,
+          monto: Number(item.monto),
+          fechaPrestamo: item.fechaPrestamo.toISOString(),
+          ownerNombre: item.ownerUser?.nombre ?? null,
+          ownerEmail: item.ownerUser?.email ?? null,
+        }))
+      : undefined;
     return {
       ok: false,
-      error:
-        error instanceof Error
+      error: possibleDuplicates
+        ? "Se encontraron créditos posiblemente duplicados."
+        : error instanceof Error
           ? error.message
           : "No se pudo guardar el crédito.",
+      possibleDuplicates,
     };
   }
 }

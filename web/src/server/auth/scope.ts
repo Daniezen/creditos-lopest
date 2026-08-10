@@ -33,6 +33,7 @@ export function buildClienteVisibilityWhere(
         creditos: {
           some: {
             ownerUserId: user.id,
+            eliminadoEn: null,
           },
         },
       },
@@ -47,11 +48,12 @@ export function buildCreditoVisibilityWhere(
   user: CurrentUserScope,
 ): Prisma.CreditoWhereInput {
   if (canSeeAllOwners(user)) {
-    return {};
+    return { eliminadoEn: null };
   }
 
   return {
     ownerUserId: user.id,
+    eliminadoEn: null,
   };
 }
 

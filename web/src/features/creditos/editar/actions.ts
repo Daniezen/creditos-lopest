@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { generarCronogramaSimulado } from "@/domain/creditos/simulador/calcular-cronograma";
 import { prisma } from "@/lib/prisma";
 import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
+import { puedeBorrarseCredito } from "@/features/creditos/deletion-policy";
+import { recordAuditLogTx } from "@/server/audit/audit-log";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 
 import {
@@ -27,6 +29,7 @@ interface ActualizarCreditoInput {
 
 interface EliminarCreditoInput {
   id: string;
+  motivo: string;
 }
 
 type CreditMutationResult =
@@ -249,17 +252,60 @@ export async function eliminarCredito(
         throw new Error("El crédito no existe.");
       }
 
-      const tieneActividad = credito.eventos.some(eventoTieneActividadFinanciera);
+      const motivo = input.motivo.trim();
 
-      if (tieneActividad) {
+      if (motivo.length < 10 || motivo.length > 500) {
         throw new Error(
-          "No se puede eliminar el crédito porque tiene pagos, abonos o historial financiero.",
+          "Indica un motivo de eliminación entre 10 y 500 caracteres.",
         );
       }
 
-      await tx.credito.delete({
+      if (!puedeBorrarseCredito(credito.eventos)) {
+        throw new Error(
+          "No se puede eliminar el crédito porque mantiene pagos o abonos activos. Reviértelos primero.",
+        );
+      }
+
+      if (credito.eliminadoEn) {
+        throw new Error("El crédito ya fue eliminado.");
+      }
+
+      const eliminadoEn = new Date();
+
+      await recordAuditLogTx(tx, {
+        actorId: user.id,
+        action: "CREDITO_DELETE",
+        entityType: "Credito",
+        entityId: credito.id,
+        reason: motivo,
+        before: {
+          codigo: credito.codigo,
+          clienteId: credito.clienteId,
+          ownerUserId: credito.ownerUserId,
+          estado: credito.estado,
+          monto: String(credito.monto),
+          fechaPrestamo: credito.fechaPrestamo.toISOString(),
+          eventos: credito.eventos.map((evento) => ({
+            id: evento.id,
+            tipo: evento.tipo,
+            estado: evento.estado,
+          })),
+        },
+        after: {
+          eliminadoEn: eliminadoEn.toISOString(),
+          eliminadoPor: user.id,
+        },
+      });
+
+      await tx.credito.update({
         where: {
           id,
+        },
+        data: {
+          eliminadoEn,
+          eliminadoPor: user.id,
+          motivoEliminacion: motivo,
+          accionPor: user.id,
         },
       });
     });

@@ -59,6 +59,9 @@ export async function actualizarCuotasVencidas(
       fechaProgramada: {
         lt: corteExclusivo,
       },
+      credito: {
+        eliminadoEn: null,
+      },
     },
     select: {
       id: true,
