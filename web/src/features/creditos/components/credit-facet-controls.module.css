@@ -28,3 +28,6 @@
 .mobileFacetBody { padding-top: var(--ds-space-3); }
 @media (min-width: 768px) { .panel { top: 0; bottom: 0; left: auto; width: min(28rem, 92vw); max-height: none; border-radius: 0; } }
 @media (min-width: 1200px) { .responsiveButton, .layer { display: none; } }
+
+.topFacet { position: relative; display: grid; min-width: 10rem; gap: var(--ds-space-1); }
+.topFacetButton { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: var(--ds-space-2); white-space: nowrap; }

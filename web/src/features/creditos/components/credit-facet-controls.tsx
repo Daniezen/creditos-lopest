@@ -14,8 +14,8 @@ import { formatCurrencyCOP, formatPercent } from "@/lib/formatters";
 import type { CreditFacetCatalogs } from "../credit-facets";
 import styles from "./credit-facet-controls.module.css";
 
-type FacetName = "codigo" | "cliente" | "monto" | "capital" | "interes" | "proximaCuota" | "tasa";
-type ListKey = "codigos" | "clientes" | "montos" | "capitales" | "intereses" | "tasas";
+type FacetName = "codigo" | "cliente" | "cuotasAtrasadas" | "monto" | "capital" | "interes" | "proximaCuota" | "tasa";
+type ListKey = "codigos" | "clientes" | "cuotasAtrasadas" | "montos" | "capitales" | "intereses" | "tasas";
 
 interface FacetHeadProps {
   facet: FacetName;
@@ -52,6 +52,57 @@ export function CreditFacetHead({ facet, label, catalogs, align, className = "" 
   );
 }
 
+export function OverdueInstallmentCountFilter({ catalogs }: { catalogs: CreditFacetCatalogs }) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const selected = useSearchParams()
+    .get("cuotasAtrasadas")
+    ?.split("|")
+    .filter(Boolean)
+    .map(safeDecode) ?? [];
+  const summary = selected.length === 0 ? "Todas" : selected.join(", ");
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsideClick(event: MouseEvent) {
+      const target = event.target as Element;
+      const insideAnchor = anchorRef.current?.contains(target) ?? false;
+      const insidePortal = Boolean(target.closest("[data-credit-facet-portal]"));
+      if (!insideAnchor && !insidePortal) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  return (
+    <div className={styles.topFacet}>
+      <span className={formRecipes.label}>Cuotas atrasadas</span>
+      <button
+        ref={anchorRef}
+        type="button"
+        className={`${actionRecipes.secondary} ${styles.topFacetButton}`}
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-label={`Filtrar por cantidades exactas de cuotas atrasadas. Selección: ${summary}`}
+      >
+        <span>{summary}</span>
+        <SlidersHorizontal className={styles.icon} />
+      </button>
+      {open ? (
+        <FacetPortal anchorRef={anchorRef} onClose={() => setOpen(false)}>
+          <Checklist
+            param="cuotasAtrasadas"
+            values={catalogs.cuotasAtrasadas.map((value) => ({
+              value: String(value),
+              label: String(value),
+            }))}
+          />
+        </FacetPortal>
+      ) : null}
+    </div>
+  );
+}
+
 export function ResponsiveCreditFilters({ catalogs }: { catalogs: CreditFacetCatalogs }) {
   const [open, setOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -79,6 +130,7 @@ export function ResponsiveCreditFilters({ catalogs }: { catalogs: CreditFacetCat
             <div className={styles.panelBody}>
               <MobileFacet title="Código"><FacetBody facet="codigo" catalogs={catalogs} /></MobileFacet>
               <MobileFacet title="Cliente"><FacetBody facet="cliente" catalogs={catalogs} /></MobileFacet>
+              <MobileFacet title="Cuotas atrasadas"><FacetBody facet="cuotasAtrasadas" catalogs={catalogs} /></MobileFacet>
               <MobileFacet title="Monto original"><FacetBody facet="monto" catalogs={catalogs} /></MobileFacet>
               <MobileFacet title="Capital pendiente"><FacetBody facet="capital" catalogs={catalogs} /></MobileFacet>
               <MobileFacet title="Interés pendiente"><FacetBody facet="interes" catalogs={catalogs} /></MobileFacet>
@@ -99,6 +151,7 @@ function MobileFacet({ title, children }: { title: string; children: ReactNode }
 function FacetBody({ facet, catalogs }: { facet: FacetName; catalogs: CreditFacetCatalogs }) {
   if (facet === "codigo") return <Checklist param="codigos" values={catalogs.codigos.map((value) => ({ value, label: value }))} />;
   if (facet === "cliente") return <Checklist param="clientes" values={catalogs.clientes.map((value) => ({ value: value.id, label: `${value.nombre} · ${value.cedula}` }))} />;
+  if (facet === "cuotasAtrasadas") return <Checklist param="cuotasAtrasadas" values={catalogs.cuotasAtrasadas.map((value) => ({ value: String(value), label: String(value) }))} />;
   if (facet === "monto") return <NumericFacet param="montos" minParam="montoMin" maxParam="montoMax" values={catalogs.montos} format={formatCurrencyCOP} />;
   if (facet === "capital") return <NumericFacet param="capitales" minParam="capitalMin" maxParam="capitalMax" values={catalogs.capitales} format={formatCurrencyCOP} />;
   if (facet === "interes") return <NumericFacet param="intereses" minParam="interesMin" maxParam="interesMax" values={catalogs.intereses} format={formatCurrencyCOP} />;
@@ -167,8 +220,8 @@ function FacetPortal({ anchorRef, align = "left", onClose, children }: { anchorR
   return createPortal(<div ref={panelRef} className={styles.popover} style={style} data-credit-facet-portal>{children}</div>, document.body);
 }
 
-const ADVANCED_PARAMS = ["codigos", "clientes", "montos", "montoMin", "montoMax", "capitales", "capitalMin", "capitalMax", "intereses", "interesMin", "interesMax", "proximaFechaDesde", "proximaFechaHasta", "proximaValorMin", "proximaValorMax", "sinProximaCuota", "tasas", "tasaMin", "tasaMax"];
+const ADVANCED_PARAMS = ["codigos", "clientes", "cuotasAtrasadas", "montos", "montoMin", "montoMax", "capitales", "capitalMin", "capitalMax", "intereses", "interesMin", "interesMax", "proximaFechaDesde", "proximaFechaHasta", "proximaValorMin", "proximaValorMax", "sinProximaCuota", "tasas", "tasaMin", "tasaMax"];
 function activeFacetCount(params: URLSearchParams) { return ADVANCED_PARAMS.filter((key) => Boolean(params.get(key))).length; }
-function facetActive(params: URLSearchParams, facet: FacetName) { const map: Record<FacetName, string[]> = { codigo: ["codigos"], cliente: ["clientes"], monto: ["montos", "montoMin", "montoMax"], capital: ["capitales", "capitalMin", "capitalMax"], interes: ["intereses", "interesMin", "interesMax"], proximaCuota: ["proximaFechaDesde", "proximaFechaHasta", "proximaValorMin", "proximaValorMax", "sinProximaCuota"], tasa: ["tasas", "tasaMin", "tasaMax"] }; return map[facet].some((key) => Boolean(params.get(key))); }
+function facetActive(params: URLSearchParams, facet: FacetName) { const map: Record<FacetName, string[]> = { codigo: ["codigos"], cliente: ["clientes"], cuotasAtrasadas: ["cuotasAtrasadas"], monto: ["montos", "montoMin", "montoMax"], capital: ["capitales", "capitalMin", "capitalMax"], interes: ["intereses", "interesMin", "interesMax"], proximaCuota: ["proximaFechaDesde", "proximaFechaHasta", "proximaValorMin", "proximaValorMax", "sinProximaCuota"], tasa: ["tasas", "tasaMin", "tasaMax"] }; return map[facet].some((key) => Boolean(params.get(key))); }
 function normalize(value: string) { return value.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 function safeDecode(value: string) { try { return decodeURIComponent(value); } catch { return value; } }

@@ -22,6 +22,7 @@ export function parseCreditFilterParams(
       segmento: parseSegment(first(params.estado)),
       codigos: stringList(first(params.codigos)),
       clientes: stringList(first(params.clientes)),
+      cuotasAtrasadas: nonNegativeIntegerList(first(params.cuotasAtrasadas)),
       montos: numberList(first(params.montos)),
       montoMin: nullableNumber(first(params.montoMin)),
       montoMax: nullableNumber(first(params.montoMax)),
@@ -61,6 +62,10 @@ function stringList(value: string): string[] {
 
 function numberList(value: string): number[] {
   return stringList(value).map(Number).filter(Number.isFinite);
+}
+
+function nonNegativeIntegerList(value: string): number[] {
+  return numberList(value).filter((item) => Number.isInteger(item) && item >= 0);
 }
 
 function nullableNumber(value: string): number | null {

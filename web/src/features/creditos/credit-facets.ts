@@ -4,6 +4,7 @@ import { derivarCreditoOperativo } from "./portfolio-summary";
 export type CreditFacet =
   | "codigo"
   | "cliente"
+  | "cuotasAtrasadas"
   | "monto"
   | "capital"
   | "interes"
@@ -15,6 +16,7 @@ export interface CreditFacetFilters {
   segmento: SegmentoCreditos;
   codigos: string[];
   clientes: string[];
+  cuotasAtrasadas: number[];
   montos: number[];
   montoMin: number | null;
   montoMax: number | null;
@@ -52,6 +54,7 @@ export interface CreditFacetSource extends CreditoResumenFuente {
 export interface CreditFacetCatalogs {
   codigos: string[];
   clientes: Array<{ id: string; nombre: string; cedula: string }>;
+  cuotasAtrasadas: number[];
   montos: number[];
   capitales: number[];
   intereses: number[];
@@ -89,6 +92,7 @@ export function matchesCreditFilters(
 
   if (omittedFacet !== "codigo" && filters.codigos.length && !filters.codigos.includes(credit.codigo)) return false;
   if (omittedFacet !== "cliente" && filters.clientes.length && !filters.clientes.includes(credit.cliente.id)) return false;
+  if (omittedFacet !== "cuotasAtrasadas" && filters.cuotasAtrasadas.length && !filters.cuotasAtrasadas.includes(derived.cuotasAtrasadas)) return false;
   if (omittedFacet !== "monto" && !matchesNumeric(credit.monto, filters.montos, filters.montoMin, filters.montoMax)) return false;
   if (omittedFacet !== "capital" && !matchesNumeric(derived.saldoCapital, filters.capitales, filters.capitalMin, filters.capitalMax)) return false;
   if (omittedFacet !== "interes" && !matchesNumeric(derived.interesPendiente, filters.intereses, filters.interesMin, filters.interesMax)) return false;
@@ -116,6 +120,7 @@ export function buildCreditFacetCatalogs(
 
   const codeSources = forFacet("codigo");
   const clientSources = forFacet("cliente");
+  const overdueCountSources = forFacet("cuotasAtrasadas");
   const amountSources = forFacet("monto");
   const capitalSources = forFacet("capital");
   const interestSources = forFacet("interes");
@@ -129,6 +134,10 @@ export function buildCreditFacetCatalogs(
     clientes: uniqueClients([
       ...clientSources.map((credit) => credit.cliente),
       ...credits.filter((credit) => filters.clientes.includes(credit.cliente.id)).map((credit) => credit.cliente),
+    ]),
+    cuotasAtrasadas: uniqueNumbers([
+      ...overdueCountSources.map((credit) => derivarCreditoOperativo(credit).cuotasAtrasadas),
+      ...filters.cuotasAtrasadas,
     ]),
     montos: uniqueNumbers([...amountSources.map((credit) => credit.monto), ...filters.montos]),
     capitales: uniqueNumbers([...capitalSources.map((credit) => derivarCreditoOperativo(credit).saldoCapital), ...filters.capitales]),

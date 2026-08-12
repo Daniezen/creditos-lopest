@@ -27,7 +27,7 @@ import { formatCurrencyCOP, formatDateCO, formatPercent } from "@/lib/formatters
 import { CreditSearchFilter } from "./credit-search-combobox";
 import type { CreditoListadoItem } from "../queries";
 import type { FacetedCreditView } from "../faceted-query";
-import { CreditFacetHead, ResponsiveCreditFilters } from "./credit-facet-controls";
+import { CreditFacetHead, OverdueInstallmentCountFilter, ResponsiveCreditFilters } from "./credit-facet-controls";
 import type {
   ResumenCreditos,
   SegmentoCreditos,
@@ -168,6 +168,7 @@ export function CreditosList({ vista, query, estado }: CreditosListProps) {
               <option value="CANCELADO">Cancelados</option>
             </select>
           </label>
+          <OverdueInstallmentCountFilter catalogs={vista.facetas} />
           <ResponsiveCreditFilters catalogs={vista.facetas} />
           {hasActiveFilters ? (
             <button type="button" className={actionRecipes.secondary} onClick={() => { setSearchValue(""); setPortfolioState(""); router.replace(pathname, { scroll: false }); }}>
@@ -337,7 +338,7 @@ function installmentCard(label: string, cuota: ResumenCreditos["proximaCuota"]):
 }
 
 const ADVANCED_FILTER_PARAMS = [
-  "codigos", "clientes", "montos", "montoMin", "montoMax",
+  "codigos", "clientes", "cuotasAtrasadas", "montos", "montoMin", "montoMax",
   "capitales", "capitalMin", "capitalMax", "intereses", "interesMin",
   "interesMax", "proximaFechaDesde", "proximaFechaHasta",
   "proximaValorMin", "proximaValorMax", "sinProximaCuota",

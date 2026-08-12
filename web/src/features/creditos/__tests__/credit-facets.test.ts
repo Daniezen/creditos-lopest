@@ -12,6 +12,7 @@ const baseFilters: CreditFacetFilters = {
   segmento: "TODOS",
   codigos: [],
   clientes: [],
+  cuotasAtrasadas: [],
   montos: [],
   montoMin: null,
   montoMax: null,
@@ -86,4 +87,51 @@ describe("facetas globales de créditos", () => {
     expect(matchesCreditFilters(withInstallment, { ...baseFilters, sinProximaCuota: true })).toBe(false);
     expect(matchesCreditFilters(withoutInstallment, { ...baseFilters, sinProximaCuota: true })).toBe(true);
   });
+
+  it("crea y aplica solo cantidades reales de cuotas atrasadas", () => {
+    const zero = credit("0", "A", 100_000, 10_000);
+    const one = {
+      ...credit("1", "B", 100_000, 10_000),
+      eventos: [{ ...credit("1a", "B", 100_000, 10_000).eventos[0], estado: "ATRASADO" as const }],
+    };
+    const three = {
+      ...credit("3", "C", 100_000, 10_000),
+      eventos: ["ATRASADO", "MORA", "ATRASADO"].map((estado, index) => ({
+        ...credit(`3-${index}`, "C", 100_000, 10_000).eventos[0],
+        numeroCuota: index + 1,
+        estado: estado as "ATRASADO" | "MORA",
+      })),
+    };
+    const catalogs = buildCreditFacetCatalogs([zero, one, three], baseFilters);
+    expect(catalogs.cuotasAtrasadas).toEqual([0, 1, 3]);
+    expect(catalogs.cuotasAtrasadas).not.toContain(2);
+    expect(matchesCreditFilters(three, { ...baseFilters, cuotasAtrasadas: [3] })).toBe(true);
+    expect(matchesCreditFilters(one, { ...baseFilters, cuotasAtrasadas: [3] })).toBe(false);
+    expect(matchesCreditFilters(three, { ...baseFilters, cuotasAtrasadas: [1, 3] })).toBe(true);
+    expect(matchesCreditFilters(one, { ...baseFilters, cuotasAtrasadas: [1, 3] })).toBe(true);
+    expect(matchesCreditFilters(zero, { ...baseFilters, cuotasAtrasadas: [1, 3] })).toBe(false);
+  });
+
+  it("omite solo la propia faceta al recalcular sus opciones", () => {
+    const one = {
+      ...credit("1", "A", 100_000, 10_000),
+      eventos: [{ ...credit("1a", "A", 100_000, 10_000).eventos[0], estado: "ATRASADO" as const }],
+    };
+    const three = {
+      ...credit("3", "B", 200_000, 10_000),
+      eventos: Array.from({ length: 3 }, (_, index) => ({
+        ...credit(`3-${index}`, "B", 200_000, 10_000).eventos[0],
+        numeroCuota: index + 1,
+        estado: "ATRASADO" as const,
+      })),
+    };
+    const catalogs = buildCreditFacetCatalogs([one, three], {
+      ...baseFilters,
+      cuotasAtrasadas: [1],
+      montos: [200_000],
+    });
+    expect(catalogs.cuotasAtrasadas).toEqual([1, 3]);
+    expect(catalogs.montos).toEqual([100_000, 200_000]);
+  });
+
 });

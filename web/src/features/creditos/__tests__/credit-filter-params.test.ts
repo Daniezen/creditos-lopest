@@ -10,6 +10,7 @@ describe("parámetros URL de filtros de créditos", () => {
       page: "3",
       codigos: "LP-1|LP-2|LP-1",
       clientes: "cliente-a|cliente-b",
+      cuotasAtrasadas: "0|2|2|invalido|-1|3.5",
       montos: "100000|invalido|200000",
       capitalMin: "50000",
       sinProximaCuota: "1",
@@ -20,6 +21,7 @@ describe("parámetros URL de filtros de créditos", () => {
     expect(result.filters.query).toBe("María");
     expect(result.filters.segmento).toBe("VENCIDA");
     expect(result.filters.codigos).toEqual(["LP-1", "LP-2"]);
+    expect(result.filters.cuotasAtrasadas).toEqual([0, 2]);
     expect(result.filters.montos).toEqual([100000, 200000]);
     expect(result.filters.capitalMin).toBe(50000);
     expect(result.filters.sinProximaCuota).toBe(true);

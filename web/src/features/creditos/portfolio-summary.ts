@@ -41,6 +41,7 @@ export interface CreditoOperativoDerivado {
   saldoCapital: number;
   interesPendiente: number;
   tieneCuotasVencidas: boolean;
+  cuotasAtrasadas: number;
   proximaCuota: CuotaResumenCredito | null;
   cuotaVencidaMasAntigua: CuotaResumenCredito | null;
 }
@@ -89,6 +90,7 @@ export function derivarCreditoOperativo(
     saldoCapital,
     interesPendiente,
     tieneCuotasVencidas: cuotasVencidas.length > 0,
+    cuotasAtrasadas: cuotasVencidas.length,
     proximaCuota: toCuotaResumen(credito, cuotasPendientes[0] ?? null),
     cuotaVencidaMasAntigua: toCuotaResumen(credito, cuotasVencidas[0] ?? null),
   };
