@@ -180,11 +180,35 @@ export function CreditosList({ vista, query, estado }: CreditosListProps) {
 
       <section className={surfaceRecipes.stickyDataPanel}>
         <div className={surfaceRecipes.dataPanelHeader}>
-          <div>
-            <h3 className={dataDisplayRecipes.sectionTitle}>Créditos</h3>
-            <p className={styles.supportingText}>
-              {vista.totalCoincidencias} resultado(s)
-            </p>
+          <div className="flex items-start gap-2">
+            <div>
+              <h3 className={dataDisplayRecipes.sectionTitle}>Créditos</h3>
+              <p className={styles.supportingText}>
+                {vista.totalCoincidencias} resultado(s)
+              </p>
+            </div>
+            <a
+              href={buildCreditExportHref(searchParams)}
+              className={actionRecipes.entityDetailIcon}
+              title="Exportar resultados a Excel"
+              aria-label="Exportar resultados a Excel"
+            >
+              <svg
+                viewBox="0 0 32 32"
+                className="h-6 w-6"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <rect x="11" y="3" width="18" height="26" rx="2.5" fill="#107C41" />
+                <path d="M20 8h6M20 13h6M20 18h6M20 23h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                <path d="M23 6v20" stroke="white" strokeWidth="1.5" opacity="0.9" />
+                <path d="M5 6.5 19 4v24L5 25.5v-19Z" fill="#185C37" />
+                <path
+                  d="m8.2 10 2.65 5.7L8 22h2.75l1.65-4.1 1.7 4.1h2.8l-2.95-6.35L16.6 10h-2.7l-1.45 3.65L10.95 10H8.2Z"
+                  fill="white"
+                />
+              </svg>
+            </a>
           </div>
           <div className={styles.summaryGroup}>
             <SummaryPill
@@ -344,6 +368,13 @@ const ADVANCED_FILTER_PARAMS = [
   "proximaValorMin", "proximaValorMax", "sinProximaCuota",
   "tasas", "tasaMin", "tasaMax",
 ] as const;
+
+function buildCreditExportHref(params: URLSearchParams): string {
+  const exportParams = new URLSearchParams(params.toString());
+  exportParams.delete("page");
+  const query = exportParams.toString();
+  return query ? `/api/creditos/exportar-resultados?${query}` : "/api/creditos/exportar-resultados";
+}
 
 function normalizeSegment(value: string): SegmentoCreditos {
   if (value === "ACTIVO" || value === "VENCIDA" || value === "CANCELADO") return value;

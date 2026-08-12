@@ -15,6 +15,8 @@ export interface EventoResumenCredito {
   fechaProgramada: Date;
   valorProgramado: number;
   interesProgramado: number;
+  capitalProgramado?: number;
+  diasAtraso?: number;
   capitalPagado?: number;
   saldoCapitalPost: number | null;
 }

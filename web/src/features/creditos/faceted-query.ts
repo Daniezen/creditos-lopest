@@ -28,10 +28,7 @@ export interface FacetedCreditView {
  * Loads the authorized Credit universe once, applies derived financial facets,
  * calculates global catalogs and metrics, then paginates only the matching IDs.
  */
-export async function obtenerVistaCreditosFacetada(
-  filters: CreditFacetFilters,
-  requestedPage = 1,
-): Promise<FacetedCreditView> {
+export async function cargarCreditosAutorizados(): Promise<CreditFacetSource[]> {
   const user = await requireUser();
   const authorized = await prisma.credito.findMany({
     where: buildCreditoVisibilityWhere(user),
@@ -57,6 +54,8 @@ export async function obtenerVistaCreditosFacetada(
           fechaProgramada: true,
           valorProgramado: true,
           interesProgramado: true,
+          capitalProgramado: true,
+          diasAtraso: true,
           capitalPagado: true,
           saldoCapitalPost: true,
         },
@@ -85,11 +84,21 @@ export async function obtenerVistaCreditosFacetada(
       fechaProgramada: event.fechaProgramada,
       valorProgramado: Number(event.valorProgramado),
       interesProgramado: Number(event.interesProgramado),
+      capitalProgramado: Number(event.capitalProgramado),
+      diasAtraso: event.diasAtraso,
       capitalPagado: Number(event.capitalPagado),
       saldoCapitalPost: event.saldoCapitalPost === null ? null : Number(event.saldoCapitalPost),
     })),
   }));
 
+  return sources;
+}
+
+export async function obtenerVistaCreditosFacetada(
+  filters: CreditFacetFilters,
+  requestedPage = 1,
+): Promise<FacetedCreditView> {
+  const sources = await cargarCreditosAutorizados();
   const matching = sources.filter((credit) => matchesCreditFilters(credit, filters));
   const totalCoincidencias = matching.length;
   const totalPaginas = Math.max(1, Math.ceil(totalCoincidencias / CREDITOS_PAGE_SIZE));
