@@ -213,12 +213,8 @@ export default async function CreditoDetallePage({
       <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
         <div className={styles.actionLayout}>
           <div>
-            <h3 className={dataDisplayRecipes.sectionTitle}>
-              Abono extraordinario a capital
+            <h3 className="text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
             </h3>
-            <p className={styles.actionHelp}>
-              En amortización fija reduce plazo atacando cuotas futuras desde la cola. En solo interés reduce la base de capital y recalcula intereses futuros.
-            </p>
           </div>
 
           <AbonoForm
@@ -234,7 +230,7 @@ export default async function CreditoDetallePage({
         <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
           <div className={styles.actionLayout}>
             <div>
-              <h3 className={dataDisplayRecipes.sectionTitle}>
+              <h3 className="text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                 Extender plazo
               </h3>
             </div>

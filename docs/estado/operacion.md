@@ -71,11 +71,29 @@ git push origin main
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --force-recreate web
 ```
 
-## 6. Sincronización y Tareas Programadas (Cron)
+## 6. Inspección de Contenedores y Diagnóstico de Errores (Logs)
+
+Para auditar excepciones de Server Actions, errores 500 o fallos de infraestructura en la VPS:
+
+```bash
+# Ver estado de los contenedores
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+
+# Logs con timestamp del runner Next.js (web)
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -t --tail=100 -f web
+
+# Logs de PostgreSQL
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=100 postgres
+
+# Logs de Caddy (Reverse Proxy SSL)
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=100 caddy
+```
+
+## 7. Sincronización y Tareas Programadas (Cron)
 
 - Sincronización de documentos Drive: `POST /api/cron/documentos/sincronizar` con header de autorización `Bearer ${DOCUMENTOS_CRON_SECRET}`.
 - Clasificación de cuotas vencidas y mora: `POST /api/cron/creditos/vencidas` con header `Bearer ${CREDITOS_CRON_SECRET}`.
 
 ---
 
-**Changelog:** 30-ago-2026 — Actualización integral del runbook operativo de Lopest, incorporando jerarquía de entrega segura y recolectores de contexto.
+**Changelog:** 31-ago-2026 — Incorporación de comandos operativos para inspección de logs y contenedores de producción.

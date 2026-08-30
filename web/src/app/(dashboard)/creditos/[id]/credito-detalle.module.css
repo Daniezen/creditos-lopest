@@ -3,10 +3,8 @@
 .identityBand { border-bottom: 1px solid var(--color-border-subtle); padding: var(--ds-space-5) var(--ds-space-6); }
 .identityLayout, .actionLayout { display: flex; flex-direction: column; justify-content: space-between; gap: var(--ds-space-4); }
 .identityBadges, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3); }
-.clientName { margin-top: var(--ds-space-4); color: var(--color-text-primary); font-size: var(--text-2xl); font-weight: var(--font-weight-heading); letter-spacing: -.025em; }
-.identityMeta, .actionHelp { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.identityMeta { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
 .metricsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); padding: var(--ds-space-5); }
-.operationalGrid { display: grid; gap: var(--ds-space-3); border-top: 1px solid var(--color-border-subtle); padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-5); }
 .operationalInfo { min-width: 0; }
 .operationalValue { display: -webkit-box; margin-top: var(--ds-space-2); overflow: hidden; color: var(--color-text-primary); font-size: var(--text-sm); line-height: var(--leading-normal); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .muted { color: var(--color-text-muted); }

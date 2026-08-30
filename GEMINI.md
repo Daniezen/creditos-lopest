@@ -39,6 +39,12 @@ pnpm build           # Build de producción Next.js
 pnpm exec prisma generate
 pnpm exec prisma studio
 
+# Operación en VPS, contenedores y logs (desde raíz)
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps                           # Estado de servicios
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -t --tail=100 -f web    # Logs en vivo de Next.js (con timestamp)
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=100 postgres   # Logs de PostgreSQL
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=100 caddy      # Logs de Caddy SSL
+
 # Control de versiones (en raíz)
 git status --short
 git diff --stat
