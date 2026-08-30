@@ -17,11 +17,11 @@ import {
 
 import { actionRecipes } from "@/design-system/recipes/actions";
 import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
-import { formRecipes } from "@/design-system/recipes/forms";
 import { statusRecipes } from "@/design-system/recipes/status";
 import { surfaceRecipes } from "@/design-system/recipes/surfaces";
-import { extenderPlazoSoloInteres } from "@/features/creditos/plazos/actions";
-import { registrarAbonoCapital } from "@/features/creditos/abonos/actions";
+import { ExtensionTermForm } from "@/features/creditos/plazos/extension-term-form";
+import { AbonoForm } from "@/features/creditos/abonos/components/abono-form";
+import { obtenerHoyColombia } from "@/lib/formatters";
 import { CreditMovements } from "@/features/creditos/components/credit-movements";
 import { calcularSaldoCapitalActual } from "@/features/creditos/current-capital-balance";
 import { obtenerCreditoDetalle } from "@/features/creditos/queries";
@@ -29,6 +29,7 @@ import {
   formatCurrencyCOP,
   formatDateCO,
   formatPercent,
+  toDateInputValue,
 } from "@/lib/formatters";
 
 import styles from "./credito-detalle.module.css";
@@ -220,27 +221,11 @@ export default async function CreditoDetallePage({
             </p>
           </div>
 
-          <form action={registrarAbonoCapital} className={styles.abonoForm}>
-            <input type="hidden" name="creditoId" value={credito.id} />
-
-            <label className={styles.formField}>
-              <span className={formRecipes.label}>
-                Valor del abono
-              </span>
-              <input
-                name="montoAbono"
-                placeholder="Ej: 100.000"
-                className={formRecipes.control}
-              />
-            </label>
-
-            <button
-              type="submit"
-              className={actionRecipes.primary}
-            >
-              Aplicar abono
-            </button>
-          </form>
+          <AbonoForm
+            creditoId={credito.id}
+            fechaPrestamo={credito.fechaPrestamo}
+            todayValue={toDateInputValue(obtenerHoyColombia())}
+          />
         </div>
       </section>
 
@@ -254,28 +239,10 @@ export default async function CreditoDetallePage({
               </h3>
             </div>
 
-            <form action={extenderPlazoSoloInteres} className={styles.extensionForm}>
-              <input type="hidden" name="creditoId" value={credito.id} />
-
-              <label className={styles.formField}>
-                <span className={formRecipes.label}>
-                  Cuotas extra
-                </span>
-                <input
-                  name="cuotasExtra"
-                  inputMode="numeric"
-                  placeholder="Ej: 2"
-                  className={formRecipes.control}
-                />
-              </label>
-
-              <button
-                type="submit"
-                className={actionRecipes.secondary}
-              >
-                Extender
-              </button>
-            </form>
+            <ExtensionTermForm
+              creditoId={credito.id}
+              reversibleSnapshotId={credito.extensionSnapshots[0]?.id ?? null}
+            />
           </div>
         </section>
       ) : null}

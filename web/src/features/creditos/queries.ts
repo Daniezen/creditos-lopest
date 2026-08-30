@@ -80,6 +80,11 @@ export async function obtenerCreditoDetalle(id: string) {
           telefono: true,
         },
       },
+      extensionSnapshots: {
+        where: { revertidoEn: null },
+        orderBy: { aplicadoEn: "desc" },
+        take: 1,
+      },
       eventos: {
         include: {
           abonoSnapshot: true,

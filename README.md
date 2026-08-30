@@ -1,34 +1,66 @@
-# Fix branding Lopest v2
+# Plataforma Créditos Lopest
 
-Corrige dos problemas:
+Sistema integral de gestión financiera de créditos, cartera de clientes, planes de amortización, cobranza, snapshots reversibles y reconciliación documental con Google Drive.
 
-1. El logo de sidebar ya no se sirve desde `/brand/...`; se importa estáticamente desde `web/src/assets/lopest-logo.png`, por lo que Next lo valida y empaqueta durante el build.
-2. El favicon usa una marca simplificada: squircle con gradiente Lopest y símbolo `$` blanco. El logo completo no es legible a 16x16.
+## Stack tecnológico
 
-## Aplicar
+- **Frontend & Backend API:** Next.js 16 (App Router con Turbopack), React 19, TypeScript 5, Tailwind CSS 4.
+- **Base de datos & ORM:** PostgreSQL 18 (Alpine), Prisma 7 (`@prisma/adapter-pg`).
+- **Autenticación & Auditoría:** NextAuth (`next-auth`), eventos transaccionales inmutables en `AuditLog`.
+- **Integraciones:** Google Drive API (`googleapis`) para gestión documental, `exceljs` para exportación de cartera.
+- **Testing & Calidad:** Vitest, ESLint, TypeScript (`tsc --noEmit`).
+- **Infraestructura & Despliegue:** Docker Compose, Caddy 2 (reverse proxy SSL automático).
 
-```bash
-cd ~/apps/lopest
-node scripts/apply-lopest-branding-fix-v2.mjs
+## Estructura del repositorio
+
+```
+lopest/
+├── docs/                 → Documentación canónica, specs funcionales y contratos de diseño
+│   ├── README-documentacion.md → Índice maestro y taxonomía de documentación
+│   ├── contexto-canonico.md    → Reglas estables y arquitectura de dominio
+│   ├── design-system/          → Contrato universal y perfil visual de Lopest
+│   ├── specs/                  → Especificaciones funcionales por módulo
+│   └── estado/                 → Handoff del corte, plan de ejecución y runbook
+├── web/                  → Aplicación web Next.js
+│   ├── prisma/           → Esquema de base de datos y migraciones
+│   └── src/
+│       ├── app/          → App Router (rutas, layouts, route handlers y crons)
+│       ├── design-system/→ Tokens de diseño, temas y recetas
+│       ├── features/     → Lógica de dominio (clientes, créditos, abonos, plazos)
+│       └── server/       → Servicios de backend (auth, auditoría, Google Drive)
+├── scripts/              → Herramientas de mantenimiento, recolección y parches
+└── docker-compose.prod.yml → Orquestación productiva en VPS
 ```
 
-## Validar
+## Comandos de desarrollo y validación
+
+Todos los comandos de construcción, calidad y pruebas se ejecutan dentro del subdirectorio `web/`:
 
 ```bash
-cd ~/apps/lopest/web
+cd web
+
+# Validación estática completa (Prisma generate + ESLint + Typecheck + Next.js build)
 pnpm validate
+
+# Suite de pruebas unitarias y de dominio (Vitest)
+pnpm test
+
+# Servidor de desarrollo local
+pnpm dev
 ```
 
-## Deploy
+## Despliegue en producción (VPS)
+
+El entorno productivo opera mediante contenedores Docker:
 
 ```bash
-cd ~/apps/lopest
-git status --short
-git diff --stat
-git add -A
-git commit --amend --no-edit
-git push --force-with-lease
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build web
+# Validar migraciones pendientes
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate
+
+# Recompilar y levantar el servicio web
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --force-recreate web
 ```
 
-Después del deploy, abrir una pestaña privada o cerrar y reabrir la pestaña para evitar la caché del favicon.
+## Documentación del sistema
+
+Para consultar las especificaciones funcionales, reglas de negocio y contratos de diseño, consulta el [Índice Maestro de Documentación](docs/README-documentacion.md).

@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lopest — Aplicación Web (Next.js App Router)
 
-## Getting Started
+Módulo web interactivo y API de backend para la plataforma de gestión financiera de Créditos Lopest.
 
-First, run the development server:
+## Stack y Tecnologías
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Framework:** Next.js 16 (App Router con Turbopack)
+- **UI & Render:** React 19, Tailwind CSS 4, Lucide React
+- **Lenguaje:** TypeScript 5 (estricto)
+- **Base de Datos & ORM:** PostgreSQL 18 + Prisma 7 (`@prisma/adapter-pg`)
+- **Autenticación:** NextAuth (`next-auth`) con Google OAuth y perfiles de sesión
+- **Pruebas:** Vitest
+
+## Estructura de Directorios
+
+```
+web/
+├── prisma/
+│   ├── schema.prisma          → Modelos de datos y relaciones de base de datos
+│   └── migrations/            → Historial de migraciones SQL
+├── src/
+│   ├── app/                   → App Router: vistas (/clientes, /creditos), layouts y APIs
+│   │   └── api/
+│   │       ├── auth/          → Handlers de NextAuth
+│   │       ├── cron/          → Tareas programadas (reconciliación Drive, mora)
+│   │       └── creditos/      → Exportación de resultados a Excel
+│   ├── design-system/         → Tokens CSS, recetas Tailwind y componentes base
+│   ├── features/              → Módulos de dominio (clientes, créditos, abonos, plazos)
+│   │   ├── clientes/          → Gestión de cartera, filtros facetados y balances
+│   │   └── creditos/          → Ciclo de vida de créditos, cuotas y amortizaciones
+│   ├── server/                → Servicios de infraestructura (auth guards, audit log, drive)
+│   └── types/                 → Definiciones de tipos TypeScript globales
+└── tests/                     → Suites de pruebas unitarias y de integración
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Comandos Disponibles
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Servidor de desarrollo con Turbopack
+pnpm dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Verificación estática integral (Prisma generate + ESLint + TypeScript + Next build)
+pnpm validate
 
-## Learn More
+# Ejecutar suite de pruebas unitarias y de dominio con Vitest
+pnpm test
 
-To learn more about Next.js, take a look at the following resources:
+# Ejecutar linter ESLint
+pnpm lint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Chequeo estricto de tipos TypeScript
+pnpm exec tsc --noEmit
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Compilación de producción
+pnpm build
 
-## Deploy on Vercel
+# Prisma Studio para inspección visual de la base de datos
+pnpm exec prisma studio
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Variables de Entorno
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Configurar las variables requeridas en `.env` (desarrollo) o `.env.prod` (producción):
+- `DATABASE_URL`: Cadena de conexión PostgreSQL.
+- `AUTH_SECRET`: Secreto criptográfico para firmas de sesión de NextAuth.
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Credenciales OAuth para autenticación.
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_PRIVATE_KEY`: Credenciales de cuenta de servicio para Google Drive.
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de carpeta raíz para almacenamiento documental.
+- `DOCUMENTOS_CRON_SECRET` / `CREDITOS_CRON_SECRET`: Tokens de autorización para webhooks cron.
+

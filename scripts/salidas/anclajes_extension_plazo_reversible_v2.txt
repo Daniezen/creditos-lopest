@@ -1,0 +1,2425 @@
+LOPEST | ANCLAJES EXTENSION PLAZO REVERSIBLE V2
+GENERATED_UTC: 2026-08-17T23:24:17.515225+00:00
+MODE: SOURCE READ ONLY
+
+====================================================================================================
+FILE: web/src/features/creditos/plazos/actions.ts
+====================================================================================================
+"use server";
+
+import { revalidatePath } from "next/cache";
+import {
+  EstadoCredito,
+  EstadoEventoFinanciero,
+  FrecuenciaPago,
+  TipoAmortizacion,
+  TipoEventoFinanciero,
+} from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+
+function toMoneyDecimalString(value: number): string {
+  return value.toFixed(2);
+}
+
+function obtenerHoyColombia(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return new Date(year, month - 1, day);
+}
+
+function leerCampoObligatorio(formData: FormData, name: string): string {
+  const value = formData.get(name);
+
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Falta el campo obligatorio ${name}.`);
+  }
+
+  return value.trim();
+}
+
+function calcularSiguienteFechaLegacy(fecha: Date, frecuencia: FrecuenciaPago): Date {
+  const siguiente = new Date(fecha);
+
+  if (frecuencia === FrecuenciaPago.MENSUAL) {
+    siguiente.setMonth(siguiente.getMonth() + 1);
+    return siguiente;
+  }
+
+  siguiente.setDate(siguiente.getDate() + 15);
+  return siguiente;
+}
+
+function estadoInicialPorFecha(fechaProgramada: Date, hoy: Date): EstadoEventoFinanciero {
+  return fechaProgramada.getTime() < hoy.getTime()
+    ? EstadoEventoFinanciero.ATRASADO
+    : EstadoEventoFinanciero.PENDIENTE;
+}
+
+export async function extenderPlazoSoloInteres(formData: FormData): Promise<void> {
+  const creditoId = leerCampoObligatorio(formData, "creditoId");
+  const cuotasExtraRaw = leerCampoObligatorio(formData, "cuotasExtra");
+  const cuotasExtra = Number(cuotasExtraRaw);
+  const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
+
+  if (!Number.isInteger(cuotasExtra) || cuotasExtra <= 0 || cuotasExtra > 60) {
+    throw new Error("Ingresa un número entero de cuotas extra entre 1 y 60.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const credito = await tx.credito.findUnique({
+      where: {
+        id: creditoId,
+      },
+      include: {
+        cliente: {
+          select: {
+            nombre: true,
+            cedula: true,
+          },
+        },
+        eventos: {
+          orderBy: [
+            {
+              numeroCuota: "asc",
+            },
+            {
+              creadoEn: "asc",
+            },
+          ],
+        },
+      },
+    });
+
+    if (!credito) {
+      throw new Error("El crédito no existe.");
+    }
+
+    if (credito.estado === EstadoCredito.CANCELADO) {
+      throw new Error("No se puede extender un crédito cancelado.");
+    }
+
+    if (credito.tipoAmortizacion !== TipoAmortizacion.SOLO_INTERES) {
+      throw new Error("Extender plazo solo aplica para créditos de Solo Interés.");
+    }
+
+    if (credito.eventos.some(eventoTieneActividadFinanciera)) {
+      throw new Error("No se puede extender el plazo porque el crédito ya tiene movimientos financieros.");
+    }
+
+    const cuotas = credito.eventos.filter(
+      (evento) =>
+        evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
+        evento.estado !== EstadoEventoFinanciero.CANCELADO_POR_ABONO &&
+        evento.numeroCuota !== null,
+    );
+
+    if (cuotas.length === 0) {
+      throw new Error("El crédito no tiene cuotas programadas para extender.");
+    }
+
+    const ultimaCuota = [...cuotas].sort(
+      (a, b) => Number(b.numeroCuota ?? 0) - Number(a.numeroCuota ?? 0),
+    )[0];
+
+    const capitalFinal = Number(ultimaCuota.capitalProgramado || 0);
+    const interesBase = Number(ultimaCuota.interesProgramado || 0);
+
+    if (capitalFinal <= 0) {
+      throw new Error("La última cuota no tiene capital pendiente para extender.");
+    }
+
+    await tx.eventoFinanciero.update({
+      where: {
+        id: ultimaCuota.id,
+      },
+      data: {
+        capitalProgramado: "0.00",
+        valorProgramado: toMoneyDecimalString(interesBase),
+        saldoCapitalPost: toMoneyDecimalString(capitalFinal),
+        accionPor: user.id,
+      },
+    });
+
+    const maxNumeroCuota = Math.max(
+      ...cuotas.map((cuota) => Number(cuota.numeroCuota ?? 0)),
+    );
+
+    let fechaIterativa = new Date(ultimaCuota.fechaProgramada);
+    const nuevasCuotas = [];
+
+    for (let index = 1; index <= cuotasExtra; index++) {
+      fechaIterativa = calcularSiguienteFechaLegacy(
+        fechaIterativa,
+        credito.frecuencia,
+      );
+
+      const numeroCuota = maxNumeroCuota + index;
+      const esUltimaNueva = index === cuotasExtra;
+      const capitalProgramado = esUltimaNueva ? capitalFinal : 0;
+      const valorProgramado = interesBase + capitalProgramado;
+      const saldoCapitalPost = esUltimaNueva ? 0 : capitalFinal;
+
+      nuevasCuotas.push({
+        codigo: `${credito.codigo}-C${numeroCuota}`,
+        creditoId: credito.id,
+        numeroCuota,
+        tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+        fechaProgramada: new Date(fechaIterativa),
+        fechaPago: null,
+        valorProgramado: toMoneyDecimalString(valorProgramado),
+        capitalProgramado: toMoneyDecimalString(capitalProgramado),
+        interesProgramado: toMoneyDecimalString(interesBase),
+        montoPagado: "0.00",
+        capitalPagado: "0.00",
+        interesPagado: "0.00",
+        saldoCapitalPost: toMoneyDecimalString(saldoCapitalPost),
+        estado: estadoInicialPorFecha(fechaIterativa, hoy),
+        diasAtraso: 0,
+        accionPor: user.id,
+      });
+    }
+
+    await tx.eventoFinanciero.createMany({
+      data: nuevasCuotas,
+    });
+
+    await tx.credito.update({
+      where: {
+        id: credito.id,
+      },
+      data: {
+        plazoMeses: credito.plazoMeses,
+        estado: EstadoCredito.ACTIVO,
+        fechaCancelacion: null,
+        accionPor: user.id,
+      },
+    });
+  });
+
+  revalidatePath("/creditos");
+  revalidatePath(`/creditos/${creditoId}`);
+}
+
+====================================================================================================
+FILE: web/src/app/(dashboard)/creditos/[id]/page.tsx
+====================================================================================================
+
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
+  Hash,
+  Landmark,
+  Percent,
+  PencilLine,
+  WalletCards,
+  Activity,
+  StickyNote,
+} from "lucide-react";
+
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+import { extenderPlazoSoloInteres } from "@/features/creditos/plazos/actions";
+import { registrarAbonoCapital } from "@/features/creditos/abonos/actions";
+import { CreditMovements } from "@/features/creditos/components/credit-movements";
+import { calcularSaldoCapitalActual } from "@/features/creditos/current-capital-balance";
+import { obtenerCreditoDetalle } from "@/features/creditos/queries";
+import {
+  formatCurrencyCOP,
+  formatDateCO,
+  formatPercent,
+} from "@/lib/formatters";
+
+import styles from "./credito-detalle.module.css";
+
+interface CreditoDetallePageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/**
+ * Detalle de crédito.
+ *
+ * La tabla de cuotas se alinea con la hoja legacy de Sheets:
+ * - número de cuota;
+ * - fecha programada;
+ * - fecha real de pago;
+ * - valor de cuota;
+ * - interés;
+ * - saldo capital después del pago;
+ * - estado;
+ * - check de pagado.
+ *
+ * El check no muta estado localmente: dispara server actions transaccionales.
+ */
+export default async function CreditoDetallePage({
+  params,
+}: CreditoDetallePageProps) {
+  const { id } = await params;
+  const credito = await obtenerCreditoDetalle(id);
+
+  if (!credito) {
+    notFound();
+  }
+
+  const monto = Number(credito.monto);
+  const tasaMensual = Number(credito.tasaMensual);
+  const plazoMeses = Number(credito.plazoMeses);
+
+  // Derive current balance from every realized principal movement.
+  const saldoActual = calcularSaldoCapitalActual(monto, credito.eventos);
+
+  const cuotasEfectivas = credito.eventos.filter(
+    (evento) =>
+      evento.tipo === "CUOTA_PROGRAMADA" &&
+      evento.estado !== "CANCELADO_POR_ABONO",
+  );
+  const cuotasPagadas = cuotasEfectivas.filter(
+    (evento) => evento.estado === "PAGADO",
+  ).length;
+  const tieneMora = cuotasEfectivas.some((evento) => evento.estado === "MORA");
+  const tieneAtraso = cuotasEfectivas.some(
+    (evento) => evento.estado === "ATRASADO",
+  );
+  const estadoOperativo = tieneMora
+    ? "En mora"
+    : tieneAtraso
+      ? "Atrasado"
+      : credito.estado === "CANCELADO"
+        ? "Pagado"
+        : "Al día";
+  const observacionOperativa =
+    "Pagado: " +
+    cuotasPagadas +
+    "/" +
+    cuotasEfectivas.length +
+    " · Saldo: " +
+    formatCurrencyCOP(saldoActual) +
+    " · " +
+    estadoOperativo;
+
+  return (
+    <main className={styles.page}>
+      <header className={`${surfaceRecipes.dataPanel} ${styles.summary}`}>
+        <div className={styles.identityBand}>
+          <div className={styles.identityLayout}>
+            <div className="min-w-0">
+              <div className={styles.identityBadges}>
+                <span className={actionRecipes.tertiaryPill}>
+                  <Hash className="h-3.5 w-3.5" />
+                  {credito.codigo}
+                </span>
+
+                <EstadoCreditoBadge estado={credito.estado} />
+              </div>
+
+              <h2 className={styles.clientName}>
+                {credito.cliente.nombre}
+              </h2>
+
+              <p className={styles.identityMeta}>
+                C.C. {credito.cliente.cedula} · Tel. {credito.cliente.telefono || "-"} · Crédito creado el {formatDateCO(credito.creadoEn)}
+              </p>
+            </div>
+
+            <div className={styles.actions}>
+              <Link
+                href={`/creditos/${credito.id}/editar`}
+                className={actionRecipes.primaryLarge}
+              >
+                <PencilLine className="h-4 w-4" />
+                Editar crédito
+              </Link>
+
+            </div>
+          </div>
+        </div>
+
+        <section className={styles.metricsGrid}>
+          <MetricCard
+            icon={Landmark}
+            label="Monto"
+            value={formatCurrencyCOP(monto)}
+            className="xl:col-span-2"
+            emphasis
+          />
+
+          <MetricCard
+            icon={WalletCards}
+            label="Saldo"
+            value={formatCurrencyCOP(saldoActual)}
+            className="xl:col-span-2"
+            featured
+          />
+
+          <MetricCard
+            icon={Percent}
+            label="Tasa mensual"
+            value={formatPercent(tasaMensual)}
+            relevant
+          />
+
+          <MetricCard
+            icon={Clock3}
+            label="Plazo"
+            value={`${formatPlainNumber(plazoMeses)} meses`}
+            relevant
+          />
+
+          <MetricCard
+            icon={CalendarDays}
+            label="Fecha préstamo"
+            value={formatDateCO(credito.fechaPrestamo)}
+            className="xl:col-span-2"
+          />
+
+          <MetricCard
+            icon={CreditCard}
+            label="Frecuencia"
+            value={formatFrecuencia(credito.frecuencia)}
+            className="xl:col-span-2"
+          />
+
+          <MetricCard
+            icon={CreditCard}
+            label="Tipo"
+            value={formatTipoAmortizacion(credito.tipoAmortizacion)}
+            className="xl:col-span-2"
+          />
+        </section>
+
+        <section className={styles.operationalGrid}>
+          <OperationalInfo
+            icon={Activity}
+            label="Observación operativa"
+            value={observacionOperativa}
+          />
+          <OperationalInfo
+            icon={StickyNote}
+            label="Nota"
+            value={credito.nota?.trim() || "Sin nota registrada"}
+            muted={!credito.nota?.trim()}
+          />
+        </section>
+      </header>
+
+
+      <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
+        <div className={styles.actionLayout}>
+          <div>
+            <h3 className={dataDisplayRecipes.sectionTitle}>
+              Abono extraordinario a capital
+            </h3>
+            <p className={styles.actionHelp}>
+              En amortización fija reduce plazo atacando cuotas futuras desde la cola. En solo interés reduce la base de capital y recalcula intereses futuros.
+            </p>
+          </div>
+
+          <form action={registrarAbonoCapital} className={styles.abonoForm}>
+            <input type="hidden" name="creditoId" value={credito.id} />
+
+            <label className={styles.formField}>
+              <span className={formRecipes.label}>
+                Valor del abono
+              </span>
+              <input
+                name="montoAbono"
+                placeholder="Ej: 100.000"
+                className={formRecipes.control}
+              />
+            </label>
+
+            <button
+              type="submit"
+              className={actionRecipes.primary}
+            >
+              Aplicar abono
+            </button>
+          </form>
+        </div>
+      </section>
+
+
+      {credito.tipoAmortizacion === "SOLO_INTERES" ? (
+        <section className={`${surfaceRecipes.section} ${styles.actionSection}`}>
+          <div className={styles.actionLayout}>
+            <div>
+              <h3 className={dataDisplayRecipes.sectionTitle}>
+                Extender plazo
+              </h3>
+            </div>
+
+            <form action={extenderPlazoSoloInteres} className={styles.extensionForm}>
+              <input type="hidden" name="creditoId" value={credito.id} />
+
+              <label className={styles.formField}>
+                <span className={formRecipes.label}>
+                  Cuotas extra
+                </span>
+                <input
+                  name="cuotasExtra"
+                  inputMode="numeric"
+                  placeholder="Ej: 2"
+                  className={formRecipes.control}
+                />
+              </label>
+
+              <button
+                type="submit"
+                className={actionRecipes.secondary}
+              >
+                Extender
+              </button>
+            </form>
+          </div>
+        </section>
+      ) : null}
+
+      <CreditMovements
+        creditoId={credito.id}
+        montoInicial={monto}
+        eventos={credito.eventos}
+      />
+    </main>
+  );
+}
+
+interface OperationalInfoProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  muted?: boolean;
+}
+
+function OperationalInfo({
+  icon: Icon,
+  label,
+  value,
+  muted = false,
+}: OperationalInfoProps) {
+  return (
+    <article className={`${dataDisplayRecipes.compactDatum} ${styles.operationalInfo}`}>
+      <p className={dataDisplayRecipes.compactDatumLabel}>
+        <Icon className={styles.semanticIcon} />
+        {label}
+      </p>
+      <p
+        className={[
+          styles.operationalValue,
+          muted ? styles.muted : "",
+        ].join(" ")}
+        title={value}
+      >
+        {value}
+      </p>
+    </article>
+  );
+}
+
+interface MetricCardProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  featured?: boolean;
+  relevant?: boolean;
+  emphasis?: boolean;
+  className?: string;
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  featured,
+  relevant = false,
+  emphasis = false,
+  className = "",
+}: MetricCardProps) {
+  return (
+    <article
+      className={[
+        dataDisplayRecipes.metricCompact,
+        featured ? styles.featuredMetric : "",
+        className,
+      ].join(" ")}
+    >
+      <p
+        className={[
+          dataDisplayRecipes.metricCompactLabel,
+          featured ? styles.featuredMetricLabel : "",
+        ].join(" ")}
+      >
+        <Icon className={styles.metricIcon} />
+        {label}
+      </p>
+
+      <p
+        className={[
+          dataDisplayRecipes.metricCompactValue,
+          featured || emphasis
+            ? dataDisplayRecipes.metricCompactValueEmphasis
+            : relevant
+              ? dataDisplayRecipes.metricCompactValueRelevant
+              : "",
+        ].join(" ")}
+      >
+        {value}
+      </p>
+    </article>
+  );
+}
+
+function EstadoCreditoBadge({ estado }: { estado: string }) {
+  if (estado === "ACTIVO") {
+    return (
+      <span className={statusRecipes.success}>
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Activo
+      </span>
+    );
+  }
+
+  return (
+    <span className={statusRecipes.neutral}>
+      {formatEnumLabel(estado)}
+    </span>
+  );
+}
+
+function formatFrecuencia(value: string): string {
+  if (value === "MENSUAL") {
+    return "Mensual";
+  }
+
+  if (value === "QUINCENAL_5_20") {
+    return "Quincenal 5/20";
+  }
+
+  if (value === "QUINCENAL_10_25") {
+    return "Quincenal 10/25";
+  }
+
+  if (value === "QUINCENAL_15_30") {
+    return "Quincenal 15/30";
+  }
+
+  return formatEnumLabel(value);
+}
+
+function formatTipoAmortizacion(value: string): string {
+  if (value === "AMORTIZACION_FIJA") {
+    return "Amortización fija";
+  }
+
+  if (value === "SOLO_INTERES") {
+    return "Solo interés";
+  }
+
+  return formatEnumLabel(value);
+}
+
+function formatEnumLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatPlainNumber(value: number): string {
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toLocaleString("es-CO", {
+        maximumFractionDigits: 2,
+      });
+}
+
+====================================================================================================
+FILE: web/src/app/(dashboard)/creditos/[id]/credito-detalle.module.css
+====================================================================================================
+.page { min-width: 0; padding: var(--ds-space-6) var(--ds-space-4); }
+.summary { margin-bottom: var(--ds-space-6); }
+.identityBand { border-bottom: 1px solid var(--color-border-subtle); padding: var(--ds-space-5) var(--ds-space-6); }
+.identityLayout, .actionLayout { display: flex; flex-direction: column; justify-content: space-between; gap: var(--ds-space-4); }
+.identityBadges, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3); }
+.clientName { margin-top: var(--ds-space-4); color: var(--color-text-primary); font-size: var(--text-2xl); font-weight: var(--font-weight-heading); letter-spacing: -.025em; }
+.identityMeta, .actionHelp { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.metricsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); padding: var(--ds-space-5); }
+.operationalGrid { display: grid; gap: var(--ds-space-3); border-top: 1px solid var(--color-border-subtle); padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-5); }
+.operationalInfo { min-width: 0; }
+.operationalValue { display: -webkit-box; margin-top: var(--ds-space-2); overflow: hidden; color: var(--color-text-primary); font-size: var(--text-sm); line-height: var(--leading-normal); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.muted { color: var(--color-text-muted); }
+.semanticIcon, .metricIcon { width: .875rem; height: .875rem; color: var(--color-action-primary); }
+.featuredMetric { border-color: var(--color-border-default); background: var(--color-selection); }
+.featuredMetricLabel { color: var(--color-selection-strong); }
+.actionSection { margin-bottom: var(--ds-space-5); padding: var(--ds-space-5); }
+.abonoForm, .extensionForm { display: flex; width: 100%; flex-direction: column; gap: var(--ds-space-2); }
+.formField { min-width: 0; flex: 1; }
+@media (min-width: 640px) { .page { padding-inline: var(--ds-space-6); } .abonoForm, .extensionForm { width: auto; flex-direction: row; align-items: end; } .abonoForm { min-width: 22.5rem; } .extensionForm { min-width: 20rem; } }
+@media (min-width: 1024px) { .page { padding-inline: var(--ds-space-10); } .operationalGrid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
+@media (min-width: 1200px) { .identityLayout, .actionLayout { flex-direction: row; align-items: center; } .metricsGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+====================================================================================================
+FILE: web/src/features/creditos/queries.ts
+====================================================================================================
+import {
+  EstadoCredito,
+  EstadoEventoFinanciero,
+  TipoEventoFinanciero,
+  type FrecuenciaPago,
+  type TipoAmortizacion,
+} from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/server/auth/guards";
+import { buildCreditoVisibilityWhere } from "@/server/auth/scope";
+import { isAbonoReversible } from "@/features/creditos/abonos/reversibility";
+import { puedeRevertirAbonoRecalculando } from "@/features/creditos/abonos/recalculated-reversal-policy";
+import {
+  calcularResumenCreditos,
+  derivarCreditoOperativo,
+  type CreditoResumenFuente,
+  type SegmentoCreditos,
+} from "@/features/creditos/portfolio-summary";
+
+interface ObtenerCreditosParaListadoParams {
+  query?: string;
+  estado?: string;
+}
+
+export interface CreditoListadoItem {
+  id: string;
+  codigo: string;
+  estado: EstadoCredito;
+  fechaPrestamo: Date;
+
+  monto: number;
+  plazoMeses: number;
+  tasaMensual: number;
+
+  frecuencia: FrecuenciaPago;
+  tipoAmortizacion: TipoAmortizacion;
+
+  cliente: {
+    id: string;
+    cedula: string;
+    nombre: string;
+    telefono: string | null;
+  };
+
+  saldoCapital: number;
+  interesPendiente: number;
+  tieneCuotasVencidas: boolean;
+  proximaCuota: {
+    creditoId: string;
+    codigoCredito: string;
+    numeroCuota: number | null;
+    fechaProgramada: Date;
+    valorProgramado: number;
+    estado: EstadoEventoFinanciero;
+  } | null;
+}
+
+/**
+ * Obtiene detalle de credito aplicando ownership en servidor.
+ *
+ * No se usa findUnique porque findUnique por id ignoraria el ownerUserId
+ * ubicado en la relacion credito -> cliente.
+ */
+export async function obtenerCreditoDetalle(id: string) {
+  const user = await requireUser();
+  const credito = await prisma.credito.findFirst({
+    where: {
+      AND: [
+        { id },
+        buildCreditoVisibilityWhere(user),
+      ],
+    },
+    include: {
+      cliente: {
+        select: {
+          id: true,
+          cedula: true,
+          nombre: true,
+          telefono: true,
+        },
+      },
+      eventos: {
+        include: {
+          abonoSnapshot: true,
+        },
+        orderBy: [
+          { numeroCuota: "asc" },
+          { creadoEn: "asc" },
+        ],
+      },
+    },
+  });
+
+  if (!credito) return null;
+
+  return {
+    ...credito,
+    eventos: credito.eventos.map((evento) => ({
+      ...evento,
+      abonoPuedeRevertirse:
+        evento.tipo === "ABONO_CAPITAL" && evento.abonoSnapshot
+          ? isAbonoReversible({
+              eventosDespues: evento.abonoSnapshot.eventosDespues,
+              currentEvents: credito.eventos,
+            }) || puedeRevertirAbonoRecalculando({
+              abonoId: evento.id,
+              abonoCreadoEn: evento.creadoEn,
+              tipoAmortizacion: credito.tipoAmortizacion,
+              eventos: credito.eventos,
+            })
+          : false,
+    })),
+  };
+}
+/**
+ * Obtiene creditos para la vista principal de cartera.
+ *
+ * Decisiones:
+ * - Busqueda global por codigo, cliente, cedula o telefono.
+ * - Filtro simple por estado.
+ * - Incluye eventos para calcular saldo y proxima cuota sin guardar resumenes
+ *   derivados como fuente de verdad.
+ *
+ * Regla de seguridad:
+ * - ADMIN ve todos.
+ * - OPERADOR/LECTURA solo ven creditos cuyo cliente pertenece a su ownerUserId.
+ */
+export async function obtenerCreditosParaListado({
+  query,
+  estado,
+}: ObtenerCreditosParaListadoParams = {}): Promise<CreditoListadoItem[]> {
+  const user = await requireUser();
+  const normalizedQuery = query?.trim() ?? "";
+  const estadoFiltro = parseEstadoCredito(estado);
+
+  const filtrosFuncionales = {
+    ...(estadoFiltro ? { estado: estadoFiltro } : {}),
+    ...(normalizedQuery
+      ? {
+          OR: [
+            {
+              codigo: {
+                contains: normalizedQuery,
+                mode: "insensitive" as const,
+              },
+            },
+            {
+              cliente: {
+                nombre: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+            {
+              cliente: {
+                cedula: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+            {
+              cliente: {
+                telefono: {
+                  contains: normalizedQuery,
+                  mode: "insensitive" as const,
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const creditos = await prisma.credito.findMany({
+    where: {
+      AND: [buildCreditoVisibilityWhere(user), filtrosFuncionales],
+    },
+    include: {
+      cliente: {
+        select: {
+          id: true,
+          cedula: true,
+          nombre: true,
+          telefono: true,
+        },
+      },
+      eventos: {
+        orderBy: [
+          {
+            fechaProgramada: "asc",
+          },
+          {
+            numeroCuota: "asc",
+          },
+        ],
+        select: {
+          numeroCuota: true,
+          tipo: true,
+          fechaProgramada: true,
+          valorProgramado: true,
+          interesProgramado: true,
+          capitalPagado: true,
+          saldoCapitalPost: true,
+          estado: true,
+        },
+      },
+    },
+    orderBy: {
+      creadoEn: "desc",
+    },
+    take: 200,
+  });
+
+  return creditos.map((credito) => {
+    const operativo = derivarCreditoOperativo({
+      id: credito.id,
+      codigo: credito.codigo,
+      estado: credito.estado,
+      monto: Number(credito.monto),
+      fechaCancelacion: credito.fechaCancelacion,
+      eventos: credito.eventos.map((evento) => ({
+        numeroCuota: evento.numeroCuota,
+        tipo: evento.tipo,
+        estado: evento.estado,
+        fechaProgramada: evento.fechaProgramada,
+        valorProgramado: Number(evento.valorProgramado),
+        interesProgramado: Number(evento.interesProgramado),
+        capitalPagado: Number(evento.capitalPagado),
+        saldoCapitalPost:
+          evento.saldoCapitalPost === null
+            ? null
+            : Number(evento.saldoCapitalPost),
+      })),
+    });
+
+    return {
+      id: credito.id,
+      codigo: credito.codigo,
+      estado: credito.estado,
+      fechaPrestamo: credito.fechaPrestamo,
+
+      monto: Number(credito.monto),
+      plazoMeses: Number(credito.plazoMeses),
+      tasaMensual: Number(credito.tasaMensual),
+
+      frecuencia: credito.frecuencia,
+      tipoAmortizacion: credito.tipoAmortizacion,
+
+      cliente: credito.cliente,
+
+      saldoCapital: operativo.saldoCapital,
+      interesPendiente: operativo.interesPendiente,
+      tieneCuotasVencidas: operativo.tieneCuotasVencidas,
+
+      proximaCuota: operativo.proximaCuota
+        ? {
+            creditoId: operativo.proximaCuota.creditoId,
+            codigoCredito: operativo.proximaCuota.codigoCredito,
+            numeroCuota: operativo.proximaCuota.numeroCuota,
+            fechaProgramada: operativo.proximaCuota.fechaProgramada,
+            valorProgramado: operativo.proximaCuota.valorProgramado,
+            estado: operativo.proximaCuota.estado,
+          }
+        : null,
+    };
+  });
+}
+
+function parseEstadoCredito(value: string | undefined): EstadoCredito | null {
+  if (value === EstadoCredito.ACTIVO) {
+    return EstadoCredito.ACTIVO;
+  }
+
+  if (value === EstadoCredito.CANCELADO) {
+    return EstadoCredito.CANCELADO;
+  }
+
+  return null;
+}
+
+export const CREDITOS_PAGE_SIZE = 200;
+
+export interface ObtenerVistaCreditosParams {
+  query?: string;
+  estado?: string;
+  page?: number;
+}
+
+export interface VistaCreditosPaginada {
+  items: CreditoListadoItem[];
+  page: number;
+  pageSize: number;
+  totalCoincidencias: number;
+  totalPaginas: number;
+  resumenSegmento: ReturnType<typeof calcularResumenCreditos>;
+  resumenVisible: ReturnType<typeof calcularResumenCreditos>;
+}
+
+/**
+ * Loads one page of Credits while calculating counts and financial metrics over
+ * every authorized match. Pagination never changes cards, totals or statistics.
+ */
+export async function obtenerVistaCreditos({
+  query,
+  estado,
+  page = 1,
+}: ObtenerVistaCreditosParams = {}): Promise<VistaCreditosPaginada> {
+  const user = await requireUser();
+  const normalizedQuery = query?.trim() ?? "";
+  const segmento = parseSegmentoCreditos(estado);
+  const safePage = Number.isInteger(page) && page > 0 ? page : 1;
+  const where = {
+    AND: [
+      buildCreditoVisibilityWhere(user),
+      buildCreditFunctionalWhere(normalizedQuery, segmento),
+    ],
+  };
+
+  const eventSelect = {
+    tipo: true,
+    estado: true,
+    fechaProgramada: true,
+    valorProgramado: true,
+    interesProgramado: true,
+    capitalPagado: true,
+    saldoCapitalPost: true,
+  } as const;
+
+  const [totalCoincidencias, summaryCredits, pageCredits] = await Promise.all([
+    prisma.credito.count({ where }),
+    prisma.credito.findMany({
+      where,
+      select: {
+        id: true,
+        codigo: true,
+        estado: true,
+        monto: true,
+        fechaCancelacion: true,
+        eventos: {
+          orderBy: [{ fechaProgramada: "asc" }, { numeroCuota: "asc" }],
+          select: eventSelect,
+        },
+      },
+    }),
+    prisma.credito.findMany({
+      where,
+      include: {
+        cliente: {
+          select: { id: true, cedula: true, nombre: true, telefono: true },
+        },
+        eventos: {
+          orderBy: [{ fechaProgramada: "asc" }, { numeroCuota: "asc" }],
+          select: {
+            numeroCuota: true,
+            ...eventSelect,
+          },
+        },
+      },
+      orderBy: { creadoEn: "desc" },
+      skip: (safePage - 1) * CREDITOS_PAGE_SIZE,
+      take: CREDITOS_PAGE_SIZE,
+    }),
+  ]);
+
+  const summarySources = summaryCredits.map(toCreditoResumenFuente);
+  const pageSources = pageCredits.map(toCreditoResumenFuente);
+  const derivedById = new Map(
+    pageSources.map((credito) => [credito.id, derivarCreditoOperativo(credito)]),
+  );
+
+  const items = pageCredits.map((credito) => {
+    const derived = derivedById.get(credito.id);
+    if (!derived) throw new Error(`No se pudo derivar el crédito ${credito.id}.`);
+
+    return {
+      id: credito.id,
+      codigo: credito.codigo,
+      estado: credito.estado,
+      fechaPrestamo: credito.fechaPrestamo,
+      monto: Number(credito.monto),
+      plazoMeses: Number(credito.plazoMeses),
+      tasaMensual: Number(credito.tasaMensual),
+      frecuencia: credito.frecuencia,
+      tipoAmortizacion: credito.tipoAmortizacion,
+      cliente: credito.cliente,
+      saldoCapital: derived.saldoCapital,
+      interesPendiente: derived.interesPendiente,
+      tieneCuotasVencidas: derived.tieneCuotasVencidas,
+      proximaCuota: derived.proximaCuota
+        ? {
+            creditoId: credito.id,
+            codigoCredito: credito.codigo,
+            numeroCuota: derived.proximaCuota.numeroCuota,
+            fechaProgramada: derived.proximaCuota.fechaProgramada,
+            valorProgramado: derived.proximaCuota.valorProgramado,
+            estado: derived.proximaCuota.estado,
+          }
+        : null,
+    };
+  });
+
+  return {
+    items,
+    page: safePage,
+    pageSize: CREDITOS_PAGE_SIZE,
+    totalCoincidencias,
+    totalPaginas: Math.max(1, Math.ceil(totalCoincidencias / CREDITOS_PAGE_SIZE)),
+    resumenSegmento: calcularResumenCreditos(summarySources, segmento),
+    resumenVisible: calcularResumenCreditos(pageSources, segmento),
+  };
+}
+
+function parseSegmentoCreditos(value: string | undefined): SegmentoCreditos {
+  if (value === "ACTIVO" || value === "VENCIDA" || value === "CANCELADO") {
+    return value;
+  }
+  return "TODOS";
+}
+
+function buildCreditFunctionalWhere(
+  normalizedQuery: string,
+  segmento: SegmentoCreditos,
+) {
+  const searchWhere = normalizedQuery
+    ? {
+        OR: [
+          { codigo: { contains: normalizedQuery, mode: "insensitive" as const } },
+          { cliente: { nombre: { contains: normalizedQuery, mode: "insensitive" as const } } },
+          { cliente: { cedula: { contains: normalizedQuery, mode: "insensitive" as const } } },
+          { cliente: { telefono: { contains: normalizedQuery, mode: "insensitive" as const } } },
+        ],
+      }
+    : {};
+
+  const segmentWhere = segmento === "ACTIVO"
+    ? { estado: EstadoCredito.ACTIVO }
+    : segmento === "CANCELADO"
+      ? { estado: EstadoCredito.CANCELADO }
+      : segmento === "VENCIDA"
+        ? {
+            estado: EstadoCredito.ACTIVO,
+            eventos: {
+              some: {
+                tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+                estado: { in: [EstadoEventoFinanciero.ATRASADO, EstadoEventoFinanciero.MORA] },
+              },
+            },
+          }
+        : {};
+
+  return { ...searchWhere, ...segmentWhere };
+}
+
+function toCreditoResumenFuente(credito: {
+  id: string;
+  codigo: string;
+  estado: EstadoCredito;
+  monto: unknown;
+  fechaCancelacion: Date | null;
+  eventos: Array<{
+    numeroCuota?: number | null;
+    tipo: TipoEventoFinanciero;
+    estado: EstadoEventoFinanciero;
+    fechaProgramada: Date;
+    valorProgramado: unknown;
+    interesProgramado: unknown;
+    capitalPagado: unknown;
+    saldoCapitalPost: unknown | null;
+  }>;
+}): CreditoResumenFuente {
+  return {
+    id: credito.id,
+    codigo: credito.codigo,
+    estado: credito.estado,
+    monto: Number(credito.monto),
+    fechaCancelacion: credito.fechaCancelacion,
+    eventos: credito.eventos.map((evento) => ({
+      numeroCuota: evento.numeroCuota ?? null,
+      tipo: evento.tipo,
+      estado: evento.estado,
+      fechaProgramada: evento.fechaProgramada,
+      valorProgramado: Number(evento.valorProgramado),
+      interesProgramado: Number(evento.interesProgramado),
+      capitalPagado: Number(evento.capitalPagado),
+      saldoCapitalPost:
+        evento.saldoCapitalPost === null ? null : Number(evento.saldoCapitalPost),
+    })),
+  };
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/abonos/components/abono-reversal-button.tsx
+====================================================================================================
+"use client";
+
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+import { reversarAbonoCapital } from "../reversal-actions";
+
+import styles from "./abono-reversal-button.module.css";
+
+interface AbonoReversalButtonProps {
+  creditoId: string;
+  abonoEventoId: string;
+}
+
+/** Fixed overlay prevents the confirmation UI from changing table geometry. */
+export function AbonoReversalButton({
+  creditoId,
+  abonoEventoId,
+}: AbonoReversalButtonProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={styles.trigger}
+      >
+        Revertir
+      </button>
+
+      {open
+        ? createPortal(
+            <div className={styles.backdrop}>
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="revertir-abono-title"
+                className={`${surfaceRecipes.overlay} ${styles.dialog}`}
+              >
+                <div className={styles.dialogHeader}>
+                  <div>
+                    <h3 id="revertir-abono-title" className={styles.title}>
+                      Revertir abono
+                    </h3>
+                    <p className={styles.description}>
+                      Se restaurara el credito al estado anterior a este abono.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className={styles.close}
+                    aria-label="Cerrar confirmacion"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form action={reversarAbonoCapital} className={styles.form}>
+                  <input type="hidden" name="creditoId" value={creditoId} />
+                  <input type="hidden" name="abonoEventoId" value={abonoEventoId} />
+                  <label className={formRecipes.label}>
+                    Motivo opcional
+                  </label>
+                  <textarea
+                    name="motivo"
+                    maxLength={500}
+                    rows={3}
+                    className={`${formRecipes.control} ${styles.textarea}`}
+                  />
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      className={actionRecipes.secondary}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className={actionRecipes.destructive}
+                    >
+                      Confirmar reversion
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/abonos/components/abono-reversal-button.module.css
+====================================================================================================
+.trigger { border: 1px solid var(--color-danger-border); border-radius: var(--ds-radius-sm); background: var(--color-surface-primary); padding: .375rem .625rem; color: var(--color-danger); font-size: var(--text-xs); font-weight: var(--font-weight-action); }
+.trigger:hover { background: var(--color-danger-surface); }
+.backdrop { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: var(--color-overlay-backdrop); padding: var(--ds-space-4); backdrop-filter: blur(4px); }
+.dialog { width: 100%; max-width: 28rem; padding: var(--ds-space-5); }
+.dialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ds-space-4); }
+.title { color: var(--color-text-primary); font-size: var(--text-lg); font-weight: var(--font-weight-heading); }
+.description { margin-top: var(--ds-space-2); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.close { border-radius: var(--ds-radius-md); padding: var(--ds-space-2); color: var(--color-text-secondary); }
+.close:hover { background: var(--color-surface-subtle); }
+.form { margin-top: var(--ds-space-5); }
+.textarea { margin-top: var(--ds-space-2); resize: vertical; }
+.actions { display: flex; justify-content: flex-end; gap: var(--ds-space-2); margin-top: var(--ds-space-5); }
+
+====================================================================================================
+FILE: web/src/features/creditos/pagos/components/edit-payment-date.tsx
+====================================================================================================
+"use client";
+
+import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Check, PencilLine, X } from "lucide-react";
+
+import { actualizarFechaPagoCuota } from "../actions";
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { overlayRecipes } from "@/design-system/recipes/overlays";
+import type { UpdatePaymentDateState } from "../payment-date-state";
+
+import styles from "./edit-payment-date.module.css";
+
+interface EditPaymentDateProps {
+  eventoId: string;
+  creditoId: string;
+  initialDate: string;
+  formattedDate: string;
+  compact?: boolean;
+}
+
+const initialState: UpdatePaymentDateState = {
+  ok: false,
+  message: null,
+};
+
+/**
+ * Edits the actual payment date without changing the table row or card size.
+ *
+ * The date text and native input keep the existing footprint. Edit, confirm,
+ * cancel, and feedback controls are absolutely positioned overlays, so they do
+ * not participate in layout calculations or reduce the date's available width.
+ */
+export function EditPaymentDate({
+  eventoId,
+  creditoId,
+  initialDate,
+  formattedDate,
+  compact = false,
+}: EditPaymentDateProps) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [state, formAction, pending] = useActionState(
+    actualizarFechaPagoCuota,
+    initialState,
+  );
+
+  function closeEditor() {
+    setEditing(false);
+
+    if (state.ok) {
+      router.refresh();
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div
+        className={
+          compact
+            ? `${dataDisplayRecipes.compactDatum} ${styles.compact}`
+            : "relative w-full min-w-0"
+        }
+      >
+        {compact ? (
+          <p className={dataDisplayRecipes.compactDatumLabel}>
+            Fecha real
+          </p>
+        ) : null}
+
+        <span
+          className={[
+            dataDisplayRecipes.numericCell,
+            compact ? styles.compactValue : styles.value,
+          ].join(" ")}
+        >
+          {formattedDate}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className={[
+            `${actionRecipes.entityDetailIcon} ${styles.editButton}`,
+            compact
+              ? "right-2 top-1/2 -translate-y-1/2"
+              : "left-full top-1/2 ml-1 -translate-y-1/2",
+          ].join(" ")}
+          aria-label="Editar fecha real de pago"
+          title="Editar fecha real de pago"
+        >
+          <PencilLine className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={formAction}
+      className={
+        compact
+          ? `${dataDisplayRecipes.compactDatum} ${styles.compact}`
+          : "relative w-full min-w-0"
+      }
+    >
+      <input type="hidden" name="eventoId" value={eventoId} />
+      <input type="hidden" name="creditoId" value={creditoId} />
+
+      {compact ? (
+        <p className={dataDisplayRecipes.compactDatumLabel}>
+          Fecha real
+        </p>
+      ) : null}
+
+      <input
+        type="date"
+        name="fechaPago"
+        defaultValue={initialDate}
+        required
+        disabled={pending || state.ok}
+        className={[
+          formRecipes.control,
+          styles.dateInput,
+          compact ? styles.compactInput : "",
+        ].join(" ")}
+      />
+
+      <div
+        className={[
+          styles.controls,
+          compact
+            ? "right-2 top-full mt-1"
+            : "left-full top-1/2 ml-1 -translate-y-1/2",
+        ].join(" ")}
+      >
+        {!state.ok ? (
+          <button
+            type="submit"
+            disabled={pending}
+            className={`${actionRecipes.primary} ${styles.iconAction}`}
+            aria-label="Guardar fecha real de pago"
+            title="Guardar"
+          >
+            <Check className="h-4 w-4" />
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={closeEditor}
+          disabled={pending}
+          className={`${actionRecipes.secondary} ${styles.iconAction}`}
+          aria-label={state.ok ? "Cerrar edición" : "Cancelar edición"}
+          title={state.ok ? "Cerrar" : "Cancelar"}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {pending || state.message ? (
+        <div
+          className={[
+            `${overlayRecipes.tooltip} ${styles.feedback}`,
+            compact
+              ? "right-2 top-[calc(100%+3rem)]"
+              : "left-full top-[calc(50%+2.35rem)] ml-1",
+          ].join(" ")}
+        >
+          <p
+            className={
+              pending
+                ? styles.feedbackPending
+                : state.ok
+                  ? styles.feedbackSuccess
+                  : styles.feedbackError
+            }
+          >
+            {pending ? "Guardando..." : state.message}
+          </p>
+        </div>
+      ) : null}
+    </form>
+  );
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/pagos/payment-date-state.ts
+====================================================================================================
+export interface UpdatePaymentDateState {
+  ok: boolean;
+  message: string | null;
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/abonos/snapshot.ts
+====================================================================================================
+import type { Prisma } from "@prisma/client";
+
+export interface FinancialEventImage {
+  id: string;
+  fechaProgramada: string;
+  fechaPago: string | null;
+  valorProgramado: string;
+  capitalProgramado: string;
+  interesProgramado: string;
+  montoPagado: string;
+  capitalPagado: string;
+  interesPagado: string;
+  saldoCapitalPost: string | null;
+  estado: string;
+  diasAtraso: number;
+  accionPor: string | null;
+}
+
+interface SnapshotSourceEvent {
+  id: string;
+  fechaProgramada: Date;
+  fechaPago: Date | null;
+  valorProgramado: unknown;
+  capitalProgramado: unknown;
+  interesProgramado: unknown;
+  montoPagado: unknown;
+  capitalPagado: unknown;
+  interesPagado: unknown;
+  saldoCapitalPost: unknown | null;
+  estado: string;
+  diasAtraso: number;
+  accionPor: string | null;
+}
+
+/** Captures only fields whose divergence can make an abono unsafe to reverse. */
+export function toFinancialEventImage(
+  evento: SnapshotSourceEvent,
+): FinancialEventImage {
+  return {
+    id: evento.id,
+    fechaProgramada: evento.fechaProgramada.toISOString(),
+    fechaPago: evento.fechaPago?.toISOString() ?? null,
+    valorProgramado: normalizeMoney(evento.valorProgramado),
+    capitalProgramado: normalizeMoney(evento.capitalProgramado),
+    interesProgramado: normalizeMoney(evento.interesProgramado),
+    montoPagado: normalizeMoney(evento.montoPagado),
+    capitalPagado: normalizeMoney(evento.capitalPagado),
+    interesPagado: normalizeMoney(evento.interesPagado),
+    saldoCapitalPost:
+      evento.saldoCapitalPost === null ? null : normalizeMoney(evento.saldoCapitalPost),
+    estado: evento.estado,
+    diasAtraso: evento.diasAtraso,
+    accionPor: evento.accionPor,
+  };
+}
+
+export function financialImageChanged(
+  before: FinancialEventImage,
+  after: FinancialEventImage,
+): boolean {
+  return financialComparable(before) !== financialComparable(after);
+}
+
+/**
+ * Technical metadata is intentionally excluded. Only financial and operational
+ * fields determine whether an affected installment diverged after the abono.
+ */
+export function financialImageMatches(
+  current: SnapshotSourceEvent,
+  expected: FinancialEventImage,
+): boolean {
+  return financialComparable(toFinancialEventImage(current)) === financialComparable(expected);
+}
+
+export function toSnapshotJson(
+  images: FinancialEventImage[],
+): Prisma.InputJsonArray {
+  return images as unknown as Prisma.InputJsonArray;
+}
+
+function financialComparable(image: FinancialEventImage): string {
+  return JSON.stringify({
+    fechaProgramada: image.fechaProgramada,
+    fechaPago: image.fechaPago,
+    valorProgramado: image.valorProgramado,
+    capitalProgramado: image.capitalProgramado,
+    interesProgramado: image.interesProgramado,
+    montoPagado: image.montoPagado,
+    capitalPagado: image.capitalPagado,
+    interesPagado: image.interesPagado,
+    saldoCapitalPost: image.saldoCapitalPost,
+    estado: image.estado,
+    diasAtraso: image.diasAtraso,
+  });
+}
+
+
+/** Normalizes Prisma Decimal and JSON monetary values to a stable comparison form. */
+function normalizeMoney(value: unknown): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error("El snapshot contiene un valor monetario no numerico.");
+  }
+  return parsed.toFixed(2);
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/abonos/reversibility.ts
+====================================================================================================
+import type { FinancialEventImage } from "./snapshot";
+import { financialImageMatches } from "./snapshot";
+
+interface CurrentFinancialEvent {
+  id: string;
+  fechaProgramada: Date;
+  fechaPago: Date | null;
+  valorProgramado: unknown;
+  capitalProgramado: unknown;
+  interesProgramado: unknown;
+  montoPagado: unknown;
+  capitalPagado: unknown;
+  interesPagado: unknown;
+  saldoCapitalPost: unknown | null;
+  estado: string;
+  diasAtraso: number;
+  accionPor: string | null;
+}
+
+/** Returns true only when every installment affected by the abono is unchanged. */
+export function isAbonoReversible(input: {
+  eventosDespues: unknown;
+  currentEvents: CurrentFinancialEvent[];
+}): boolean {
+  if (!Array.isArray(input.eventosDespues) || input.eventosDespues.length === 0) {
+    return false;
+  }
+
+  const currentById = new Map(input.currentEvents.map((event) => [event.id, event]));
+  return (input.eventosDespues as FinancialEventImage[]).every((expected) => {
+    const current = currentById.get(expected.id);
+    return current ? financialImageMatches(current, expected) : false;
+  });
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/abonos/reversal-actions.ts
+====================================================================================================
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { EstadoCredito, EstadoEventoFinanciero, TipoEventoFinanciero } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { recordAuditLogTx } from "@/server/audit/audit-log";
+
+import { isAbonoReversible } from "./reversibility";
+import { puedeRevertirAbonoRecalculando, recalcularSoloInteresTrasReversion } from "./recalculated-reversal-policy";
+import type { FinancialEventImage } from "./snapshot";
+
+interface SnapshotCredit {
+  estado: EstadoCredito;
+  fechaCancelacion: string | null;
+}
+
+/** Restores only installments changed by the abono and preserves unrelated payments. */
+export async function reversarAbonoCapital(formData: FormData): Promise<void> {
+  const creditoId = required(formData, "creditoId");
+  const abonoEventoId = required(formData, "abonoEventoId");
+  const motivo = optional(formData, "motivo");
+  if (motivo.length > 500) throw new Error("El motivo no puede superar 500 caracteres.");
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
+
+  await prisma.$transaction(async (tx) => {
+    const abono = await tx.eventoFinanciero.findUnique({
+      where: { id: abonoEventoId },
+      include: {
+        abonoSnapshot: true,
+        credito: { select: { tipoAmortizacion: true, frecuencia: true, tasaMensual: true } },
+      },
+    });
+    if (!abono || abono.creditoId !== creditoId || abono.tipo !== TipoEventoFinanciero.ABONO_CAPITAL) {
+      throw new Error("El abono no existe o no pertenece al credito.");
+    }
+    if (!abono.abonoSnapshot) throw new Error("Este abono no tiene un snapshot seguro.");
+
+    const todosLosEventos = await tx.eventoFinanciero.findMany({ where: { creditoId } });
+    const eventosActuales = todosLosEventos.filter((e) => e.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA);
+    const reversionExacta = isAbonoReversible({ eventosDespues: abono.abonoSnapshot.eventosDespues, currentEvents: eventosActuales });
+    const reversionRecalculada = !reversionExacta && puedeRevertirAbonoRecalculando({
+      abonoId: abono.id,
+      abonoCreadoEn: abono.creadoEn,
+      tipoAmortizacion: abono.credito.tipoAmortizacion,
+      eventos: todosLosEventos,
+    });
+    if (!reversionExacta && !reversionRecalculada) {
+      throw new Error("El abono no puede revertirse porque existen cuotas pagadas, otro abono posterior o no admite recálculo seguro.");
+    }
+
+    const eventosAntes = abono.abonoSnapshot.eventosAntes as unknown as FinancialEventImage[];
+    const creditoAntes = abono.abonoSnapshot.creditoAntes as unknown as SnapshotCredit;
+
+    if (reversionExacta) {
+      for (const evento of eventosAntes) {
+        await tx.eventoFinanciero.update({
+          where: { id: evento.id },
+          data: {
+            fechaProgramada: new Date(evento.fechaProgramada),
+            fechaPago: evento.fechaPago ? new Date(evento.fechaPago) : null,
+            valorProgramado: evento.valorProgramado,
+            capitalProgramado: evento.capitalProgramado,
+            interesProgramado: evento.interesProgramado,
+            montoPagado: evento.montoPagado,
+            capitalPagado: evento.capitalPagado,
+            interesPagado: evento.interesPagado,
+            saldoCapitalPost: evento.saldoCapitalPost,
+            estado: evento.estado as EstadoEventoFinanciero,
+            diasAtraso: evento.diasAtraso,
+            accionPor: user.id,
+          },
+        });
+      }
+    } else {
+      const saldoRestaurado = Number(abono.saldoCapitalPost ?? 0) + Number(abono.capitalPagado);
+      const recalculadas = recalcularSoloInteresTrasReversion({
+        saldoRestaurado,
+        tasaMensual: Number(abono.credito.tasaMensual),
+        frecuencia: abono.credito.frecuencia,
+        cuotas: eventosActuales,
+      });
+      for (const cuota of recalculadas) {
+        await tx.eventoFinanciero.update({
+          where: { id: cuota.id },
+          data: {
+            valorProgramado: cuota.valorProgramado.toFixed(2),
+            capitalProgramado: cuota.capitalProgramado.toFixed(2),
+            interesProgramado: cuota.interesProgramado.toFixed(2),
+            saldoCapitalPost: cuota.saldoCapitalPost.toFixed(2),
+            accionPor: user.id,
+          },
+        });
+      }
+    }
+
+    await tx.credito.update({
+      where: { id: creditoId },
+      data: {
+        estado: creditoAntes.estado,
+        fechaCancelacion: creditoAntes.fechaCancelacion
+          ? new Date(creditoAntes.fechaCancelacion)
+          : null,
+        accionPor: user.id,
+      },
+    });
+
+    await recordAuditLogTx(tx, {
+      actorId: user.id,
+      action: "ABONO_CAPITAL_REVERSE",
+      entityType: "EventoFinanciero",
+      entityId: abono.id,
+      reason: motivo || null,
+      before: {
+        codigo: abono.codigo,
+        monto: String(abono.capitalPagado),
+        snapshotId: abono.abonoSnapshot.id,
+      },
+      after: {
+        restoredEventIds: reversionExacta
+          ? eventosAntes.map((evento) => evento.id)
+          : eventosActuales.map((evento) => evento.id),
+        reversionMode: reversionExacta ? "EXACT_SNAPSHOT" : "RECALCULATED_CURRENT_SCHEDULE",
+      },
+      metadata: {
+        creditoId,
+        versionAlgoritmo: abono.abonoSnapshot.versionAlgoritmo,
+      },
+    });
+
+    await tx.eventoFinanciero.delete({ where: { id: abono.id } });
+  });
+
+  revalidatePath("/creditos");
+  revalidatePath(`/creditos/${creditoId}`);
+}
+
+function required(formData: FormData, name: string): string {
+  const value = formData.get(name);
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Falta el campo obligatorio ${name}.`);
+  }
+  return value.trim();
+}
+
+function optional(formData: FormData, name: string): string {
+  const value = formData.get(name);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+====================================================================================================
+FILE: web/src/features/creditos/current-capital-balance.ts
+====================================================================================================
+export interface EventoCapitalRealizado {
+  estado: string;
+  capitalPagado?: unknown;
+  saldoCapitalPost?: unknown | null;
+}
+
+/** Derives current principal from realized ledger movements only. */
+export function calcularSaldoCapitalActual(
+  montoOriginal: unknown,
+  eventos: EventoCapitalRealizado[],
+): number {
+  const monto = normalizarDineroNoNegativo(montoOriginal);
+  const saldosRealizados = eventos
+    .filter((evento) => evento.estado === "PAGADO")
+    .map((evento) => evento.saldoCapitalPost)
+    .filter((saldo): saldo is NonNullable<typeof saldo> => saldo !== null && saldo !== undefined)
+    .map(normalizarDineroNoNegativo);
+
+  if (saldosRealizados.length > 0) {
+    // Supported payments and prepayments only reduce principal. Taking the
+    // minimum removes ordering ambiguity when several payments share a date.
+    return Math.min(monto, ...saldosRealizados);
+  }
+
+  // Fallback only for records without historical post-balance snapshots.
+  const capitalPagado = eventos.reduce((total, evento) => {
+    if (evento.estado !== "PAGADO") return total;
+    return total + normalizarDineroNoNegativo(evento.capitalPagado);
+  }, 0);
+  return Math.max(0, monto - capitalPagado);
+}
+
+function normalizarDineroNoNegativo(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+====================================================================================================
+FILE: web/src/server/audit/audit-log.ts
+====================================================================================================
+import type { Prisma } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+
+interface RecordAuditLogInput {
+  actorId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  reason?: string | null;
+  before?: Prisma.InputJsonValue | null;
+  after?: Prisma.InputJsonValue | null;
+  metadata?: Prisma.InputJsonValue | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+export async function recordAuditLog(input: RecordAuditLogInput) {
+  return prisma.auditLog.create({
+    data: {
+      actorId: input.actorId ?? null,
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId ?? null,
+      reason: input.reason ?? null,
+      before: input.before ?? undefined,
+      after: input.after ?? undefined,
+      metadata: input.metadata ?? undefined,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    },
+  });
+}
+
+export async function recordAuditLogTx(
+  tx: Prisma.TransactionClient,
+  input: RecordAuditLogInput,
+) {
+  return tx.auditLog.create({
+    data: {
+      actorId: input.actorId ?? null,
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId ?? null,
+      reason: input.reason ?? null,
+      before: input.before ?? undefined,
+      after: input.after ?? undefined,
+      metadata: input.metadata ?? undefined,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    },
+  });
+}
+
+====================================================================================================
+FILE: web/prisma/schema.prisma
+====================================================================================================
+// ============================================================================
+// Prisma Schema - Créditos Lopest
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// CLIENTES
+// ============================================================================
+
+model Cliente {
+  id String @id @default(cuid())
+
+  cedula String @unique
+  nombre String
+
+  direccion  String?
+  empresa    String?
+  telefono   String?
+  recomienda String?
+  contacto   String?
+  contacto2  String?
+
+  carpetaAdjuntosUrl String?
+  estadoDocumentos   EstadoDocumentos @default(FALTAN_DOCUMENTOS)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  creditos   Credito[]
+  documentos DocumentoCliente[]
+
+  // Propietario principal/documental del cliente.
+  // Importante: la cartera financiera por credito vive en Credito.ownerUserId.
+  ownerUserId String?
+  ownerUser   User? @relation("ClienteOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@index([ownerUserId])
+  @@index([nombre])
+  @@index([telefono])
+  @@map("clientes")
+}
+
+// ============================================================================
+// CRÉDITOS
+// ============================================================================
+
+model Credito {
+  id String @id @default(cuid())
+
+  codigo String @unique
+  idempotencyKey String? @unique
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+
+  // Propietario operativo/financiero del credito.
+  // Permite que un mismo cliente sea compartido entre cuentas con creditos distintos.
+  ownerUserId String?
+  ownerUser   User? @relation("CreditoOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  fechaPrestamo DateTime
+
+  monto       Decimal @db.Decimal(18, 2)
+  plazoMeses  Decimal @db.Decimal(10, 2)
+  tasaMensual Decimal @db.Decimal(10, 6)
+
+  frecuencia       FrecuenciaPago
+  tipoAmortizacion TipoAmortizacion @default(AMORTIZACION_FIJA)
+
+  estado EstadoCredito @default(ACTIVO)
+
+  observaciones String?
+  nota          String?
+
+  fechaCancelacion DateTime?
+
+  // User-facing deletion is a traceable soft delete, never a physical delete.
+  eliminadoEn DateTime?
+  eliminadoPor String?
+  motivoEliminacion String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  eventos          EventoFinanciero[]
+  abonoSnapshots   AbonoSnapshot[]
+
+  @@index([clienteId])
+  @@index([ownerUserId])
+  @@index([codigo])
+  @@index([estado])
+  @@index([fechaPrestamo])
+  @@index([eliminadoEn])
+  @@map("creditos")
+}
+
+// ============================================================================
+// EVENTOS FINANCIEROS
+// ============================================================================
+
+model EventoFinanciero {
+  id String @id @default(cuid())
+
+  codigo String @unique
+
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Cascade)
+
+  numeroCuota Int?
+
+  tipo TipoEventoFinanciero @default(CUOTA_PROGRAMADA)
+
+  fechaProgramada DateTime
+  fechaPago       DateTime?
+
+  valorProgramado   Decimal @db.Decimal(18, 2)
+  capitalProgramado Decimal @db.Decimal(18, 2)
+  interesProgramado Decimal @db.Decimal(18, 2)
+
+  montoPagado   Decimal @default(0) @db.Decimal(18, 2)
+  capitalPagado Decimal @default(0) @db.Decimal(18, 2)
+  interesPagado Decimal @default(0) @db.Decimal(18, 2)
+
+  saldoCapitalPost Decimal? @db.Decimal(18, 2)
+
+  estado EstadoEventoFinanciero @default(PENDIENTE)
+
+  diasAtraso Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@index([creditoId])
+  @@index([tipo])
+  @@index([estado])
+  @@index([fechaProgramada])
+  @@index([fechaPago])
+  @@index([creditoId, numeroCuota])
+  abonoSnapshot AbonoSnapshot? @relation("AbonoSnapshotEvent")
+
+  @@map("eventos_financieros")
+}
+
+model AbonoSnapshot {
+  id String @id @default(cuid())
+
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Cascade)
+
+  abonoEventoId String @unique
+  abonoEvento   EventoFinanciero @relation("AbonoSnapshotEvent", fields: [abonoEventoId], references: [id], onDelete: Cascade)
+
+  versionAlgoritmo Int @default(1)
+  creditoAntes    Json
+  eventosAntes    Json
+  eventosDespues  Json
+  aplicadoEn      DateTime
+  creadoEn        DateTime @default(now())
+  creadoPor       String
+
+  @@index([creditoId])
+  @@index([aplicadoEn])
+  @@map("abono_snapshots")
+}
+
+model SecuenciaCredito {
+  id String @id @default(cuid())
+
+  anio Int @unique
+  ultimoNumero Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("secuencias_credito")
+}
+
+model DocumentoCliente {
+  id String @id @default(cuid())
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  nombreArchivo String
+  mimeType      String?
+  tamanoBytes   Int?
+
+  url String
+
+  driveFileId   String? @unique
+  driveFolderId String?
+
+  // Drive reconciliation state. Records remain auditable when files are
+  // removed externally instead of being silently deleted from PostgreSQL.
+  driveDisponible         Boolean  @default(true)
+  driveUltimaVerificacion DateTime?
+  driveEliminadoEn        DateTime?
+
+  proveedor ProveedorArchivo @default(GOOGLE_DRIVE)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@index([clienteId])
+  @@index([driveFileId])
+  @@index([driveFolderId])
+  @@index([driveDisponible])
+  @@map("documentos_cliente")
+}
+
+// ============================================================================
+// AUTENTICACIÓN, ROLES Y AUDITORÍA
+// ============================================================================
+
+model User {
+  id String @id @default(cuid())
+
+  email String @unique
+  nombre String
+
+  passwordHash String?
+  photoUrl String?
+  lastLoginAt DateTime?
+
+  activo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  roles    UserRole[]
+  oauthAccounts OauthAccount[]
+  auditLogs AuditLog[] @relation("AuditActor")
+
+  clientesPropios Cliente[] @relation("ClienteOwner")
+  creditosPropios Credito[] @relation("CreditoOwner")
+
+  @@index([email])
+  @@index([activo])
+  @@map("users")
+}
+
+model Role {
+  id String @id @default(cuid())
+
+  code String @unique
+  name String
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  users UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  creadoEn DateTime @default(now())
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model OauthAccount {
+  id String @id @default(cuid())
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider String
+  providerAccountId String
+
+  email String
+  emailVerified Boolean @default(false)
+
+  pictureUrl String?
+
+  creadoEn DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@unique([provider, email])
+  @@index([userId])
+  @@index([email])
+  @@map("oauth_accounts")
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId String?
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  action String
+  entityType String
+  entityId String?
+
+  reason String?
+  before Json?
+  after Json?
+  metadata Json?
+
+  ipAddress String?
+  userAgent String?
+
+  creadoEn DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([creadoEn])
+  @@map("audit_logs")
+}
+
+enum EstadoDocumentos {
+  FALTAN_DOCUMENTOS
+  DOCUMENTOS_CARGADOS
+}
+
+enum EstadoCredito {
+  ACTIVO
+  CANCELADO
+}
+
+enum FrecuenciaPago {
+  MENSUAL
+  QUINCENAL_5_20
+  QUINCENAL_10_25
+  QUINCENAL_15_30
+}
+
+enum TipoAmortizacion {
+  AMORTIZACION_FIJA
+  SOLO_INTERES
+}
+
+enum TipoEventoFinanciero {
+  CUOTA_PROGRAMADA
+  ABONO_CAPITAL
+}
+
+enum EstadoEventoFinanciero {
+  PENDIENTE
+  ATRASADO
+  MORA
+  PAGADO
+  CANCELADO_POR_ABONO
+}
+
+enum ProveedorArchivo {
+  GOOGLE_DRIVE
+  LOCAL
+  S3
+  OTRO
+}
+
+====================================================================================================
+FILE: web/package.json
+====================================================================================================
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "node scripts/validate.mjs",
+    "create-user": "node scripts/create-user.mjs"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "exceljs": "^4.4.0",
+    "googleapis": "173.0.0",
+    "lucide-react": "^1.17.0",
+    "next": "16.2.7",
+    "next-auth": "^4.24.14",
+    "pg": "^8.21.0",
+    "prisma": "^7.8.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}
+
+====================================================================================================
+PRISMA MIGRATION INVENTORY
+====================================================================================================
+web/prisma/migrations/20260607003818_init/migration.sql
+web/prisma/migrations/20260607004603_init/migration.sql
+web/prisma/migrations/20260627012000_credit_idempotency_and_decimal_term/migration.sql
+web/prisma/migrations/20260627090000_auth_roles_audit/migration.sql
+web/prisma/migrations/20260627113000_google_oauth_auth/migration.sql
+web/prisma/migrations/20260705_add_cliente_owner_user/migration.sql
+web/prisma/migrations/20260705_add_credit_owner_user/migration.sql
+web/prisma/migrations/20260706_add_transferencias_cartera_role/migration.sql
+web/prisma/migrations/20260722040000_documento_drive_file_unique/migration.sql
+web/prisma/migrations/20260722050000_documento_drive_sync_status/migration.sql
+web/prisma/migrations/20260722160000_abono_snapshots/migration.sql
+web/prisma/migrations/20260722170000_abono_snapshot_postimage/migration.sql
+web/prisma/migrations/20260810143000_credit_soft_delete/migration.sql
+web/prisma/migrations/migration_lock.toml
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/20260722040000_documento_drive_file_unique/migration.sql
+====================================================================================================
+-- Additive integrity guarantee for idempotent Drive inventory and retries.
+CREATE UNIQUE INDEX "documentos_cliente_driveFileId_key"
+ON "documentos_cliente"("driveFileId");
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/20260722050000_documento_drive_sync_status/migration.sql
+====================================================================================================
+ALTER TABLE "documentos_cliente"
+ADD COLUMN "driveDisponible" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "driveUltimaVerificacion" TIMESTAMP(3),
+ADD COLUMN "driveEliminadoEn" TIMESTAMP(3);
+
+CREATE INDEX "documentos_cliente_driveDisponible_idx"
+ON "documentos_cliente"("driveDisponible");
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/20260722160000_abono_snapshots/migration.sql
+====================================================================================================
+CREATE TABLE "abono_snapshots" (
+  "id" TEXT NOT NULL,
+  "creditoId" TEXT NOT NULL,
+  "abonoEventoId" TEXT NOT NULL,
+  "versionAlgoritmo" INTEGER NOT NULL DEFAULT 1,
+  "creditoAntes" JSONB NOT NULL,
+  "eventosAntes" JSONB NOT NULL,
+  "aplicadoEn" TIMESTAMP(3) NOT NULL,
+  "creadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "creadoPor" TEXT NOT NULL,
+  CONSTRAINT "abono_snapshots_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "abono_snapshots_abonoEventoId_key" ON "abono_snapshots"("abonoEventoId");
+CREATE INDEX "abono_snapshots_creditoId_idx" ON "abono_snapshots"("creditoId");
+CREATE INDEX "abono_snapshots_aplicadoEn_idx" ON "abono_snapshots"("aplicadoEn");
+ALTER TABLE "abono_snapshots" ADD CONSTRAINT "abono_snapshots_creditoId_fkey" FOREIGN KEY ("creditoId") REFERENCES "creditos"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "abono_snapshots" ADD CONSTRAINT "abono_snapshots_abonoEventoId_fkey" FOREIGN KEY ("abonoEventoId") REFERENCES "eventos_financieros"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/20260722170000_abono_snapshot_postimage/migration.sql
+====================================================================================================
+ALTER TABLE "abono_snapshots"
+ADD COLUMN "eventosDespues" JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/20260810143000_credit_soft_delete/migration.sql
+====================================================================================================
+ALTER TABLE "creditos"
+  ADD COLUMN IF NOT EXISTS "eliminadoEn" TIMESTAMP(3),
+  ADD COLUMN IF NOT EXISTS "eliminadoPor" TEXT,
+  ADD COLUMN IF NOT EXISTS "motivoEliminacion" TEXT;
+
+CREATE INDEX IF NOT EXISTS "creditos_eliminadoEn_idx"
+  ON "creditos"("eliminadoEn");
+
+====================================================================================================
+RECENT MIGRATION: web/prisma/migrations/migration_lock.toml
+====================================================================================================
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+
+====================================================================================================
+CREDIT TEST INVENTORY
+====================================================================================================
+web/src/features/creditos/__tests__/credit-export.test.ts
+web/src/features/creditos/__tests__/credit-facets.test.ts
+web/src/features/creditos/__tests__/credit-filter-params.test.ts
+web/src/features/creditos/__tests__/credit-movements-balance.test.ts
+web/src/features/creditos/__tests__/current-capital-balance.test.ts
+web/src/features/creditos/__tests__/deletion-policy.test.ts
+web/src/features/creditos/__tests__/portfolio-summary.test.ts
+web/src/features/creditos/abonos/__tests__/recalculated-reversal-policy.test.ts
+web/src/features/creditos/pagos/__tests__/overdue-policy.test.ts
+
+REQUIRED IMPLEMENTATION CONTRACT
+- Preserve every paid installment and extraordinary payment byte-for-byte.
+- Recalculate only operational unpaid installments: PENDIENTE, ATRASADO, MORA.
+- For Solo Interest, keep current realized principal as the interest base.
+- Move final principal from the last unpaid installment to the new final installment.
+- Store exact before/after images plus IDs of created installments in a dedicated snapshot.
+- Permit reversal only if affected and created events still match the post-extension snapshot.
+- Block reversal after any payment or abono dependent on the extension.
+- Return typed visible action feedback instead of throwing an opaque Server Action error.
+- Record extension and reversal in AuditLog inside the same transaction.

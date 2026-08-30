@@ -1,0 +1,987 @@
+=== recalculated-reversal-policy.ts ===
+export interface EventoElegibilidadReversion {
+  id: string;
+  tipo: string;
+  estado: string;
+  creadoEn: Date;
+}
+
+export function puedeRevertirAbonoRecalculando(input: {
+  abonoId: string;
+  abonoCreadoEn: Date;
+  tipoAmortizacion: string;
+  eventos: EventoElegibilidadReversion[];
+}): boolean {
+  if (input.tipoAmortizacion !== "SOLO_INTERES") return false;
+  if (input.eventos.some((e) => e.tipo === "CUOTA_PROGRAMADA" && e.estado === "PAGADO")) return false;
+  return !input.eventos.some(
+    (e) => e.id !== input.abonoId && e.tipo === "ABONO_CAPITAL" && e.estado === "PAGADO" && e.creadoEn > input.abonoCreadoEn,
+  );
+}
+
+export function recalcularSoloInteresTrasReversion(input: {
+  saldoRestaurado: number;
+  tasaMensual: number;
+  frecuencia: string;
+  cuotas: Array<{ id: string; numeroCuota: number | null }>;
+}) {
+  const cuotas = [...input.cuotas].sort((a, b) => Number(a.numeroCuota ?? 0) - Number(b.numeroCuota ?? 0));
+  if (cuotas.length === 0) throw new Error("El crédito no tiene cuotas para recalcular.");
+  const tasaPeriodo = input.frecuencia === "MENSUAL" ? input.tasaMensual : input.tasaMensual / 2;
+  const interes = input.saldoRestaurado * tasaPeriodo;
+  const ultimaId = cuotas.at(-1)?.id;
+  return cuotas.map((cuota) => {
+    const capital = cuota.id === ultimaId ? input.saldoRestaurado : 0;
+    return {
+      id: cuota.id,
+      interesProgramado: interes,
+      capitalProgramado: capital,
+      valorProgramado: interes + capital,
+      saldoCapitalPost: cuota.id === ultimaId ? 0 : input.saldoRestaurado,
+    };
+  });
+}
+
+=== recalculated-reversal-policy.test.ts ===
+import { describe, expect, it } from "vitest";
+import { puedeRevertirAbonoRecalculando, recalcularSoloInteresTrasReversion } from "../recalculated-reversal-policy";
+
+const base = {
+  abonoId: "a1",
+  abonoCreadoEn: new Date("2026-08-02T15:22:28Z"),
+  tipoAmortizacion: "SOLO_INTERES",
+};
+
+describe("reversión recalculada", () => {
+  it("permite el caso histórico extendido sin cuotas pagadas", () => {
+    expect(puedeRevertirAbonoRecalculando({ ...base, eventos: [
+      { id: "a1", tipo: "ABONO_CAPITAL", estado: "PAGADO", creadoEn: base.abonoCreadoEn },
+      { id: "c1", tipo: "CUOTA_PROGRAMADA", estado: "ATRASADO", creadoEn: new Date("2026-08-03") },
+      { id: "c2", tipo: "CUOTA_PROGRAMADA", estado: "PENDIENTE", creadoEn: new Date("2026-08-03") },
+    ] })).toBe(true);
+  });
+  it("bloquea cuotas pagadas", () => {
+    expect(puedeRevertirAbonoRecalculando({ ...base, eventos: [
+      { id: "c1", tipo: "CUOTA_PROGRAMADA", estado: "PAGADO", creadoEn: new Date("2026-08-03") },
+    ] })).toBe(false);
+  });
+  it("bloquea un abono posterior", () => {
+    expect(puedeRevertirAbonoRecalculando({ ...base, eventos: [
+      { id: "a2", tipo: "ABONO_CAPITAL", estado: "PAGADO", creadoEn: new Date("2026-08-03") },
+    ] })).toBe(false);
+  });
+  it("recalcula siete cuotas de LP-26-0294", () => {
+    const result = recalcularSoloInteresTrasReversion({ saldoRestaurado: 2_000_000, tasaMensual: 0.15, frecuencia: "MENSUAL", cuotas: Array.from({ length: 7 }, (_, i) => ({ id: String(i + 1), numeroCuota: i + 1 })) });
+    expect(result.slice(0, 6).every((c) => c.valorProgramado === 300_000 && c.capitalProgramado === 0 && c.saldoCapitalPost === 2_000_000)).toBe(true);
+    expect(result[6]).toMatchObject({ valorProgramado: 2_300_000, capitalProgramado: 2_000_000, interesProgramado: 300_000, saldoCapitalPost: 0 });
+  });
+});
+
+=== abonos/actions.ts ===
+"use server";
+
+import { revalidatePath } from "next/cache";
+import {
+  EstadoCredito,
+  EstadoEventoFinanciero,
+  FrecuenciaPago,
+  TipoAmortizacion,
+  TipoEventoFinanciero,
+  type Prisma,
+} from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { financialImageChanged, toFinancialEventImage, toSnapshotJson } from "./snapshot";
+
+function toMoneyDecimalString(value: number): string {
+  return value.toFixed(2);
+}
+
+function obtenerHoyColombia(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return new Date(year, month - 1, day);
+}
+
+function leerCampoObligatorio(formData: FormData, name: string): string {
+  const value = formData.get(name);
+
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Falta el campo obligatorio ${name}.`);
+  }
+
+  return value.trim();
+}
+
+function parseMontoInput(value: string): number {
+  const cleaned = value
+    .trim()
+    .replace(/\$/g, "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+
+  const parsed = Number(cleaned);
+
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function esEstadoPendienteOperativo(estado: EstadoEventoFinanciero): boolean {
+  return (
+    estado === EstadoEventoFinanciero.PENDIENTE ||
+    estado === EstadoEventoFinanciero.ATRASADO ||
+    estado === EstadoEventoFinanciero.MORA
+  );
+}
+
+async function sincronizarEstadoCredito(
+  tx: Prisma.TransactionClient,
+  creditoId: string,
+  accionPor: string,
+): Promise<void> {
+  const eventos = await tx.eventoFinanciero.findMany({
+    where: {
+      creditoId,
+      tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+    },
+    select: {
+      estado: true,
+    },
+  });
+
+  const hayCuotas = eventos.length > 0;
+  const todasCerradas =
+    hayCuotas &&
+    eventos.every((evento) => {
+      return (
+        evento.estado === EstadoEventoFinanciero.PAGADO ||
+        evento.estado === EstadoEventoFinanciero.CANCELADO_POR_ABONO
+      );
+    });
+
+  await tx.credito.update({
+    where: {
+      id: creditoId,
+    },
+    data: {
+      estado: todasCerradas ? EstadoCredito.CANCELADO : EstadoCredito.ACTIVO,
+      fechaCancelacion: todasCerradas ? obtenerHoyColombia() : null,
+      accionPor,
+    },
+  });
+}
+
+async function recalcularSaldosCapitalPost(
+  tx: Prisma.TransactionClient,
+  creditoId: string,
+): Promise<void> {
+  const credito = await tx.credito.findUnique({
+    where: {
+      id: creditoId,
+    },
+    include: {
+      eventos: {
+        orderBy: [
+          {
+            numeroCuota: "asc",
+          },
+          {
+            creadoEn: "asc",
+          },
+        ],
+      },
+    },
+  });
+
+  if (!credito) {
+    throw new Error("El crédito no existe para recalcular saldos.");
+  }
+
+  const capitalInicial = Number(credito.monto);
+
+  const capitalPagadoHistorico = credito.eventos.reduce((total, evento) => {
+    if (evento.estado !== EstadoEventoFinanciero.PAGADO) {
+      return total;
+    }
+
+    return total + Number(evento.capitalPagado || 0);
+  }, 0);
+
+  let capitalProyectado = Math.max(0, capitalInicial - capitalPagadoHistorico);
+
+  const cuotasFuturas = credito.eventos
+    .filter((evento) => evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA)
+    .filter((evento) => evento.estado !== EstadoEventoFinanciero.PAGADO)
+    .sort((a, b) => Number(a.numeroCuota ?? 0) - Number(b.numeroCuota ?? 0));
+
+  for (const cuota of cuotasFuturas) {
+    const capitalProgramado = Number(cuota.capitalProgramado || 0);
+    const saldoPost = Math.max(0, capitalProyectado - capitalProgramado);
+
+    await tx.eventoFinanciero.update({
+      where: {
+        id: cuota.id,
+      },
+      data: {
+        saldoCapitalPost: toMoneyDecimalString(saldoPost),
+      },
+    });
+
+    capitalProyectado = saldoPost;
+  }
+}
+
+export async function registrarAbonoCapital(formData: FormData): Promise<void> {
+  const creditoId = leerCampoObligatorio(formData, "creditoId");
+  const montoRaw = leerCampoObligatorio(formData, "montoAbono");
+  const montoAbono = parseMontoInput(montoRaw);
+  const hoy = obtenerHoyColombia();
+
+  const { user } = await requireCreditoAccess(creditoId);
+  assertCanMutate(user);
+
+  if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
+    throw new Error("Ingresa un monto de abono válido mayor a cero.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const credito = await tx.credito.findUnique({
+      where: {
+        id: creditoId,
+      },
+      include: {
+        eventos: {
+          orderBy: [
+            {
+              numeroCuota: "asc",
+            },
+            {
+              creadoEn: "asc",
+            },
+          ],
+        },
+      },
+    });
+
+    if (!credito) {
+      throw new Error("El crédito no existe.");
+    }
+
+    if (credito.estado === EstadoCredito.CANCELADO) {
+      throw new Error("No se puede abonar a un crédito cancelado.");
+    }
+
+    const eventosAntesPorId = new Map(
+      credito.eventos
+        .filter((evento) => evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA)
+        .map((evento) => [evento.id, toFinancialEventImage(evento)]),
+    );
+
+    const cuotasOperativas = credito.eventos.filter((evento) => {
+      return (
+        evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
+        esEstadoPendienteOperativo(evento.estado)
+      );
+    });
+
+    const saldoCapitalOperativo = cuotasOperativas.reduce((total, evento) => {
+      return total + Number(evento.capitalProgramado || 0);
+    }, 0);
+
+    if (saldoCapitalOperativo <= 0) {
+      throw new Error("El crédito no tiene saldo de capital pendiente para abonar.");
+    }
+
+    if (montoAbono > saldoCapitalOperativo) {
+      throw new Error(
+        `El abono ${toMoneyDecimalString(montoAbono)} supera el saldo de capital pendiente ${toMoneyDecimalString(saldoCapitalOperativo)}.`,
+      );
+    }
+
+    const saldoPosteriorAbono = Math.max(0, saldoCapitalOperativo - montoAbono);
+
+    const abonoCreado = await tx.eventoFinanciero.create({
+      data: {
+        codigo: `${credito.codigo}-ABX-${Date.now()}`,
+        creditoId: credito.id,
+        numeroCuota: null,
+        tipo: TipoEventoFinanciero.ABONO_CAPITAL,
+        fechaProgramada: hoy,
+        fechaPago: hoy,
+        valorProgramado: toMoneyDecimalString(montoAbono),
+        capitalProgramado: toMoneyDecimalString(montoAbono),
+        interesProgramado: "0.00",
+        montoPagado: toMoneyDecimalString(montoAbono),
+        capitalPagado: toMoneyDecimalString(montoAbono),
+        interesPagado: "0.00",
+        saldoCapitalPost: toMoneyDecimalString(saldoPosteriorAbono),
+        estado: EstadoEventoFinanciero.PAGADO,
+        diasAtraso: 0,
+        accionPor: user.id,
+      },
+    });
+
+    if (credito.tipoAmortizacion === TipoAmortizacion.SOLO_INTERES) {
+      await aplicarAbonoSoloInteres({
+        tx,
+        frecuencia: credito.frecuencia,
+        tasaMensual: Number(credito.tasaMensual),
+        cuotasOperativas,
+        nuevoSaldoCapital: saldoPosteriorAbono,
+      });
+    } else {
+      await aplicarAbonoAmortizacionFija({
+        tx,
+        cuotasOperativas,
+        montoAbono,
+      });
+    }
+
+    await recalcularSaldosCapitalPost(tx, credito.id);
+    await sincronizarEstadoCredito(tx, credito.id, user.id);
+
+    const eventosDespues = await tx.eventoFinanciero.findMany({
+      where: {
+        creditoId: credito.id,
+        tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+      },
+      orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }],
+    });
+    const imagenesDespues = eventosDespues.map(toFinancialEventImage);
+    const imagenesAfectadasDespues = imagenesDespues.filter((after) => {
+      const before = eventosAntesPorId.get(after.id);
+      return before ? financialImageChanged(before, after) : true;
+    });
+    const idsAfectados = new Set(imagenesAfectadasDespues.map((event) => event.id));
+    const imagenesAfectadasAntes = [...eventosAntesPorId.values()].filter((event) =>
+      idsAfectados.has(event.id),
+    );
+
+    if (imagenesAfectadasDespues.length === 0) {
+      throw new Error("El abono no produjo cambios financieros verificables.");
+    }
+
+    await tx.abonoSnapshot.create({
+      data: {
+        creditoId: credito.id,
+        abonoEventoId: abonoCreado.id,
+        versionAlgoritmo: 2,
+        creditoAntes: {
+          estado: credito.estado,
+          fechaCancelacion: credito.fechaCancelacion?.toISOString() ?? null,
+        },
+        eventosAntes: toSnapshotJson(imagenesAfectadasAntes),
+        eventosDespues: toSnapshotJson(imagenesAfectadasDespues),
+        aplicadoEn: new Date(),
+        creadoPor: user.id,
+      },
+    });
+  });
+
+  revalidatePath("/creditos");
+  revalidatePath(`/creditos/${creditoId}`);
+}
+
+async function aplicarAbonoAmortizacionFija(input: {
+  tx: Prisma.TransactionClient;
+  cuotasOperativas: Array<{
+    id: string;
+    numeroCuota: number | null;
+    capitalProgramado: unknown;
+    interesProgramado: unknown;
+  }>;
+  montoAbono: number;
+}): Promise<void> {
+  let restante = input.montoAbono;
+
+  const cuotasDesdeCola = [...input.cuotasOperativas].sort(
+    (a, b) => Number(b.numeroCuota ?? 0) - Number(a.numeroCuota ?? 0),
+  );
+
+  for (const cuota of cuotasDesdeCola) {
+    if (restante <= 0) {
+      break;
+    }
+
+    const capitalProgramado = Number(cuota.capitalProgramado || 0);
+    const interesProgramado = Number(cuota.interesProgramado || 0);
+
+    if (restante >= capitalProgramado) {
+      restante -= capitalProgramado;
+
+      await input.tx.eventoFinanciero.update({
+        where: {
+          id: cuota.id,
+        },
+        data: {
+          capitalProgramado: "0.00",
+          interesProgramado: "0.00",
+          valorProgramado: "0.00",
+          estado: EstadoEventoFinanciero.CANCELADO_POR_ABONO,
+          diasAtraso: 0,
+          accionPor: "sistema",
+        },
+      });
+    } else {
+      const nuevoCapital = capitalProgramado - restante;
+      const nuevoValor = nuevoCapital + interesProgramado;
+
+      await input.tx.eventoFinanciero.update({
+        where: {
+          id: cuota.id,
+        },
+        data: {
+          capitalProgramado: toMoneyDecimalString(nuevoCapital),
+          valorProgramado: toMoneyDecimalString(nuevoValor),
+          accionPor: "sistema",
+        },
+      });
+
+      restante = 0;
+    }
+  }
+}
+
+async function aplicarAbonoSoloInteres(input: {
+  tx: Prisma.TransactionClient;
+  frecuencia: FrecuenciaPago;
+  tasaMensual: number;
+  cuotasOperativas: Array<{
+    id: string;
+    numeroCuota: number | null;
+  }>;
+  nuevoSaldoCapital: number;
+}): Promise<void> {
+  const cuotasOrdenadas = [...input.cuotasOperativas].sort(
+    (a, b) => Number(a.numeroCuota ?? 0) - Number(b.numeroCuota ?? 0),
+  );
+
+  if (cuotasOrdenadas.length === 0) {
+    return;
+  }
+
+  if (input.nuevoSaldoCapital === 0) {
+    await input.tx.eventoFinanciero.updateMany({
+      where: {
+        id: {
+          in: cuotasOrdenadas.map((cuota) => cuota.id),
+        },
+      },
+      data: {
+        capitalProgramado: "0.00",
+        interesProgramado: "0.00",
+        valorProgramado: "0.00",
+        estado: EstadoEventoFinanciero.CANCELADO_POR_ABONO,
+        diasAtraso: 0,
+        accionPor: "sistema",
+      },
+    });
+
+    return;
+  }
+
+  const tasaPeriodo =
+    input.frecuencia === FrecuenciaPago.MENSUAL
+      ? input.tasaMensual
+      : input.tasaMensual / 2;
+
+  const nuevoInteresPeriodo = input.nuevoSaldoCapital * tasaPeriodo;
+  const ultimaCuotaId = cuotasOrdenadas[cuotasOrdenadas.length - 1]?.id;
+
+
+=== credit-movements.tsx ===
+import { CalendarDays, CheckCircle2, Star } from "lucide-react";
+
+import {
+  registrarPagoCuota,
+  reversarPagoCuota,
+} from "@/features/creditos/pagos/actions";
+import { EditPaymentDate } from "@/features/creditos/pagos/components/edit-payment-date";
+import { AbonoReversalButton } from "@/features/creditos/abonos/components/abono-reversal-button";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
+import { resolverSaldoMostradoMovimiento } from "@/features/creditos/movement-balance-display";
+
+import styles from "./credit-movements.module.css";
+
+interface CreditMovementEvent {
+  id: string;
+  codigo: string;
+  numeroCuota: number | null;
+  tipo: string;
+  fechaProgramada: Date;
+  fechaPago: Date | null;
+  valorProgramado: unknown;
+  interesProgramado: unknown;
+  capitalPagado: unknown;
+  saldoCapitalPost: unknown | null;
+  estado: string;
+  creadoEn: Date;
+  abonoPuedeRevertirse?: boolean;
+}
+
+interface CreditMovementsProps {
+  creditoId: string;
+  montoInicial: number;
+  eventos: CreditMovementEvent[];
+}
+
+interface DisplayMovement {
+  evento: CreditMovementEvent;
+  saldoMostrado: number | null;
+}
+
+
+/**
+ * Builds the unified operational history used by the legacy Sheets view.
+ *
+ * Scheduled installments and extraordinary principal payments remain separate
+ * domain event types. This function only unifies their presentation. Paid events
+ * advance the realized capital balance; pending installments keep their stored
+ * projected balance and never mutate the realized running balance.
+ */
+function buildDisplayMovements(
+  eventos: CreditMovementEvent[],
+  montoInicial: number,
+): DisplayMovement[] {
+  const paidEvents = [...eventos]
+    .filter((evento) => evento.estado === "PAGADO")
+    .sort((left, right) => {
+      const leftDate = left.fechaPago ?? left.fechaProgramada;
+      const rightDate = right.fechaPago ?? right.fechaProgramada;
+      const dateDifference = leftDate.getTime() - rightDate.getTime();
+
+      return dateDifference !== 0
+        ? dateDifference
+        : left.creadoEn.getTime() - right.creadoEn.getTime();
+    });
+
+  // Realized balances must be calculated chronologically, independently from
+  // presentation order. Otherwise moving abonos to the end would corrupt their
+  // derived historical balances when installments and abonos are interleaved.
+  const realizedBalanceByEventId = new Map<string, number>();
+  let realizedBalance = montoInicial;
+
+  for (const evento of paidEvents) {
+    const storedBalance =
+      evento.saldoCapitalPost === null
+        ? null
+        : Number(evento.saldoCapitalPost);
+
+    realizedBalance =
+      storedBalance ??
+      Math.max(0, realizedBalance - Number(evento.capitalPagado || 0));
+    realizedBalanceByEventId.set(evento.id, realizedBalance);
+  }
+
+  const displayEvents = [...eventos].sort((left, right) => {
+    const leftIsInstallment = left.tipo === "CUOTA_PROGRAMADA";
+    const rightIsInstallment = right.tipo === "CUOTA_PROGRAMADA";
+
+    if (leftIsInstallment && rightIsInstallment) {
+      return Number(left.numeroCuota ?? 0) - Number(right.numeroCuota ?? 0);
+    }
+
+    if (leftIsInstallment) return -1;
+    if (rightIsInstallment) return 1;
+
+    const leftDate = left.fechaPago ?? left.fechaProgramada;
+    const rightDate = right.fechaPago ?? right.fechaProgramada;
+    const dateDifference = leftDate.getTime() - rightDate.getTime();
+
+    return dateDifference !== 0
+      ? dateDifference
+      : left.creadoEn.getTime() - right.creadoEn.getTime();
+  });
+
+  return displayEvents.map((evento) => ({
+    evento,
+    saldoMostrado: resolverSaldoMostradoMovimiento({
+      estado: evento.estado,
+      saldoCapitalPost: evento.saldoCapitalPost,
+      saldoRealizado: realizedBalanceByEventId.get(evento.id) ?? null,
+    }),
+  }));
+}
+
+/**
+ * Renders scheduled installments and extraordinary principal payments in one
+ * chronological history, matching the operational model users already know from
+ * Sheets while preserving typed event behavior for mutations.
+ */
+export function CreditMovements({
+  creditoId,
+  montoInicial,
+  eventos,
+}: CreditMovementsProps) {
+  const movimientos = buildDisplayMovements(eventos, montoInicial);
+  const cuotasCount = eventos.filter(
+    (evento) => evento.tipo === "CUOTA_PROGRAMADA",
+  ).length;
+  const abonosCount = eventos.filter(
+    (evento) => evento.tipo === "ABONO_CAPITAL",
+  ).length;
+
+  return (
+    <section className={surfaceRecipes.dataPanel}>
+      <div className={surfaceRecipes.dataPanelHeader}>
+        <div>
+          <h3 className={dataDisplayRecipes.sectionTitle}>
+            Cronograma y movimientos
+          </h3>
+        </div>
+
+        <div className={styles.counts}>
+          <span className={statusRecipes.neutral}>
+            <CalendarDays className="h-4 w-4" />
+            {cuotasCount} cuota(s)
+          </span>
+          {abonosCount > 0 ? (
+            <span className={statusRecipes.success}>
+              <Star className="h-4 w-4" />
+              {abonosCount} abono(s)
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className={styles.mobileList}>
+        {movimientos.map(({ evento, saldoMostrado }) => (
+          <MovementCard
+            key={evento.id}
+            creditoId={creditoId}
+            evento={evento}
+            saldoMostrado={saldoMostrado}
+          />
+        ))}
+      </div>
+
+      <div className={styles.tableViewport}>
+        <table className={styles.table}>
+          <thead className={styles.tableHead}>
+            <tr>
+              <TableHead className="w-[10%]">Movimiento</TableHead>
+              <TableHead className="w-[12%]">
+                Programada
+              </TableHead>
+              <TableHead className="w-[12%]">
+                Fecha de pago
+              </TableHead>
+              <TableHead className="w-[12%] text-right">
+                Valor
+              </TableHead>
+              <TableHead className="w-[17%] text-right">
+                <span>Intereses</span>
+              </TableHead>
+              <TableHead className="w-[17%] text-right">
+                <span>Saldo capital</span>
+              </TableHead>
+              <TableHead className="w-[11%]">Estado</TableHead>
+              <TableHead className="w-[9%] text-center">¿Pagado?</TableHead>
+            </tr>
+          </thead>
+
+          <tbody>
+            {movimientos.map(({ evento, saldoMostrado }) => (
+              <MovementRow
+                key={evento.id}
+                creditoId={creditoId}
+                evento={evento}
+                saldoMostrado={saldoMostrado}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MovementRow({
+  creditoId,
+  evento,
+  saldoMostrado,
+}: {
+  creditoId: string;
+  evento: CreditMovementEvent;
+  saldoMostrado: number | null;
+}) {
+  const esAbono = evento.tipo === "ABONO_CAPITAL";
+  const estaPagado = evento.estado === "PAGADO";
+  const estaAtrasado =
+    evento.estado === "ATRASADO" || evento.estado === "MORA";
+  const estaCanceladoPorAbono = evento.estado === "CANCELADO_POR_ABONO";
+  const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
+
+  const rowClassName = [
+    styles.row,
+    esAbono || estaPagado
+      ? styles.successRow
+      : estaAtrasado
+        ? styles.overdueRow
+        : estaCanceladoPorAbono
+          ? styles.cancelledRow
+          : "",
+  ].join(" ");
+
+  return (
+    <tr className={rowClassName}>
+      <TableCell className={dataDisplayRecipes.numericCell}>
+        {esAbono ? (
+          <span className={styles.abonoLabel}>
+            <Star className="h-4 w-4 fill-amber-300 text-amber-500" />
+            ABONO
+          </span>
+        ) : (
+          evento.numeroCuota ?? "-"
+        )}
+      </TableCell>
+
+      <TableCell>{formatDateCO(evento.fechaProgramada)}</TableCell>
+
+      <TableCell>
+        {!esAbono && estaPagado && evento.fechaPago ? (
+          <EditPaymentDate
+            eventoId={evento.id}
+            creditoId={creditoId}
+            initialDate={evento.fechaPago.toISOString().slice(0, 10)}
+            formattedDate={formatDateCO(evento.fechaPago)}
+          />
+        ) : (
+          formatDateCO(evento.fechaPago)
+        )}
+      </TableCell>
+
+      <TableCell className={`text-right ${dataDisplayRecipes.numericCell}`}>
+        {formatCurrencyCOP(Number(evento.valorProgramado))}
+      </TableCell>
+
+      <TableCell className="text-right">
+        {formatCurrencyCOP(Number(evento.interesProgramado))}
+      </TableCell>
+
+      <TableCell className={`text-right ${dataDisplayRecipes.numericCell}`}>
+        {saldoMostrado === null ? "-" : formatCurrencyCOP(saldoMostrado)}
+      </TableCell>
+
+      <TableCell>
+        <EstadoMovimientoBadge estado={evento.estado} esAbono={esAbono} />
+      </TableCell>
+
+      <TableCell className="text-center">
+        {esAbono ? (
+          evento.abonoPuedeRevertirse ? (
+            <AbonoReversalButton
+              creditoId={creditoId}
+              abonoEventoId={evento.id}
+            />
+          ) : (
+            <StaticPaidIndicator />
+          )
+        ) : (
+          <form action={action}>
+            <input type="hidden" name="eventoId" value={evento.id} />
+            <input type="hidden" name="creditoId" value={creditoId} />
+            <button
+              type="submit"
+              disabled={estaCanceladoPorAbono}
+              className="inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={estaPagado ? "Reversar pago" : "Registrar pago"}
+            >
+              <PaidCheckbox paid={estaPagado} />
+            </button>
+          </form>
+        )}
+      </TableCell>
+    </tr>
+  );
+}
+
+function MovementCard({
+  creditoId,
+  evento,
+  saldoMostrado,
+}: {
+  creditoId: string;
+  evento: CreditMovementEvent;
+  saldoMostrado: number | null;
+}) {
+  const esAbono = evento.tipo === "ABONO_CAPITAL";
+  const estaPagado = evento.estado === "PAGADO";
+  const estaAtrasado =
+    evento.estado === "ATRASADO" || evento.estado === "MORA";
+  const estaCanceladoPorAbono = evento.estado === "CANCELADO_POR_ABONO";
+  const action = estaPagado ? reversarPagoCuota : registrarPagoCuota;
+
+  const cardClassName = [
+    styles.card,
+    esAbono || estaPagado
+      ? styles.successRow
+      : estaAtrasado
+        ? styles.overdueRow
+        : estaCanceladoPorAbono
+          ? styles.cancelledRow
+          : "",
+  ].join(" ");
+
+  return (
+    <article className={cardClassName}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p
+            className={[
+              styles.cardLabel,
+              esAbono ? styles.abonoLabel : "",
+            ].join(" ")}
+          >
+            {esAbono ? (
+              <>
+                <Star className="h-4 w-4 fill-amber-300 text-amber-500" />
+                Abono
+              </>
+            ) : (
+              `Cuota ${evento.numeroCuota ?? "-"}`
+            )}
+          </p>
+          <p className={dataDisplayRecipes.numericCell}>
+            {formatCurrencyCOP(Number(evento.valorProgramado))}
+          </p>
+        </div>
+
+        {esAbono ? (
+          <StaticPaidIndicator />
+        ) : (
+          <form action={action}>
+            <input type="hidden" name="eventoId" value={evento.id} />
+            <input type="hidden" name="creditoId" value={creditoId} />
+            <button
+              type="submit"
+              disabled={estaCanceladoPorAbono}
+              className="inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={estaPagado ? "Reversar pago" : "Registrar pago"}
+            >
+              <PaidCheckbox paid={estaPagado} />
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className={styles.cardGrid}>
+        <CompactField
+          label="Fecha programada"
+          value={formatDateCO(evento.fechaProgramada)}
+        />
+
+        {!esAbono && estaPagado && evento.fechaPago ? (
+          <EditPaymentDate
+            eventoId={evento.id}
+            creditoId={creditoId}
+            initialDate={evento.fechaPago.toISOString().slice(0, 10)}
+            formattedDate={formatDateCO(evento.fechaPago)}
+            compact
+          />
+        ) : (
+          <CompactField
+            label="Fecha real"
+            value={formatDateCO(evento.fechaPago)}
+          />
+        )}
+
+        <CompactField
+          label="Intereses"
+          value={formatCurrencyCOP(Number(evento.interesProgramado))}
+        />
+        <CompactField
+          label="Saldo capital"
+          value={
+            saldoMostrado === null ? "-" : formatCurrencyCOP(saldoMostrado)
+          }
+        />
+      </div>
+
+      <div className={styles.cardStatus}>
+        <EstadoMovimientoBadge estado={evento.estado} esAbono={esAbono} />
+      </div>
+    </article>
+  );
+}
+
+function StaticPaidIndicator() {
+  return (
+    <span
+      className={styles.paidIndicator}
+      aria-label="Abono aplicado"
+      title="Abono aplicado"
+    >
+      <CheckCircle2 className="h-4 w-4" />
+    </span>
+  );
+}
+
+function PaidCheckbox({ paid }: { paid: boolean }) {
+  return (
+    <span
+      className={[
+        styles.checkbox,
+        paid ? styles.checkboxPaid : styles.checkboxPending,
+      ].join(" ")}
+    >
+      {paid ? <CheckCircle2 className="h-4 w-4" /> : null}
+    </span>
+  );
+}
+
+function EstadoMovimientoBadge({
+  estado,
+  esAbono,
+}: {
+  estado: string;
+  esAbono: boolean;
+}) {
+  if (esAbono && estado === "PAGADO") {
+    return (
+      <span className={statusRecipes.success}>
+        Pagado
+      </span>
+    );
+  }
+
+  if (estado === "PENDIENTE") {
+    return (
+
+=== financial-activity.ts ===
+export interface EventoConActividadFinanciera {
+  tipo: string;
+  estado: string;
+  montoPagado: unknown;
+  capitalPagado: unknown;
+  interesPagado: unknown;
+  fechaPago: Date | null;
+}
+
+/** Central rule used by every structural credit mutation. */
+export function eventoTieneActividadFinanciera(
+  evento: EventoConActividadFinanciera,
+): boolean {
+  return (
+    evento.tipo === "ABONO_CAPITAL" ||
+    evento.estado === "PAGADO" ||
+    evento.estado === "CANCELADO_POR_ABONO" ||
+    Number(evento.montoPagado) > 0 ||
+    Number(evento.capitalPagado) > 0 ||
+    Number(evento.interesPagado) > 0 ||
+    evento.fechaPago !== null
+  );
+}

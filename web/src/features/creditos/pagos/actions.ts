@@ -187,22 +187,49 @@ export async function actualizarFechaPagoCuota(
         include: { credito: { select: { id: true, codigo: true, fechaPrestamo: true } } },
       });
 
-      if (!evento || evento.creditoId !== creditoId) throw new Error("La cuota no existe o no pertenece al crédito indicado.");
-      if (evento.tipo !== TipoEventoFinanciero.CUOTA_PROGRAMADA) throw new Error("Solo se puede editar la fecha real de una cuota programada.");
-      if (evento.estado !== EstadoEventoFinanciero.PAGADO || !evento.fechaPago) throw new Error("Solo se puede editar la fecha real de una cuota pagada.");
+      if (!evento || evento.creditoId !== creditoId) throw new Error("El movimiento no existe o no pertenece al crédito indicado.");
+      if (
+        evento.tipo !== TipoEventoFinanciero.CUOTA_PROGRAMADA &&
+        evento.tipo !== TipoEventoFinanciero.ABONO_CAPITAL
+      ) {
+        throw new Error("Solo se puede editar la fecha real de una cuota o un abono extraordinario.");
+      }
+      if (evento.estado !== EstadoEventoFinanciero.PAGADO || !evento.fechaPago) throw new Error("Solo se puede editar la fecha real de un movimiento pagado.");
       if (fechaPago.getTime() < normalizarFechaSinHora(evento.credito.fechaPrestamo).getTime()) throw new Error("La fecha real de pago no puede ser anterior a la fecha del préstamo.");
 
-      const diasAtraso = calcularDiasAtraso(evento.fechaProgramada, fechaPago);
+      const diasAtraso =
+        evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA
+          ? calcularDiasAtraso(evento.fechaProgramada, fechaPago)
+          : 0;
 
-      await tx.eventoFinanciero.update({ where: { id: evento.id }, data: { fechaPago, diasAtraso, accionPor: user.id } });
+      const dataToUpdate: Prisma.EventoFinancieroUpdateInput = {
+        fechaPago,
+        diasAtraso,
+        accionPor: user.id,
+      };
+
+      if (evento.tipo === TipoEventoFinanciero.ABONO_CAPITAL) {
+        dataToUpdate.fechaProgramada = fechaPago;
+      }
+
+      await tx.eventoFinanciero.update({ where: { id: evento.id }, data: dataToUpdate });
       await recordAuditLogTx(tx, {
         actorId: user.id,
-        action: "CUOTA_UPDATE_PAYMENT_DATE",
+        action:
+          evento.tipo === TipoEventoFinanciero.ABONO_CAPITAL
+            ? "ABONO_UPDATE_PAYMENT_DATE"
+            : "CUOTA_UPDATE_PAYMENT_DATE",
         entityType: "EventoFinanciero",
         entityId: evento.id,
         before: { fechaPago: evento.fechaPago.toISOString(), diasAtraso: evento.diasAtraso },
         after: { fechaPago: fechaPago.toISOString(), diasAtraso },
-        metadata: { creditoId: evento.credito.id, creditoCodigo: evento.credito.codigo, eventoCodigo: evento.codigo, numeroCuota: evento.numeroCuota },
+        metadata: {
+          creditoId: evento.credito.id,
+          creditoCodigo: evento.credito.codigo,
+          eventoCodigo: evento.codigo,
+          numeroCuota: evento.numeroCuota,
+          tipoEvento: evento.tipo,
+        },
       });
     });
 

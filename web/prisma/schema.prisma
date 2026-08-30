@@ -92,7 +92,8 @@ model Credito {
   accionPor     String?
 
   eventos          EventoFinanciero[]
-  abonoSnapshots   AbonoSnapshot[]
+  abonoSnapshots      AbonoSnapshot[]
+  extensionSnapshots ExtensionPlazoSnapshot[]
 
   @@index([clienteId])
   @@index([ownerUserId])
@@ -171,6 +172,30 @@ model AbonoSnapshot {
   @@index([creditoId])
   @@index([aplicadoEn])
   @@map("abono_snapshots")
+}
+
+model ExtensionPlazoSnapshot {
+  id String @id @default(cuid())
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Cascade)
+
+  versionAlgoritmo Int @default(1)
+  creditoAntes     Json
+  creditoDespues   Json
+  eventosAntes     Json
+  eventosDespues   Json
+  eventosCreados   Json
+  aplicadoEn       DateTime
+  creadoEn         DateTime @default(now())
+  creadoPor        String
+  revertidoEn      DateTime?
+  revertidoPor     String?
+  motivoReversion  String?
+
+  @@index([creditoId])
+  @@index([aplicadoEn])
+  @@index([revertidoEn])
+  @@map("extension_plazo_snapshots")
 }
 
 model SecuenciaCredito {

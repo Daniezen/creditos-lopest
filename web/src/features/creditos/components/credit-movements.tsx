@@ -9,7 +9,7 @@ import { AbonoReversalButton } from "@/features/creditos/abonos/components/abono
 import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
 import { statusRecipes } from "@/design-system/recipes/status";
 import { surfaceRecipes } from "@/design-system/recipes/surfaces";
-import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
+import { formatCurrencyCOP, formatDateCO, toDateInputValue } from "@/lib/formatters";
 import { resolverSaldoMostradoMovimiento } from "@/features/creditos/movement-balance-display";
 
 import styles from "./credit-movements.module.css";
@@ -250,11 +250,11 @@ function MovementRow({
       <TableCell>{formatDateCO(evento.fechaProgramada)}</TableCell>
 
       <TableCell>
-        {!esAbono && estaPagado && evento.fechaPago ? (
+        {estaPagado && evento.fechaPago ? (
           <EditPaymentDate
             eventoId={evento.id}
             creditoId={creditoId}
-            initialDate={evento.fechaPago.toISOString().slice(0, 10)}
+            initialDate={toDateInputValue(evento.fechaPago)}
             formattedDate={formatDateCO(evento.fechaPago)}
           />
         ) : (
@@ -359,7 +359,14 @@ function MovementCard({
         </div>
 
         {esAbono ? (
-          <StaticPaidIndicator />
+          evento.abonoPuedeRevertirse ? (
+            <AbonoReversalButton
+              creditoId={creditoId}
+              abonoEventoId={evento.id}
+            />
+          ) : (
+            <StaticPaidIndicator />
+          )
         ) : (
           <form action={action}>
             <input type="hidden" name="eventoId" value={evento.id} />
@@ -382,11 +389,11 @@ function MovementCard({
           value={formatDateCO(evento.fechaProgramada)}
         />
 
-        {!esAbono && estaPagado && evento.fechaPago ? (
+        {estaPagado && evento.fechaPago ? (
           <EditPaymentDate
             eventoId={evento.id}
             creditoId={creditoId}
-            initialDate={evento.fechaPago.toISOString().slice(0, 10)}
+            initialDate={toDateInputValue(evento.fechaPago)}
             formattedDate={formatDateCO(evento.fechaPago)}
             compact
           />

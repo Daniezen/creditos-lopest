@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowLeft,
   Building2,
   CheckCircle2,
   Contact,
@@ -54,7 +53,6 @@ export default async function ClienteDetallePage({ params }: ClienteDetallePageP
             </div>
           </div>
           <div className={styles.actions}>
-            <Link href="/clientes" className={actionRecipes.secondaryLarge}><ArrowLeft className="h-4 w-4" />Volver</Link>
             <Link href={`/clientes/${cliente.id}/editar`} className={actionRecipes.primaryLarge}><Edit3 className="h-4 w-4" />Editar</Link>
           </div>
         </div>

@@ -59,6 +59,24 @@ export function formatDateCO(date: Date | null | undefined): string {
  *
  * No usamos toISOString() porque convierte a UTC y puede mover el día según zona horaria.
  */
+/**
+ * Retorna la fecha actual en la zona horaria oficial de operacion (America/Bogota) a medianoche local.
+ */
+export function obtenerHoyColombia(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return new Date(year, month - 1, day);
+}
+
 export function toDateInputValue(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

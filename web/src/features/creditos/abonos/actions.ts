@@ -12,26 +12,15 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { obtenerHoyColombia } from "@/lib/formatters";
 import { financialImageChanged, toFinancialEventImage, toSnapshotJson } from "./snapshot";
+import type { AbonoFormState } from "./abono-state";
 
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
-function obtenerHoyColombia(): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
 
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  const day = Number(parts.find((part) => part.type === "day")?.value);
-
-  return new Date(year, month - 1, day);
-}
 
 function leerCampoObligatorio(formData: FormData, name: string): string {
   const value = formData.get(name);
@@ -161,155 +150,210 @@ async function recalcularSaldosCapitalPost(
   }
 }
 
-export async function registrarAbonoCapital(formData: FormData): Promise<void> {
-  const creditoId = leerCampoObligatorio(formData, "creditoId");
-  const montoRaw = leerCampoObligatorio(formData, "montoAbono");
-  const montoAbono = parseMontoInput(montoRaw);
-  const hoy = obtenerHoyColombia();
+function normalizarFechaSinHora(fecha: Date): Date {
+  return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+}
 
-  const { user } = await requireCreditoAccess(creditoId);
-  assertCanMutate(user);
-
-  if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
-    throw new Error("Ingresa un monto de abono válido mayor a cero.");
+function parseFechaAbono(value: unknown, hoy: Date): Date {
+  if (typeof value !== "string" || !value.trim()) {
+    return hoy;
   }
 
-  await prisma.$transaction(async (tx) => {
-    const credito = await tx.credito.findUnique({
-      where: {
-        id: creditoId,
-      },
-      include: {
-        eventos: {
-          orderBy: [
-            {
-              numeroCuota: "asc",
-            },
-            {
-              creadoEn: "asc",
-            },
-          ],
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) {
+    throw new Error("La fecha del abono no tiene un formato válido (AAAA-MM-DD).");
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const parsed = new Date(year, month, day);
+
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month ||
+    parsed.getDate() !== day
+  ) {
+    throw new Error("La fecha del abono no es una fecha válida en el calendario.");
+  }
+
+  if (parsed.getTime() > hoy.getTime()) {
+    throw new Error("La fecha del abono no puede estar en el futuro.");
+  }
+
+  return parsed;
+}
+
+export async function registrarAbonoCapital(
+  _previousState: AbonoFormState,
+  formData: FormData,
+): Promise<AbonoFormState> {
+  let creditoId = "";
+  try {
+    creditoId = leerCampoObligatorio(formData, "creditoId");
+    const montoRaw = leerCampoObligatorio(formData, "montoAbono");
+    const montoAbono = parseMontoInput(montoRaw);
+    const hoy = obtenerHoyColombia();
+    const fechaAbono = parseFechaAbono(formData.get("fechaAbono"), hoy);
+
+    const { user } = await requireCreditoAccess(creditoId);
+    assertCanMutate(user);
+
+    if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
+      throw new Error("Ingresa un monto de abono válido mayor a cero.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const credito = await tx.credito.findUnique({
+        where: {
+          id: creditoId,
         },
-      },
-    });
-
-    if (!credito) {
-      throw new Error("El crédito no existe.");
-    }
-
-    if (credito.estado === EstadoCredito.CANCELADO) {
-      throw new Error("No se puede abonar a un crédito cancelado.");
-    }
-
-    const eventosAntesPorId = new Map(
-      credito.eventos
-        .filter((evento) => evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA)
-        .map((evento) => [evento.id, toFinancialEventImage(evento)]),
-    );
-
-    const cuotasOperativas = credito.eventos.filter((evento) => {
-      return (
-        evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
-        esEstadoPendienteOperativo(evento.estado)
-      );
-    });
-
-    const saldoCapitalOperativo = cuotasOperativas.reduce((total, evento) => {
-      return total + Number(evento.capitalProgramado || 0);
-    }, 0);
-
-    if (saldoCapitalOperativo <= 0) {
-      throw new Error("El crédito no tiene saldo de capital pendiente para abonar.");
-    }
-
-    if (montoAbono > saldoCapitalOperativo) {
-      throw new Error(
-        `El abono ${toMoneyDecimalString(montoAbono)} supera el saldo de capital pendiente ${toMoneyDecimalString(saldoCapitalOperativo)}.`,
-      );
-    }
-
-    const saldoPosteriorAbono = Math.max(0, saldoCapitalOperativo - montoAbono);
-
-    const abonoCreado = await tx.eventoFinanciero.create({
-      data: {
-        codigo: `${credito.codigo}-ABX-${Date.now()}`,
-        creditoId: credito.id,
-        numeroCuota: null,
-        tipo: TipoEventoFinanciero.ABONO_CAPITAL,
-        fechaProgramada: hoy,
-        fechaPago: hoy,
-        valorProgramado: toMoneyDecimalString(montoAbono),
-        capitalProgramado: toMoneyDecimalString(montoAbono),
-        interesProgramado: "0.00",
-        montoPagado: toMoneyDecimalString(montoAbono),
-        capitalPagado: toMoneyDecimalString(montoAbono),
-        interesPagado: "0.00",
-        saldoCapitalPost: toMoneyDecimalString(saldoPosteriorAbono),
-        estado: EstadoEventoFinanciero.PAGADO,
-        diasAtraso: 0,
-        accionPor: user.id,
-      },
-    });
-
-    if (credito.tipoAmortizacion === TipoAmortizacion.SOLO_INTERES) {
-      await aplicarAbonoSoloInteres({
-        tx,
-        frecuencia: credito.frecuencia,
-        tasaMensual: Number(credito.tasaMensual),
-        cuotasOperativas,
-        nuevoSaldoCapital: saldoPosteriorAbono,
-      });
-    } else {
-      await aplicarAbonoAmortizacionFija({
-        tx,
-        cuotasOperativas,
-        montoAbono,
-      });
-    }
-
-    await recalcularSaldosCapitalPost(tx, credito.id);
-    await sincronizarEstadoCredito(tx, credito.id, user.id);
-
-    const eventosDespues = await tx.eventoFinanciero.findMany({
-      where: {
-        creditoId: credito.id,
-        tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
-      },
-      orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }],
-    });
-    const imagenesDespues = eventosDespues.map(toFinancialEventImage);
-    const imagenesAfectadasDespues = imagenesDespues.filter((after) => {
-      const before = eventosAntesPorId.get(after.id);
-      return before ? financialImageChanged(before, after) : true;
-    });
-    const idsAfectados = new Set(imagenesAfectadasDespues.map((event) => event.id));
-    const imagenesAfectadasAntes = [...eventosAntesPorId.values()].filter((event) =>
-      idsAfectados.has(event.id),
-    );
-
-    if (imagenesAfectadasDespues.length === 0) {
-      throw new Error("El abono no produjo cambios financieros verificables.");
-    }
-
-    await tx.abonoSnapshot.create({
-      data: {
-        creditoId: credito.id,
-        abonoEventoId: abonoCreado.id,
-        versionAlgoritmo: 2,
-        creditoAntes: {
-          estado: credito.estado,
-          fechaCancelacion: credito.fechaCancelacion?.toISOString() ?? null,
+        include: {
+          eventos: {
+            orderBy: [
+              {
+                numeroCuota: "asc",
+              },
+              {
+                creadoEn: "asc",
+              },
+            ],
+          },
         },
-        eventosAntes: toSnapshotJson(imagenesAfectadasAntes),
-        eventosDespues: toSnapshotJson(imagenesAfectadasDespues),
-        aplicadoEn: new Date(),
-        creadoPor: user.id,
-      },
-    });
-  });
+      });
 
-  revalidatePath("/creditos");
-  revalidatePath(`/creditos/${creditoId}`);
+      if (!credito) {
+        throw new Error("El crédito no existe.");
+      }
+
+      if (credito.estado === EstadoCredito.CANCELADO) {
+        throw new Error("No se puede abonar a un crédito cancelado.");
+      }
+
+      if (fechaAbono.getTime() < normalizarFechaSinHora(credito.fechaPrestamo).getTime()) {
+        throw new Error("La fecha del abono no puede ser anterior a la fecha del préstamo.");
+      }
+
+      const eventosAntesPorId = new Map(
+        credito.eventos
+          .filter((evento) => evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA)
+          .map((evento) => [evento.id, toFinancialEventImage(evento)]),
+      );
+
+      const cuotasOperativas = credito.eventos.filter((evento) => {
+        return (
+          evento.tipo === TipoEventoFinanciero.CUOTA_PROGRAMADA &&
+          esEstadoPendienteOperativo(evento.estado)
+        );
+      });
+
+      const saldoCapitalOperativo = cuotasOperativas.reduce((total, evento) => {
+        return total + Number(evento.capitalProgramado || 0);
+      }, 0);
+
+      if (saldoCapitalOperativo <= 0) {
+        throw new Error("El crédito no tiene saldo de capital pendiente para abonar.");
+      }
+
+      if (montoAbono > saldoCapitalOperativo) {
+        throw new Error(
+          `El abono $${toMoneyDecimalString(montoAbono)} supera el saldo de capital pendiente $${toMoneyDecimalString(saldoCapitalOperativo)}.`,
+        );
+      }
+
+      const saldoPosteriorAbono = Math.max(0, saldoCapitalOperativo - montoAbono);
+
+      const abonoCreado = await tx.eventoFinanciero.create({
+        data: {
+          codigo: `${credito.codigo}-ABX-${Date.now()}`,
+          creditoId: credito.id,
+          numeroCuota: null,
+          tipo: TipoEventoFinanciero.ABONO_CAPITAL,
+          fechaProgramada: fechaAbono,
+          fechaPago: fechaAbono,
+          valorProgramado: toMoneyDecimalString(montoAbono),
+          capitalProgramado: toMoneyDecimalString(montoAbono),
+          interesProgramado: "0.00",
+          montoPagado: toMoneyDecimalString(montoAbono),
+          capitalPagado: toMoneyDecimalString(montoAbono),
+          interesPagado: "0.00",
+          saldoCapitalPost: toMoneyDecimalString(saldoPosteriorAbono),
+          estado: EstadoEventoFinanciero.PAGADO,
+          diasAtraso: 0,
+          accionPor: user.id,
+        },
+      });
+
+      if (credito.tipoAmortizacion === TipoAmortizacion.SOLO_INTERES) {
+        await aplicarAbonoSoloInteres({
+          tx,
+          frecuencia: credito.frecuencia,
+          tasaMensual: Number(credito.tasaMensual),
+          cuotasOperativas,
+          nuevoSaldoCapital: saldoPosteriorAbono,
+        });
+      } else {
+        await aplicarAbonoAmortizacionFija({
+          tx,
+          cuotasOperativas,
+          montoAbono,
+        });
+      }
+
+      await recalcularSaldosCapitalPost(tx, credito.id);
+      await sincronizarEstadoCredito(tx, credito.id, user.id);
+
+      const eventosDespues = await tx.eventoFinanciero.findMany({
+        where: {
+          creditoId: credito.id,
+          tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+        },
+        orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }],
+      });
+      const imagenesDespues = eventosDespues.map(toFinancialEventImage);
+      const imagenesAfectadasDespues = imagenesDespues.filter((after) => {
+        const before = eventosAntesPorId.get(after.id);
+        return before ? financialImageChanged(before, after) : true;
+      });
+      const idsAfectados = new Set(imagenesAfectadasDespues.map((event) => event.id));
+      const imagenesAfectadasAntes = [...eventosAntesPorId.values()].filter((event) =>
+        idsAfectados.has(event.id),
+      );
+
+      if (imagenesAfectadasDespues.length === 0) {
+        throw new Error("El abono no produjo cambios financieros verificables.");
+      }
+
+      await tx.abonoSnapshot.create({
+        data: {
+          creditoId: credito.id,
+          abonoEventoId: abonoCreado.id,
+          versionAlgoritmo: 2,
+          creditoAntes: {
+            estado: credito.estado,
+            fechaCancelacion: credito.fechaCancelacion?.toISOString() ?? null,
+          },
+          eventosAntes: toSnapshotJson(imagenesAfectadasAntes),
+          eventosDespues: toSnapshotJson(imagenesAfectadasDespues),
+          aplicadoEn: new Date(),
+          creadoPor: user.id,
+        },
+      });
+    });
+
+    revalidatePath("/creditos");
+    revalidatePath(`/creditos/${creditoId}`);
+
+    return {
+      ok: true,
+      message: "Abono extraordinario a capital registrado correctamente.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "No se pudo registrar el abono.",
+    };
+  }
 }
 
 async function aplicarAbonoAmortizacionFija(input: {

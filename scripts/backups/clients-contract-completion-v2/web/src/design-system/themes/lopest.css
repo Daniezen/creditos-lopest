@@ -1,0 +1,33 @@
+/* Lopest product profile. Values reproduce the approved shell language. */
+:root {
+  --lopest-color-canvas: #f7f4ff;
+  --lopest-color-surface-primary: #ffffff;
+  --lopest-color-surface-subtle: #faf8ff;
+  --lopest-color-surface-elevated: #ffffff;
+
+  --lopest-color-text-primary: #1e293b;
+  --lopest-color-text-secondary: #64748b;
+  --lopest-color-text-muted: #94a3b8;
+  --lopest-color-text-on-accent: #ffffff;
+
+  --lopest-color-border-subtle: #ede9fe;
+  --lopest-color-border-default: #ddd6fe;
+  --lopest-color-action-primary: #7c3aed;
+  --lopest-color-action-primary-hover: #6d28d9;
+  --lopest-color-selection: #f1ecff;
+  --lopest-color-selection-strong: #7e22ce;
+  --lopest-color-focus: #8b5cf6;
+
+  --lopest-color-success: #15803d;
+  --lopest-color-warning: #b45309;
+  --lopest-color-danger: #b91c1c;
+  --lopest-color-info: #1d4ed8;
+
+  --lopest-accent-violet: #7c3aed;
+  --lopest-accent-magenta: #d946ef;
+  --lopest-accent-warm: #fff7ed;
+  --lopest-topbar-surface:
+    radial-gradient(circle at 12% 20%, rgb(217 70 239 / 10%), transparent 30%),
+    linear-gradient(100deg, #faf5ff 0%, #ffffff 52%, #fff7ed 100%);
+  --lopest-title-accent: linear-gradient(90deg, #7c3aed, #d946ef);
+}

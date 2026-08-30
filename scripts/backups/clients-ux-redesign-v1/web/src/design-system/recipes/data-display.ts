@@ -1,0 +1,17 @@
+export const dataDisplayRecipes = {
+  metric: "rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/85 p-4 shadow-[var(--ds-shadow-surface)]",
+  metricLabel: "flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]",
+  metricValue: "mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] tabular-nums",
+  metricHelper: "mt-1 text-xs text-[var(--color-text-secondary)]",
+  operationalRow: "cursor-pointer transition hover:bg-[var(--color-selection)]/50",
+  compactRow: "cursor-pointer p-3 transition hover:bg-[var(--color-selection)]/50 sm:p-4",
+  compactDatum: "rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/80 px-3 py-2",
+  compactDatumLabel: "text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]",
+  compactDatumValue: "mt-1 truncate font-semibold text-[var(--color-text-primary)] tabular-nums",
+  entityLink: "font-semibold text-[var(--color-selection-strong)] hover:underline",
+  compactEntityLink: "block truncate font-semibold text-[var(--color-selection-strong)] hover:underline",
+  entityAvatar: "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]",
+  tableHead: "whitespace-nowrap px-5 py-3 text-left font-semibold",
+  tableCell: "whitespace-nowrap px-5 py-3.5 text-[var(--color-text-secondary)]",
+  emptyState: "flex flex-col items-center justify-center text-center text-[var(--color-text-secondary)]",
+} as const;

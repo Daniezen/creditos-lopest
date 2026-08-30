@@ -1,0 +1,401 @@
+"use client";
+
+import type { ComponentType, KeyboardEvent, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  Eye,
+  FileText,
+  Filter,
+  SlidersHorizontal,
+  Plus,
+  Search,
+  UserRound,
+  Users,
+  WalletCards,
+  X,
+} from "lucide-react";
+
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+import { formatCurrencyCOP } from "@/lib/formatters";
+
+import type { ClienteListadoItem } from "../queries";
+import styles from "./clientes-list.module.css";
+
+interface ClientesListProps {
+  clientes: ClienteListadoItem[];
+  query: string;
+  estadoDocumentos: string;
+}
+
+export function ClientesList({ clientes, query, estadoDocumentos }: ClientesListProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = useState(query);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null);
+  const filtersRef = useRef<HTMLTableSectionElement | null>(null);
+  const [portfolioState, setPortfolioState] = useState(() => searchParams.get("cartera") ?? "");
+  const [selectedIds, setSelectedIds] = useState(() => parseList(searchParams.get("cedulas")));
+  const [selectedPhones, setSelectedPhones] = useState(() => parseList(searchParams.get("telefonos")));
+  const [selectedCompanies, setSelectedCompanies] = useState(() => parseList(searchParams.get("empresas")));
+  const [selectedCredits, setSelectedCredits] = useState(() => parseNumberList(searchParams.get("creditos")));
+  const [selectedDocuments, setSelectedDocuments] = useState(() => {
+    const currentValues = parseList(searchParams.get("documentos"));
+    return currentValues.length > 0 || !estadoDocumentos
+      ? currentValues
+      : [estadoDocumentos];
+  });
+  const [selectedCapital, setSelectedCapital] = useState(() => parseNumberList(searchParams.get("capitalValores")));
+  const [selectedInterest, setSelectedInterest] = useState(() => parseNumberList(searchParams.get("interesValores")));
+  const [capitalMin, setCapitalMin] = useState(() => searchParams.get("capitalMin") ?? "");
+  const [capitalMax, setCapitalMax] = useState(() => searchParams.get("capitalMax") ?? "");
+  const [interestMin, setInterestMin] = useState(() => searchParams.get("interesMin") ?? "");
+  const [interestMax, setInterestMax] = useState(() => searchParams.get("interesMax") ?? "");
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const normalizedSearch = searchValue.trim().toLocaleLowerCase("es-CO");
+
+  const filteredClients = useMemo(() => clientes.filter((client) => {
+    if (normalizedSearch && !client.nombre.toLocaleLowerCase("es-CO").includes(normalizedSearch)) return false;
+    if (portfolioState === "VENCIDA" && client.estadoCartera !== "ATRASADO" && client.estadoCartera !== "MORA") return false;
+    if (portfolioState && portfolioState !== "VENCIDA" && client.estadoCartera !== portfolioState) return false;
+    if (selectedIds.length && !selectedIds.includes(client.cedula)) return false;
+    if (selectedPhones.length && !selectedPhones.includes(client.telefono ?? "Sin teléfono")) return false;
+    if (selectedCompanies.length && !selectedCompanies.includes(client.empresa ?? "Sin empresa")) return false;
+    if (selectedCredits.length && !selectedCredits.includes(client.creditosActivos)) return false;
+    if (selectedDocuments.length && !selectedDocuments.includes(client.estadoDocumentos)) return false;
+    if (selectedCapital.length && !selectedCapital.includes(client.saldoTotal)) return false;
+    if (selectedInterest.length && !selectedInterest.includes(client.interesPendienteTotal)) return false;
+    return withinRange(client.saldoTotal, capitalMin, capitalMax) && withinRange(client.interesPendienteTotal, interestMin, interestMax);
+  }), [capitalMax, capitalMin, clientes, interestMax, interestMin, normalizedSearch, portfolioState, selectedCapital, selectedCompanies, selectedCredits, selectedDocuments, selectedIds, selectedInterest, selectedPhones]);
+
+  const suggestions = useMemo(() => filteredClients.slice(0, 10), [filteredClients]);
+  const profilesPending = filteredClients.filter((client) => client.perfilIncompleto);
+  const documentsPending = filteredClients.filter((client) => client.estadoDocumentos === "FALTAN_DOCUMENTOS");
+  const activeCredits = filteredClients.reduce((total, client) => total + client.creditosActivos, 0);
+  const clientsWithActiveCredit = filteredClients.filter((client) => client.creditosActivos > 0).length;
+  const activeFilterCount = [searchValue.trim(), portfolioState, selectedIds.length, selectedPhones.length, selectedCompanies.length, selectedCredits.length, selectedDocuments.length, selectedCapital.length, selectedInterest.length, capitalMin, capitalMax, interestMin, interestMax].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+  const idOptions = uniqueStrings(clientes.map((client) => client.cedula));
+  const phoneOptions = uniqueStrings(clientes.map((client) => client.telefono ?? "Sin teléfono"));
+  const companyOptions = uniqueStrings(clientes.map((client) => client.empresa ?? "Sin empresa"));
+  const creditOptions = uniqueNumbers(clientes.map((client) => client.creditosActivos));
+  const capitalOptions = uniqueNumbers(clientes.map((client) => client.saldoTotal));
+  const interestOptions = uniqueNumbers(clientes.map((client) => client.interesPendienteTotal));
+
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams();
+      syncParam(params, "q", searchValue);
+      syncParam(params, "cartera", portfolioState);
+      syncList(params, "cedulas", selectedIds);
+      syncList(params, "telefonos", selectedPhones);
+      syncList(params, "empresas", selectedCompanies);
+      syncNumberList(params, "creditos", selectedCredits);
+      syncList(params, "documentos", selectedDocuments);
+      syncNumberList(params, "capitalValores", selectedCapital);
+      syncNumberList(params, "interesValores", selectedInterest);
+      syncParam(params, "capitalMin", capitalMin);
+      syncParam(params, "capitalMax", capitalMax);
+      syncParam(params, "interesMin", interestMin);
+      syncParam(params, "interesMax", interestMax);
+      router.replace(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [capitalMax, capitalMin, interestMax, interestMin, pathname, portfolioState, router, searchValue, selectedCapital, selectedCompanies, selectedCredits, selectedDocuments, selectedIds, selectedInterest, selectedPhones]);
+
+  useEffect(() => {
+    function closeColumnFilter(event: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) setOpenColumnFilter(null);
+    }
+    function closeColumnFilterWithKeyboard(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") setOpenColumnFilter(null);
+    }
+    document.addEventListener("mousedown", closeColumnFilter);
+    window.addEventListener("keydown", closeColumnFilterWithKeyboard);
+    return () => {
+      document.removeEventListener("mousedown", closeColumnFilter);
+      window.removeEventListener("keydown", closeColumnFilterWithKeyboard);
+    };
+  }, []);
+
+  function clearFilters() {
+    setSearchValue("");
+    setPortfolioState("");
+    setSelectedIds([]);
+    setSelectedPhones([]);
+    setSelectedCompanies([]);
+    setSelectedCredits([]);
+    setSelectedDocuments([]);
+    setSelectedCapital([]);
+    setSelectedInterest([]);
+    setCapitalMin("");
+    setCapitalMax("");
+    setInterestMin("");
+    setInterestMax("");
+    setOpenColumnFilter(null);
+    setSuggestionsOpen(false);
+    setActiveSuggestion(-1);
+    router.replace(pathname, { scroll: false });
+  }
+
+
+  function openClient(id: string) {
+    router.push(`/clientes/${id}`);
+  }
+
+  function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, id: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openClient(id);
+    }
+  }
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSuggestionsOpen(true);
+      setActiveSuggestion((current) => Math.min(current + 1, suggestions.length - 1));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestion((current) => Math.max(current - 1, 0));
+      return;
+    }
+    if (event.key === "Enter" && activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+      event.preventDefault();
+      openClient(suggestions[activeSuggestion].id);
+    }
+  }
+
+  function handleSearchBlur() {
+    blurTimeoutRef.current = setTimeout(() => {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+    }, 150);
+  }
+
+  function selectSuggestion(id: string) {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    openClient(id);
+  }
+
+  return (
+    <main className={styles.page}>
+      <section className={surfaceRecipes.sectionSpacious}>
+        <div className={styles.metricsLayout}>
+          <div className={styles.metricsGrid}>
+            <PortfolioMetric icon={Users} label="Clientes" value={String(filteredClients.length)} />
+            <PortfolioMetric icon={AlertTriangle} label="Perfiles pendientes" value={String(profilesPending.length)} />
+            <PortfolioMetric icon={FileText} label="Documentos pendientes" value={String(documentsPending.length)} />
+            <PortfolioMetric icon={WalletCards} label="Clientes con crédito activo" value={String(clientsWithActiveCredit)} helper={`${activeCredits} crédito(s) activo(s)`} />
+          </div>
+          <div className={styles.primaryActions}>
+            <Link href="/clientes/nuevo" className={actionRecipes.primaryLarge}><Plus className="h-4 w-4" />Nuevo cliente</Link>
+          </div>
+        </div>
+      </section>
+
+      <section className={surfaceRecipes.sectionCompact}>
+        <div className={styles.filterLayout}>
+          <div className={styles.searchWrapper}>
+            <span className={formRecipes.labelWithIcon}><Search className="h-4 w-4 text-[var(--color-action-primary)]" />Buscar cliente por nombre</span>
+            <div className="relative">
+              <Search className={styles.searchIcon} aria-hidden="true" />
+              <input
+                value={searchValue}
+                placeholder="Nombre del cliente"
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={suggestionsOpen}
+                aria-controls="client-search-suggestions"
+                aria-activedescendant={activeSuggestion >= 0 ? `client-suggestion-${suggestions[activeSuggestion]?.id}` : undefined}
+                className={formRecipes.searchControl}
+                onChange={(event) => {
+                  setSearchValue(event.target.value);
+                  setSuggestionsOpen(true);
+                  setActiveSuggestion(-1);
+                }}
+                onFocus={() => setSuggestionsOpen(true)}
+                onBlur={handleSearchBlur}
+                onKeyDown={handleSearchKeyDown}
+              />
+              {searchValue ? (
+                <button type="button" className={styles.clearSearch} onMouseDown={(event) => event.preventDefault()} onClick={() => setSearchValue("")} aria-label="Limpiar búsqueda"><X className="h-4 w-4" /></button>
+              ) : null}
+
+              {suggestionsOpen ? (
+                <div id="client-search-suggestions" role="listbox" className={formRecipes.comboboxPanel}>
+                  {suggestions.length > 0 ? (
+                    <ul className="py-2">
+                      {suggestions.map((client, index) => (
+                        <li key={client.id}>
+                          <button
+                            id={`client-suggestion-${client.id}`}
+                            type="button"
+                            role="option"
+                            aria-selected={activeSuggestion === index}
+                            className={[formRecipes.comboboxOption, activeSuggestion === index ? formRecipes.comboboxOptionActive : ""].join(" ")}
+                            onMouseDown={(event) => { event.preventDefault(); selectSuggestion(client.id); }}
+                          >
+                            <div className="flex gap-3">
+                              <div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div>
+                              <div className="min-w-0">
+                                <p className={dataDisplayRecipes.suggestionTitle}>{client.nombre}</p>
+                                <p className="mt-1 truncate text-xs text-[var(--color-text-secondary)]">C.C. {client.cedula}{client.telefono ? ` · Tel. ${client.telefono}` : ""}{client.empresa ? ` · ${client.empresa}` : ""}</p>
+                              </div>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="px-4 py-5 text-sm text-[var(--color-text-secondary)]">No hay clientes para ese criterio.</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <button type="button" className={[actionRecipes.secondary, styles.mobileFilterButton].join(" ")} onClick={() => setMobileFiltersOpen((current) => !current)} aria-expanded={mobileFiltersOpen} aria-controls="client-document-filter">
+            <Filter className="h-4 w-4" />
+            Filtros{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            <ChevronDown className={["h-4 w-4 transition", mobileFiltersOpen ? "rotate-180" : ""].join(" ")} />
+          </button>
+
+          <div id="client-document-filter" className={[styles.documentFilter, mobileFiltersOpen ? styles.documentFilterOpen : ""].join(" ")}>
+            <label className="block"><span className={formRecipes.label}>Estado de cartera</span><select value={portfolioState} className={formRecipes.control} onChange={(event) => setPortfolioState(event.target.value)}><option value="">Todos</option><option value="AL_DIA">Al día</option><option value="VENCIDA">Con cuotas vencidas</option><option value="SIN_CREDITOS_ACTIVOS">Sin créditos activos</option></select></label>
+            <div className={styles.compactAdvancedFilters}><ResponsiveFilters clients={clientes} selectedIds={selectedIds} setSelectedIds={setSelectedIds} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} selectedCompanies={selectedCompanies} setSelectedCompanies={setSelectedCompanies} selectedCredits={selectedCredits} setSelectedCredits={setSelectedCredits} selectedDocuments={selectedDocuments} setSelectedDocuments={setSelectedDocuments} capitalMin={capitalMin} setCapitalMin={setCapitalMin} capitalMax={capitalMax} setCapitalMax={setCapitalMax} interestMin={interestMin} setInterestMin={setInterestMin} interestMax={interestMax} setInterestMax={setInterestMax} /></div>
+          </div>
+
+          {hasActiveFilters ? <button type="button" className={actionRecipes.secondary} onClick={clearFilters}>Limpiar</button> : null}
+        </div>
+      </section>
+
+      <section className={surfaceRecipes.stickyDataPanel}>
+        <div className={surfaceRecipes.dataPanelHeader}>
+          <div><h3 className={dataDisplayRecipes.sectionTitle}>Clientes</h3><p className="mt-1 text-sm text-[var(--color-text-secondary)]">{filteredClients.length} registro(s)</p></div>
+        </div>
+
+        <div className={styles.compactList}>{filteredClients.length ? filteredClients.map((client) => <ClientCompactRow key={client.id} client={client} onOpen={openClient} onKeyDown={handleRowKeyDown} />) : <EmptyFilters />}</div>
+        <div className={styles.desktopTable}>
+              <table className={styles.clientTable}>
+                <colgroup>
+                  <col className={styles.clientColumn} />
+                  <col className={styles.idColumn} />
+                  <col className={styles.phoneColumn} />
+                  <col className={styles.companyColumn} />
+                  <col className={styles.creditsColumn} />
+                  <col className={styles.capitalColumn} />
+                  <col className={styles.interestColumn} />
+                  <col className={styles.documentsColumn} />
+                </colgroup>
+                <thead ref={filtersRef} className="bg-[var(--color-surface-subtle)] text-xs uppercase tracking-wide text-[var(--color-text-secondary)]"><tr><TableHead>Cliente</TableHead><ExcelHead label="Cédula" name="cedula" values={idOptions} selected={selectedIds} setSelected={setSelectedIds} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Teléfono" name="telefono" values={phoneOptions} selected={selectedPhones} setSelected={setSelectedPhones} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Empresa" name="empresa" values={companyOptions} selected={selectedCompanies} setSelected={setSelectedCompanies} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label={<>Créditos<br />activos</>} name="creditos" values={creditOptions} selected={selectedCredits} setSelected={setSelectedCredits} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Capital<br />pendiente</>} name="capital" values={capitalOptions} selected={selectedCapital} setSelected={setSelectedCapital} min={capitalMin} setMin={setCapitalMin} max={capitalMax} setMax={setCapitalMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><HybridHead label={<>Interés<br />pendiente</>} name="interes" values={interestOptions} selected={selectedInterest} setSelected={setSelectedInterest} min={interestMin} setMin={setInterestMin} max={interestMax} setMax={setInterestMax} open={openColumnFilter} setOpen={setOpenColumnFilter} /><ExcelHead label="Documentos" name="documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={selectedDocuments} setSelected={setSelectedDocuments} open={openColumnFilter} setOpen={setOpenColumnFilter} format={formatDocumentValue} align="right" /></tr></thead>
+                <tbody className="divide-y divide-[var(--color-border-subtle)]">
+                  {filteredClients.length === 0 ? <tr><td colSpan={8}><EmptyFilters /></td></tr> : filteredClients.map((client) => (
+                    <tr key={client.id} role="link" tabIndex={0} onClick={() => openClient(client.id)} onKeyDown={(event) => handleRowKeyDown(event, client.id)} className={dataDisplayRecipes.operationalRow}>
+                      <TableCell><div className={styles.clientIdentityCell}><div className="flex min-w-0 items-start gap-3"><div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div><div className="min-w-0"><Link href={`/clientes/${client.id}`} className={dataDisplayRecipes.entityLink} onClick={(event) => event.stopPropagation()}>{client.nombre}</Link>{client.perfilIncompleto ? <p className={`mt-1 ${dataDisplayRecipes.supportingWarning}`}>Perfil pendiente</p> : null}</div></div><Link href={`/clientes/${client.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del cliente" aria-label={`Ver detalle de ${client.nombre}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link></div></TableCell>
+                      <TableCell className={styles.atomicValue}>{client.cedula}</TableCell><TableCell className={styles.atomicValue}>{client.telefono || "-"}</TableCell><TableCell>{client.empresa || "-"}</TableCell><TableCell className={`${styles.atomicValue} text-center tabular-nums`}>{client.creditosActivos}</TableCell>
+                      <TableCell className={`${styles.atomicValue} ${dataDisplayRecipes.numericCell} text-right`}>{formatCurrencyCOP(client.saldoTotal)}</TableCell>
+                      <TableCell className={`${styles.atomicValue} ${dataDisplayRecipes.numericCell} text-right`}>{formatCurrencyCOP(client.interesPendienteTotal)}</TableCell>
+                      <TableCell><DocumentStatus status={client.estadoDocumentos} /></TableCell>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+      </section>
+    </main>
+  );
+}
+
+interface CompactRowProps {
+  client: ClienteListadoItem;
+  onOpen: (id: string) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>, id: string) => void;
+}
+
+function ClientCompactRow({ client, onOpen, onKeyDown }: CompactRowProps) {
+  return (
+    <article role="link" tabIndex={0} onClick={() => onOpen(client.id)} onKeyDown={(event) => onKeyDown(event, client.id)} className={dataDisplayRecipes.compactRow}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3"><div className={dataDisplayRecipes.entityAvatar}><UserRound className="h-4 w-4" /></div><div className="min-w-0"><Link href={`/clientes/${client.id}`} className={dataDisplayRecipes.compactEntityLink}>{client.nombre}</Link><p className="text-xs text-[var(--color-text-secondary)]">C.C. {client.cedula}</p>{client.perfilIncompleto ? <p className={`mt-1 ${dataDisplayRecipes.supportingWarning}`}>Perfil pendiente</p> : null}</div></div>
+        <Link href={`/clientes/${client.id}`} className={actionRecipes.entityDetailIcon} title="Ver detalle del cliente" aria-label={`Ver detalle de ${client.nombre}`} onClick={(event) => event.stopPropagation()}><Eye className="h-4 w-4" /></Link>
+      </div>
+      <dl className={styles.flatDataGrid}><FlatDatum label="Teléfono" value={client.telefono || "-"} /><FlatDatum label="Empresa" value={client.empresa || "-"} /><FlatDatum label="Créditos" value={String(client.creditosActivos)} /><FlatDatum label="Capital pendiente" value={formatCurrencyCOP(client.saldoTotal)} /><FlatDatum label="Interés pendiente" value={formatCurrencyCOP(client.interesPendienteTotal)} /><div className="min-w-0"><dt className={dataDisplayRecipes.flatDatumLabel}>Documentos</dt><dd className={styles.compactStatus}><DocumentStatus status={client.estadoDocumentos} /></dd></div></dl>
+    </article>
+  );
+}
+
+function FlatDatum({ label, value }: { label: string; value: string }) { return <div className="min-w-0"><dt className={dataDisplayRecipes.flatDatumLabel}>{label}</dt><dd className={dataDisplayRecipes.flatDatumValue}>{value}</dd></div>; }
+
+interface PortfolioMetricProps { icon: ComponentType<{ className?: string }>; label: string; value: string; helper?: string; }
+function PortfolioMetric({ icon: Icon, label, value, helper }: PortfolioMetricProps) { return <div className={[dataDisplayRecipes.metric, styles.metric].join(" ")}><p className={dataDisplayRecipes.metricLabel}><Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)]" />{label}</p><p className={dataDisplayRecipes.metricValue}>{value}</p>{helper ? <p className={dataDisplayRecipes.metricHelper}>{helper}</p> : null}</div>; }
+
+interface TableCellProps { className?: string; children: ReactNode; }
+function TableCell({ className = "", children }: TableCellProps) { return <td className={`${dataDisplayRecipes.tableCell} ${className}`}>{children}</td>; }
+interface TableHeadProps { className?: string; children: ReactNode; }
+function TableHead({ className = "", children }: TableHeadProps) { return <th className={`${dataDisplayRecipes.tableHead} ${className}`}>{children}</th>; }
+
+type SetValues<T> = (values: T[]) => void;
+
+function ExcelHead<T extends string | number>({ label, name, values, selected, setSelected, open, setOpen, format, align }: { label: ReactNode; name: string; values: T[]; selected: T[]; setSelected: SetValues<T>; open: string | null; setOpen: (value: string | null) => void; format?: (value: T) => string; align?: "right" }) {
+  const visible = open === name;
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, align ? styles.filterHeadRight : ""].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)} aria-expanded={visible}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={format} /></div> : null}</th>;
+}
+
+function HybridHead({ label, name, values, selected, setSelected, min, setMin, max, setMax, open, setOpen }: { label: ReactNode; name: string; values: number[]; selected: number[]; setSelected: SetValues<number>; min: string; setMin: (value: string) => void; max: string; setMax: (value: string) => void; open: string | null; setOpen: (value: string | null) => void }) {
+  const visible = open === name;
+  return <th className={[dataDisplayRecipes.tableHead, styles.filterHead, styles.filterHeadRight].join(" ")}><button type="button" className={[styles.filterHeadButton, selected.length || min || max ? styles.filterHeadActive : ""].join(" ")} onClick={() => setOpen(visible ? null : name)}><span>{label}</span><SlidersHorizontal className="h-3.5 w-3.5" /></button>{visible ? <div className={styles.columnFilterPopover}><ValueChecklist values={values} selected={selected} setSelected={setSelected} format={(value) => formatCurrencyCOP(value)} /><div className={styles.rangeSection}><span className={formRecipes.label}>Rango personalizado</span><div className={styles.rangeGrid}><input type="number" placeholder="Desde" className={formRecipes.control} value={min} onChange={(event) => setMin(event.target.value)} /><input type="number" placeholder="Hasta" className={formRecipes.control} value={max} onChange={(event) => setMax(event.target.value)} /></div></div></div> : null}</th>;
+}
+
+function ValueChecklist<T extends string | number>({ values, selected, setSelected, format = (value) => String(value) }: { values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) {
+  const [term, setTerm] = useState("");
+  const shown = values.filter((value) => normalize(format(value)).includes(normalize(term)));
+  const allShownSelected = shown.length > 0 && shown.every((value) => selected.includes(value));
+  function toggle(value: T) { setSelected(selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value]); }
+  return <div><input autoFocus className={formRecipes.control} placeholder="Buscar valores..." value={term} onChange={(event) => setTerm(event.target.value)} /><label className={`${styles.checkRow} ${formRecipes.filterSelectAll}`}><input type="checkbox" checked={allShownSelected} onChange={() => setSelected(allShownSelected ? selected.filter((value) => !shown.includes(value)) : unique([...selected, ...shown]))} /><span>Seleccionar todos</span></label><div className={styles.checkList}>{shown.map((value) => <label key={String(value)} className={`${styles.checkRow} ${formRecipes.filterOption}`}><input type="checkbox" checked={selected.includes(value)} onChange={() => toggle(value)} /><span>{format(value)}</span></label>)}{shown.length === 0 ? <p className={styles.noValues}>Sin valores coincidentes.</p> : null}</div><button type="button" className={`${styles.clearColumn} ${formRecipes.filterAction}`} onClick={() => setSelected([])}>Limpiar filtro</button></div>;
+}
+
+function ResponsiveFilters(props: { clients: ClienteListadoItem[]; selectedIds: string[]; setSelectedIds: SetValues<string>; selectedPhones: string[]; setSelectedPhones: SetValues<string>; selectedCompanies: string[]; setSelectedCompanies: SetValues<string>; selectedCredits: number[]; setSelectedCredits: SetValues<number>; selectedDocuments: string[]; setSelectedDocuments: SetValues<string>; capitalMin: string; setCapitalMin: (v: string) => void; capitalMax: string; setCapitalMax: (v: string) => void; interestMin: string; setInterestMin: (v: string) => void; interestMax: string; setInterestMax: (v: string) => void }) {
+  return <div className={styles.advancedFilterGrid}><MobileChecklist label="Cédula" values={uniqueStrings(props.clients.map((client) => client.cedula))} selected={props.selectedIds} setSelected={props.setSelectedIds} /><MobileChecklist label="Teléfono" values={uniqueStrings(props.clients.map((client) => client.telefono ?? "Sin teléfono"))} selected={props.selectedPhones} setSelected={props.setSelectedPhones} /><MobileChecklist label="Empresa" values={uniqueStrings(props.clients.map((client) => client.empresa ?? "Sin empresa"))} selected={props.selectedCompanies} setSelected={props.setSelectedCompanies} /><MobileChecklist label="Créditos activos" values={uniqueNumbers(props.clients.map((client) => client.creditosActivos))} selected={props.selectedCredits} setSelected={props.setSelectedCredits} /><MobileChecklist label="Documentos" values={["DOCUMENTOS_CARGADOS", "FALTAN_DOCUMENTOS"]} selected={props.selectedDocuments} setSelected={props.setSelectedDocuments} format={formatDocumentValue} /><RangeFilter label="Capital pendiente" min={props.capitalMin} max={props.capitalMax} onMin={props.setCapitalMin} onMax={props.setCapitalMax} /><RangeFilter label="Interés pendiente" min={props.interestMin} max={props.interestMax} onMin={props.setInterestMin} onMax={props.setInterestMax} /></div>;
+}
+
+function MobileChecklist<T extends string | number>(props: { label: string; values: T[]; selected: T[]; setSelected: SetValues<T>; format?: (value: T) => string }) { return <details className={styles.mobileDetails}><summary className={formRecipes.filterSummary}>{props.label}{props.selected.length ? ` (${props.selected.length})` : ""}</summary><ValueChecklist values={props.values} selected={props.selected} setSelected={props.setSelected} format={props.format} /></details>; }
+function RangeFilter({ label, min, max, onMin, onMax }: { label: string; min: string; max: string; onMin: (value: string) => void; onMax: (value: string) => void }) { return <fieldset><legend className={formRecipes.label}>{label}</legend><div className={styles.rangeGrid}><input type="number" placeholder="Desde" value={min} className={formRecipes.control} onChange={(event) => onMin(event.target.value)} /><input type="number" placeholder="Hasta" value={max} className={formRecipes.control} onChange={(event) => onMax(event.target.value)} /></div></fieldset>; }
+function EmptyFilters() { return <div className={styles.emptyBody}><p>No hay clientes para esta combinación de filtros.</p><span>Modifica el filtro abierto o usa Limpiar.</span></div>; }
+function parseList(value: string | null) { return value ? value.split("|").map(decodeURIComponent).filter(Boolean) : []; }
+function parseNumberList(value: string | null) { return parseList(value).map(Number).filter(Number.isFinite); }
+function syncParam(params: URLSearchParams, key: string, value: string) { const clean = value.trim(); if (clean) params.set(key, clean); }
+function syncList(params: URLSearchParams, key: string, values: string[]) { if (values.length) params.set(key, values.map(encodeURIComponent).join("|")); }
+function syncNumberList(params: URLSearchParams, key: string, values: number[]) { if (values.length) params.set(key, values.join("|")); }
+function unique<T>(values: T[]) { return [...new Set(values)]; }
+function uniqueStrings(values: string[]) { return unique(values).sort((left, right) => left.localeCompare(right, "es")); }
+function uniqueNumbers(values: number[]) { return unique(values).sort((left, right) => left - right); }
+function normalize(value: string) { return value.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+function withinRange(value: number, minRaw: string, maxRaw: string) { const min = minRaw === "" ? null : Number(minRaw); const max = maxRaw === "" ? null : Number(maxRaw); return (min === null || !Number.isFinite(min) || value >= min) && (max === null || !Number.isFinite(max) || value <= max); }
+function formatDocumentValue(value: string) { return value === "DOCUMENTOS_CARGADOS" ? "Cargados" : "Pendientes"; }
+
+function DocumentStatus({ status }: { status: string }) {
+  if (status === "DOCUMENTOS_CARGADOS") return <span className={statusRecipes.success}><CheckCircle2 className="h-3.5 w-3.5" />Cargados</span>;
+  return <span className={statusRecipes.warning}><AlertTriangle className="h-3.5 w-3.5" />Pendientes</span>;
+}
