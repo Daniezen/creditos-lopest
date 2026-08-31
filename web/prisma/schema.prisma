@@ -147,6 +147,8 @@ model EventoFinanciero {
   @@index([fechaProgramada])
   @@index([fechaPago])
   @@index([creditoId, numeroCuota])
+  @@index([estado, fechaPago])
+  @@index([estado, fechaProgramada])
   abonoSnapshot AbonoSnapshot? @relation("AbonoSnapshotEvent")
 
   @@map("eventos_financieros")
