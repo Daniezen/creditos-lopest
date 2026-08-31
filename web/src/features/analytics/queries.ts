@@ -77,8 +77,20 @@ export async function getHistoricoRecaudacion(user: CurrentUserScope): Promise<R
   >`
     SELECT 
       TO_CHAR(DATE_TRUNC('month', e."fechaPago"), 'YYYY-MM') as "mes",
-      COALESCE(SUM(e."capitalPagado"), 0) as "capital",
-      COALESCE(SUM(e."interesPagado"), 0) as "interes"
+      COALESCE(SUM(
+        CASE 
+          WHEN e."capitalPagado" > 0 OR e."interesPagado" > 0 THEN e."capitalPagado"
+          WHEN e."tipo" = 'ABONO_CAPITAL' THEN e."montoPagado"
+          ELSE e."capitalProgramado"
+        END
+      ), 0) as "capital",
+      COALESCE(SUM(
+        CASE 
+          WHEN e."capitalPagado" > 0 OR e."interesPagado" > 0 THEN e."interesPagado"
+          WHEN e."tipo" = 'ABONO_CAPITAL' THEN 0
+          ELSE e."interesProgramado"
+        END
+      ), 0) as "interes"
     FROM "eventos_financieros" e
     JOIN "creditos" c ON e."creditoId" = c.id
     WHERE e."estado" IN ('PAGADO', 'CANCELADO_POR_ABONO')
@@ -168,7 +180,12 @@ export async function getResumenCartera(user: CurrentUserScope): Promise<Resumen
   // 2. Recaudado este mes
   const recaudado = await prisma.$queryRaw<Array<{ total: Prisma.Decimal }>>`
     SELECT 
-      COALESCE(SUM(e."capitalPagado" + e."interesPagado"), 0) as "total"
+      COALESCE(SUM(
+        CASE 
+          WHEN e."capitalPagado" > 0 OR e."interesPagado" > 0 THEN (e."capitalPagado" + e."interesPagado")
+          ELSE e."montoPagado"
+        END
+      ), 0) as "total"
     FROM "eventos_financieros" e
     JOIN "creditos" c ON e."creditoId" = c.id
     WHERE e."estado" IN ('PAGADO', 'CANCELADO_POR_ABONO')
