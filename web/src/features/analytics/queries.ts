@@ -31,6 +31,20 @@ export type CreditoEnRiesgo = {
   clienteNombre: string;
   diasAtraso: number;
   montoMora: number;
+  cuotasVencidas: number;
+};
+
+export type ResumenRiesgo = {
+  totalCreditosEnMora: number;
+  totalMoraDinero: number;
+  mora1a30Count: number;
+  mora1a30Monto: number;
+  mora31a60Count: number;
+  mora31a60Monto: number;
+  mora61a90Count: number;
+  mora61a90Monto: number;
+  moraMas90Count: number;
+  moraMas90Monto: number;
 };
 
 function fillMissingMonths<T extends { mesStr: string; capital: number; interes: number; total: number }>(
@@ -214,7 +228,84 @@ export async function getResumenCartera(user: CurrentUserScope): Promise<Resumen
   };
 }
 
-export async function getCreditosEnRiesgo(user: CurrentUserScope): Promise<CreditoEnRiesgo[]> {
+export async function getResumenRiesgo(user: CurrentUserScope): Promise<ResumenRiesgo> {
+  const isAdmin = canSeeAllOwners(user);
+  
+  const filterClause = isAdmin
+    ? Prisma.sql`1=1`
+    : Prisma.sql`c."ownerUserId" = ${user.id}`;
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      total_creditos_en_mora: bigint;
+      total_mora_dinero: Prisma.Decimal;
+      mora_1_30_count: bigint;
+      mora_1_30_monto: Prisma.Decimal;
+      mora_31_60_count: bigint;
+      mora_31_60_monto: Prisma.Decimal;
+      mora_61_90_count: bigint;
+      mora_61_90_monto: Prisma.Decimal;
+      mora_90_plus_count: bigint;
+      mora_90_plus_monto: Prisma.Decimal;
+    }>
+  >`
+    WITH mora_creditos AS (
+      SELECT 
+        c.id,
+        MAX(GREATEST(e."diasAtraso", ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date - e."fechaProgramada"::date))) as dias_atraso,
+        SUM(e."capitalProgramado" - e."capitalPagado" + e."interesProgramado" - e."interesPagado") as monto_mora
+      FROM "eventos_financieros" e
+      JOIN "creditos" c ON e."creditoId" = c.id
+      WHERE e."estado" IN ('ATRASADO', 'MORA')
+        AND ${filterClause}
+        AND c."eliminadoEn" IS NULL
+      GROUP BY c.id
+    )
+    SELECT 
+      COUNT(*) as total_creditos_en_mora,
+      COALESCE(SUM(monto_mora), 0) as total_mora_dinero,
+      COUNT(CASE WHEN dias_atraso <= 30 THEN 1 END) as mora_1_30_count,
+      COALESCE(SUM(CASE WHEN dias_atraso <= 30 THEN monto_mora END), 0) as mora_1_30_monto,
+      COUNT(CASE WHEN dias_atraso > 30 AND dias_atraso <= 60 THEN 1 END) as mora_31_60_count,
+      COALESCE(SUM(CASE WHEN dias_atraso > 30 AND dias_atraso <= 60 THEN monto_mora END), 0) as mora_31_60_monto,
+      COUNT(CASE WHEN dias_atraso > 60 AND dias_atraso <= 90 THEN 1 END) as mora_61_90_count,
+      COALESCE(SUM(CASE WHEN dias_atraso > 60 AND dias_atraso <= 90 THEN monto_mora END), 0) as mora_61_90_monto,
+      COUNT(CASE WHEN dias_atraso > 90 THEN 1 END) as mora_90_plus_count,
+      COALESCE(SUM(CASE WHEN dias_atraso > 90 THEN monto_mora END), 0) as mora_90_plus_monto
+    FROM mora_creditos;
+  `;
+
+  const r = rows[0];
+  if (!r) {
+    return {
+      totalCreditosEnMora: 0,
+      totalMoraDinero: 0,
+      mora1a30Count: 0,
+      mora1a30Monto: 0,
+      mora31a60Count: 0,
+      mora31a60Monto: 0,
+      mora61a90Count: 0,
+      mora61a90Monto: 0,
+      moraMas90Count: 0,
+      moraMas90Monto: 0,
+    };
+  }
+
+  return {
+    totalCreditosEnMora: Number(r.total_creditos_en_mora || 0),
+    totalMoraDinero: Number(r.total_mora_dinero || 0),
+    mora1a30Count: Number(r.mora_1_30_count || 0),
+    mora1a30Monto: Number(r.mora_1_30_monto || 0),
+    mora31a60Count: Number(r.mora_31_60_count || 0),
+    mora31a60Monto: Number(r.mora_31_60_monto || 0),
+    mora61a90Count: Number(r.mora_61_90_count || 0),
+    mora61a90Monto: Number(r.mora_61_90_monto || 0),
+    moraMas90Count: Number(r.mora_90_plus_count || 0),
+    moraMas90Monto: Number(r.mora_90_plus_monto || 0),
+  };
+}
+
+export async function getCreditosMayorMonto(user: CurrentUserScope, limit = 8): Promise<CreditoEnRiesgo[]> {
   const isAdmin = canSeeAllOwners(user);
   
   const filterClause = isAdmin
@@ -228,14 +319,16 @@ export async function getCreditosEnRiesgo(user: CurrentUserScope): Promise<Credi
       clienteNombre: string;
       diasAtraso: number;
       montoMora: Prisma.Decimal;
+      cuotasVencidas: number;
     }>
   >`
     SELECT 
       c.id,
       c.codigo,
       cl.nombre as "clienteNombre",
-      MAX(e."diasAtraso") as "diasAtraso",
-      SUM(e."capitalProgramado" - e."capitalPagado" + e."interesProgramado" - e."interesPagado") as "montoMora"
+      MAX(GREATEST(e."diasAtraso", ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date - e."fechaProgramada"::date)))::int as "diasAtraso",
+      SUM(e."capitalProgramado" - e."capitalPagado" + e."interesProgramado" - e."interesPagado") as "montoMora",
+      COUNT(e.id)::int as "cuotasVencidas"
     FROM "eventos_financieros" e
     JOIN "creditos" c ON e."creditoId" = c.id
     JOIN "clientes" cl ON c."clienteId" = cl.id
@@ -244,7 +337,7 @@ export async function getCreditosEnRiesgo(user: CurrentUserScope): Promise<Credi
       AND c."eliminadoEn" IS NULL
     GROUP BY c.id, c.codigo, cl.nombre
     ORDER BY "montoMora" DESC, "diasAtraso" DESC
-    LIMIT 10
+    LIMIT ${limit}
   `;
 
   return rows.map((r) => ({
@@ -253,5 +346,51 @@ export async function getCreditosEnRiesgo(user: CurrentUserScope): Promise<Credi
     clienteNombre: r.clienteNombre,
     diasAtraso: Number(r.diasAtraso),
     montoMora: Number(r.montoMora),
+    cuotasVencidas: Number(r.cuotasVencidas),
+  }));
+}
+
+export async function getCreditosMayorAtraso(user: CurrentUserScope, limit = 8): Promise<CreditoEnRiesgo[]> {
+  const isAdmin = canSeeAllOwners(user);
+  
+  const filterClause = isAdmin
+    ? Prisma.sql`1=1`
+    : Prisma.sql`c."ownerUserId" = ${user.id}`;
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      codigo: string;
+      clienteNombre: string;
+      diasAtraso: number;
+      montoMora: Prisma.Decimal;
+      cuotasVencidas: number;
+    }>
+  >`
+    SELECT 
+      c.id,
+      c.codigo,
+      cl.nombre as "clienteNombre",
+      MAX(GREATEST(e."diasAtraso", ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date - e."fechaProgramada"::date)))::int as "diasAtraso",
+      SUM(e."capitalProgramado" - e."capitalPagado" + e."interesProgramado" - e."interesPagado") as "montoMora",
+      COUNT(e.id)::int as "cuotasVencidas"
+    FROM "eventos_financieros" e
+    JOIN "creditos" c ON e."creditoId" = c.id
+    JOIN "clientes" cl ON c."clienteId" = cl.id
+    WHERE e."estado" IN ('ATRASADO', 'MORA')
+      AND ${filterClause}
+      AND c."eliminadoEn" IS NULL
+    GROUP BY c.id, c.codigo, cl.nombre
+    ORDER BY "diasAtraso" DESC, "montoMora" DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((r) => ({
+    id: r.id,
+    codigo: r.codigo,
+    clienteNombre: r.clienteNombre,
+    diasAtraso: Number(r.diasAtraso),
+    montoMora: Number(r.montoMora),
+    cuotasVencidas: Number(r.cuotasVencidas),
   }));
 }

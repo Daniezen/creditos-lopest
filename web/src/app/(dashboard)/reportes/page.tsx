@@ -1,15 +1,23 @@
-import { requireUser } from "@/server/auth/guards";
+import { AlertTriangle, Clock, Coins, ShieldAlert, TrendingUp, WalletCards } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+import { HistoricoChart } from "@/features/analytics/components/HistoricoChart";
+import { ProyeccionChart } from "@/features/analytics/components/ProyeccionChart";
 import { 
   getHistoricoRecaudacion, 
   getProyeccionCartera,
   getResumenCartera,
-  getCreditosEnRiesgo
+  getResumenRiesgo,
+  getCreditosMayorMonto,
+  getCreditosMayorAtraso,
 } from "@/features/analytics/queries";
-import { HistoricoChart } from "@/features/analytics/components/HistoricoChart";
-import { ProyeccionChart } from "@/features/analytics/components/ProyeccionChart";
 import { formatCurrencyCOP } from "@/lib/formatters";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { requireUser } from "@/server/auth/guards";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +34,13 @@ export default async function ReportesPage({ searchParams }: Props) {
     redirect("/reportes?tab=resumen");
   }
 
-  const [historico, proyeccion, resumen, enRiesgo] = await Promise.all([
+  const [historico, proyeccion, resumen, resumenRiesgo, mayorMonto, mayorAtraso] = await Promise.all([
     getHistoricoRecaudacion(user),
     getProyeccionCartera(user),
     getResumenCartera(user),
-    getCreditosEnRiesgo(user),
+    getResumenRiesgo(user),
+    getCreditosMayorMonto(user, 8),
+    getCreditosMayorAtraso(user, 8),
   ]);
 
   const tabs = [
@@ -42,24 +52,24 @@ export default async function ReportesPage({ searchParams }: Props) {
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
           Panel de Analítica
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm font-[var(--font-weight-body)] text-[var(--color-text-secondary)] mt-1">
           Indicadores financieros, proyecciones de flujo y control de mora.
         </p>
       </div>
 
-      <div className="mb-8 border-b border-slate-200">
+      <div className="mb-8 border-b border-[var(--color-border-subtle)]">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((t) => (
             <Link
               key={t.id}
               href={`/reportes?tab=${t.id}`}
-              className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
+              className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-[var(--font-weight-action)] transition ${
                 tab === t.id
-                  ? "border-violet-500 text-violet-600"
-                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                  ? "border-[var(--color-focus)] text-[var(--color-selection-strong)]"
+                  : "border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               {t.label}
@@ -70,78 +80,243 @@ export default async function ReportesPage({ searchParams }: Props) {
 
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {tab === "resumen" && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <dt className="truncate text-sm font-medium text-slate-500">Capital Activo (En Calle)</dt>
-              <dd className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{formatCurrencyCOP(resumen.capitalActivo)}</dd>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <div className={dataDisplayRecipes.metricCompact}>
+              <p className={dataDisplayRecipes.metricCompactLabel}>
+                <WalletCards className="h-3.5 w-3.5 text-[var(--color-action-primary)] shrink-0" />
+                <span>Capital Activo</span>
+              </p>
+              <p className={dataDisplayRecipes.metricCompactValue}>
+                {formatCurrencyCOP(resumen.capitalActivo)}
+              </p>
+              <p className={dataDisplayRecipes.metricCompactHelper}>
+                En colocación vigente
+              </p>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <dt className="truncate text-sm font-medium text-slate-500">Interés Proyectado</dt>
-              <dd className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{formatCurrencyCOP(resumen.interesProyectado)}</dd>
+
+            <div className={dataDisplayRecipes.metricCompact}>
+              <p className={dataDisplayRecipes.metricCompactLabel}>
+                <Coins className="h-3.5 w-3.5 text-[var(--color-action-primary)] shrink-0" />
+                <span>Interés Proyectado</span>
+              </p>
+              <p className={dataDisplayRecipes.metricCompactValue}>
+                {formatCurrencyCOP(resumen.interesProyectado)}
+              </p>
+              <p className={dataDisplayRecipes.metricCompactHelper}>
+                Rendimiento esperado
+              </p>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <dt className="truncate text-sm font-medium text-slate-500">Recaudo este Mes</dt>
-              <dd className="mt-2 text-3xl font-bold tracking-tight text-slate-900 text-emerald-600">{formatCurrencyCOP(resumen.recaudadoEsteMes)}</dd>
+
+            <div className={dataDisplayRecipes.metricCompact}>
+              <p className={dataDisplayRecipes.metricCompactLabel}>
+                <TrendingUp className="h-3.5 w-3.5 text-[var(--color-success)] shrink-0" />
+                <span>Recaudo este Mes</span>
+              </p>
+              <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-success)]`}>
+                {formatCurrencyCOP(resumen.recaudadoEsteMes)}
+              </p>
+              <p className={dataDisplayRecipes.metricCompactHelper}>
+                Capital e interés cobrado
+              </p>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <dt className="truncate text-sm font-medium text-slate-500">Capital en Riesgo (Mora/Atraso)</dt>
-              <dd className="mt-2 text-3xl font-bold tracking-tight text-slate-900 text-rose-600">{formatCurrencyCOP(resumen.capitalEnMora)}</dd>
+
+            <div className={dataDisplayRecipes.metricCompact}>
+              <p className={dataDisplayRecipes.metricCompactLabel}>
+                <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-danger)] shrink-0" />
+                <span>Capital en Riesgo</span>
+              </p>
+              <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-danger)]`}>
+                {formatCurrencyCOP(resumen.capitalEnMora)}
+              </p>
+              <p className={dataDisplayRecipes.metricCompactHelper}>
+                Cartera atrasada o en mora
+              </p>
             </div>
           </div>
         )}
 
         {tab === "graficas" && (
           <div className="grid grid-cols-1 gap-8">
-            <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.06)] lg:p-10">
+            <section className={`${surfaceRecipes.sectionSpacious} p-6 lg:p-10`}>
               <HistoricoChart data={historico} />
             </section>
-            <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.06)] lg:p-10">
+            <section className={`${surfaceRecipes.sectionSpacious} p-6 lg:p-10`}>
               <ProyeccionChart data={proyeccion} />
             </section>
           </div>
         )}
 
         {tab === "riesgo" && (
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-6 py-5">
-              <h3 className="text-base font-semibold leading-6 text-slate-900">Atención Inmediata</h3>
-              <p className="mt-1 text-sm text-slate-500">Créditos con mayores montos vencidos o días de atraso.</p>
-            </div>
-            {enRiesgo.length === 0 ? (
-              <div className="p-10 text-center text-sm text-slate-500">
-                No hay cartera en mora actualmente.
+          <div className="space-y-8">
+            {/* Macro Categorías de Riesgo (Tramos de Mora) */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <div className={dataDisplayRecipes.metricCompact}>
+                <p className={dataDisplayRecipes.metricCompactLabel}>
+                  <Clock className="h-3.5 w-3.5 text-[var(--color-warning)] shrink-0" />
+                  <span>1 a 30 días</span>
+                </p>
+                <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-warning)]`}>
+                  {formatCurrencyCOP(resumenRiesgo.mora1a30Monto)}
+                </p>
+                <p className={dataDisplayRecipes.metricCompactHelper}>
+                  {resumenRiesgo.mora1a30Count} crédito(s) · Mora temprana
+                </p>
               </div>
-            ) : (
-              <ul role="list" className="divide-y divide-slate-200">
-                {enRiesgo.map((credito) => (
-                  <li key={credito.id} className="flex items-center justify-between gap-x-6 px-6 py-5 hover:bg-slate-50">
-                    <div className="min-w-0">
-                      <div className="flex items-start gap-x-3">
-                        <p className="text-sm font-semibold leading-6 text-slate-900">{credito.clienteNombre}</p>
-                        <p className="rounded-md whitespace-nowrap mt-0.5 px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset text-rose-700 bg-rose-50 ring-rose-600/20">
-                          {credito.codigo}
-                        </p>
-                      </div>
-                      <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-slate-500">
-                        <p className="whitespace-nowrap">{credito.diasAtraso} días de atraso acumulado</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-none items-center gap-x-4">
-                      <div className="text-right">
-                        <p className="text-sm font-semibold leading-6 text-rose-600">{formatCurrencyCOP(credito.montoMora)}</p>
-                        <p className="text-xs leading-5 text-slate-500">Vencido</p>
-                      </div>
-                      <Link
-                        href={`/creditos/${credito.id}`}
-                        className="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:block"
-                      >
-                        Ver crédito<span className="sr-only">, {credito.clienteNombre}</span>
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+
+              <div className={dataDisplayRecipes.metricCompact}>
+                <p className={dataDisplayRecipes.metricCompactLabel}>
+                  <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-warning)] shrink-0" />
+                  <span>31 a 60 días</span>
+                </p>
+                <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-warning)]`}>
+                  {formatCurrencyCOP(resumenRiesgo.mora31a60Monto)}
+                </p>
+                <p className={dataDisplayRecipes.metricCompactHelper}>
+                  {resumenRiesgo.mora31a60Count} crédito(s) · Mora moderada
+                </p>
+              </div>
+
+              <div className={dataDisplayRecipes.metricCompact}>
+                <p className={dataDisplayRecipes.metricCompactLabel}>
+                  <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-danger)] shrink-0" />
+                  <span>61 a 90 días</span>
+                </p>
+                <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-danger)]`}>
+                  {formatCurrencyCOP(resumenRiesgo.mora61a90Monto)}
+                </p>
+                <p className={dataDisplayRecipes.metricCompactHelper}>
+                  {resumenRiesgo.mora61a90Count} crédito(s) · Mora avanzada
+                </p>
+              </div>
+
+              <div className={dataDisplayRecipes.metricCompact}>
+                <p className={dataDisplayRecipes.metricCompactLabel}>
+                  <ShieldAlert className="h-3.5 w-3.5 text-[var(--color-danger)] shrink-0" />
+                  <span>Más de 90 días</span>
+                </p>
+                <p className={`${dataDisplayRecipes.metricCompactValue} text-[var(--color-danger)]`}>
+                  {formatCurrencyCOP(resumenRiesgo.moraMas90Monto)}
+                </p>
+                <p className={dataDisplayRecipes.metricCompactHelper}>
+                  {resumenRiesgo.moraMas90Count} crédito(s) · Mora crítica
+                </p>
+              </div>
+            </div>
+
+            {/* Dos Paneles: Mayor Monto Vencido vs Mayor Tiempo de Atraso */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              {/* Panel 1: Mayor Monto Vencido */}
+              <div className={surfaceRecipes.dataPanel}>
+                <div className={surfaceRecipes.dataPanelHeader}>
+                  <div>
+                    <h3 className="text-base font-[var(--font-weight-heading)] leading-6 text-[var(--color-text-primary)]">
+                      Mayor Monto Vencido
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                      Créditos con mayor capital e interés adeudado.
+                    </p>
+                  </div>
+                </div>
+                {mayorMonto.length === 0 ? (
+                  <div className="p-10 text-center text-sm text-[var(--color-text-secondary)]">
+                    No hay cartera en mora actualmente.
+                  </div>
+                ) : (
+                  <ul role="list" className="divide-y divide-[var(--color-border-subtle)]">
+                    {mayorMonto.map((credito) => (
+                      <li key={credito.id} className="flex items-center justify-between gap-x-4 px-5 py-4 transition hover:bg-[var(--color-selection)]">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-x-2.5">
+                            <p className="truncate text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
+                              {credito.clienteNombre}
+                            </p>
+                            <span className={statusRecipes.danger}>
+                              {credito.codigo}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-x-2 text-xs text-[var(--color-text-secondary)]">
+                            <span className="font-medium text-[var(--color-text-primary)]">{credito.cuotasVencidas} cuota(s)</span>
+                            <span>·</span>
+                            <span>{credito.diasAtraso} días de atraso</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-none items-center gap-x-3">
+                          <div className="text-right">
+                            <p className="text-sm font-[var(--font-weight-heading)] text-[var(--color-danger)]">
+                              {formatCurrencyCOP(credito.montoMora)}
+                            </p>
+                            <p className="text-xs text-[var(--color-text-secondary)]">Vencido</p>
+                          </div>
+                          <Link
+                            href={`/creditos/${credito.id}`}
+                            className={`${actionRecipes.secondary} hidden sm:inline-flex`}
+                          >
+                            Ver crédito<span className="sr-only">, {credito.clienteNombre}</span>
+                          </Link>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Panel 2: Mayor Cantidad de Días de Atraso */}
+              <div className={surfaceRecipes.dataPanel}>
+                <div className={surfaceRecipes.dataPanelHeader}>
+                  <div>
+                    <h3 className="text-base font-[var(--font-weight-heading)] leading-6 text-[var(--color-text-primary)]">
+                      Mayor Tiempo de Atraso
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                      Créditos con mayor antigüedad sin registrar abonos.
+                    </p>
+                  </div>
+                </div>
+                {mayorAtraso.length === 0 ? (
+                  <div className="p-10 text-center text-sm text-[var(--color-text-secondary)]">
+                    No hay cartera en mora actualmente.
+                  </div>
+                ) : (
+                  <ul role="list" className="divide-y divide-[var(--color-border-subtle)]">
+                    {mayorAtraso.map((credito) => (
+                      <li key={credito.id} className="flex items-center justify-between gap-x-4 px-5 py-4 transition hover:bg-[var(--color-selection)]">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-x-2.5">
+                            <p className="truncate text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
+                              {credito.clienteNombre}
+                            </p>
+                            <span className={statusRecipes.danger}>
+                              {credito.codigo}
+                            </span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-x-2 text-xs text-[var(--color-text-secondary)]">
+                            <span className={`font-semibold ${credito.diasAtraso > 90 ? "text-[var(--color-danger)]" : "text-[var(--color-warning)]"}`}>
+                              {credito.diasAtraso} días acumulados
+                            </span>
+                            <span>·</span>
+                            <span>{credito.cuotasVencidas} cuota(s)</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-none items-center gap-x-3">
+                          <div className="text-right">
+                            <p className="text-sm font-[var(--font-weight-heading)] text-[var(--color-danger)]">
+                              {formatCurrencyCOP(credito.montoMora)}
+                            </p>
+                            <p className="text-xs text-[var(--color-text-secondary)]">Vencido</p>
+                          </div>
+                          <Link
+                            href={`/creditos/${credito.id}`}
+                            className={`${actionRecipes.secondary} hidden sm:inline-flex`}
+                          >
+                            Ver crédito<span className="sr-only">, {credito.clienteNombre}</span>
+                          </Link>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

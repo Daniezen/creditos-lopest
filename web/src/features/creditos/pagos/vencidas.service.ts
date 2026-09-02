@@ -82,5 +82,31 @@ export async function actualizarCuotasVencidas(
     });
   }
 
+  // Refresh days of delay for existing overdue and in-arrears installments
+  const yaVencidos = await tx.eventoFinanciero.findMany({
+    where: {
+      tipo: TipoEventoFinanciero.CUOTA_PROGRAMADA,
+      estado: { in: [EstadoEventoFinanciero.ATRASADO, EstadoEventoFinanciero.MORA] },
+      credito: {
+        eliminadoEn: null,
+      },
+    },
+    select: {
+      id: true,
+      fechaProgramada: true,
+      diasAtraso: true,
+    },
+  });
+
+  for (const evento of yaVencidos) {
+    const nuevosDias = calcularDiasAtraso(evento.fechaProgramada, hoy);
+    if (nuevosDias !== evento.diasAtraso) {
+      await tx.eventoFinanciero.update({
+        where: { id: evento.id },
+        data: { diasAtraso: nuevosDias },
+      });
+    }
+  }
+
   return eventos.length;
 }
