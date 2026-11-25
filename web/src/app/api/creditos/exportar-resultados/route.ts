@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseCreditFilterParams } from "@/features/creditos/credit-filter-params";
 import { generarReporteExcelCreditos } from "@/features/creditos/credit-export-query";
 import { requireUser } from "@/server/auth/guards";
+import { logEvent } from "@/server/observability/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("[credit-results-export]", error);
+    logEvent("error", "credito.exportacion_fallida", {}, error);
     return NextResponse.json({ ok: false, error: "No se pudo exportar los resultados de créditos." }, { status: 500 });
   }
 }

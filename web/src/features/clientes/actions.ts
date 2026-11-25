@@ -10,6 +10,7 @@ import {
 } from "@/server/auth/scope";
 
 import type { ClienteSelectorOption } from "./types";
+import { logEvent } from "@/server/observability/log";
 
 interface CrearClienteMinimoInput {
   cedula: string;
@@ -164,7 +165,7 @@ export async function crearClienteMinimo(
       };
     }
 
-    console.error("Error al crear cliente mínimo:", error);
+    logEvent("error", "cliente.creacion_fallida", {}, error);
 
     return {
       ok: false,
@@ -259,7 +260,7 @@ export async function actualizarCliente(
       clienteId: id,
     };
   } catch (error) {
-    console.error("Error al actualizar cliente:", error);
+    logEvent("error", "cliente.actualizacion_fallida", { clienteId: id }, error);
 
     return {
       ok: false,

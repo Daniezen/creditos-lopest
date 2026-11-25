@@ -1,0 +1,283 @@
+{
+  "name": "LOPEST - Salud diaria",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000001",
+      "name": "Schedule - Diaria 7:00"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000002",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f0000a1",
+              "name": "baseUrl",
+              "value": "https://CONFIGURAR-DOMINIO-LOPEST",
+              "type": "string"
+            },
+            {
+              "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f0000a2",
+              "name": "telegramChatId",
+              "value": "CONFIGURAR-CHAT-ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        100
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000003",
+      "name": "Set - Config"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.baseUrl.replace(/\\/+$/, '') }}/api/salud",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        100
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000004",
+      "name": "HTTP - GET /api/salud",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Transports, does not decide twice: /api/salud already computed `estado`.\n * This node only turns the HTTP outcome into one alert-ready message.\n *\n * Fails the check when: the request did not return 200, the body is not the\n * expected JSON, or `estado` is not \"ok\" (\"degradado\" = a cron looks late).\n * A network error arrives here too (HTTP node continues on error) with no\n * statusCode, so it is reported as \"sin respuesta\".\n */\nconst res = $input.first().json;\nconst chatId = $('Set - Config').first().json.telegramChatId;\nconst status = Number(res.statusCode ?? 0);\nconst body = res.body && typeof res.body === \"object\" ? res.body : null;\nconst estado = body?.estado ?? \"sin_respuesta\";\n\nconst problems = [];\nif (status !== 200) problems.push(`HTTP ${status || \"sin respuesta\"}`);\nif (!body) problems.push(\"respuesta sin JSON\");\nif (body && body.baseDeDatos?.ok !== true) problems.push(\"base de datos no responde\");\nif (body?.crons?.vencidas?.ok === false) {\n  problems.push(`cron de vencidas atrasado (${body.crons.vencidas.pendientesVencidasFueraDeTolerancia} cuotas pendientes fuera de tolerancia)`);\n}\nif (body?.crons?.driveSincronizacion?.ok === false) {\n  problems.push(`sincronizacion Drive sin correr hace ${body.crons.driveSincronizacion.horasDesdeUltimaVerificacion} h`);\n}\n\nconst ok = status === 200 && estado === \"ok\";\nreturn [{\n  json: {\n    ok,\n    estado,\n    chatId,\n    mensaje: ok\n      ? \"Lopest OK\"\n      : `LOPEST - Salud diaria: ${estado}. ${problems.join(\"; \") || \"revisar /api/salud\"}. Commit: ${body?.version?.commit ?? \"desconocido\"}.`,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        100
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000005",
+      "name": "Code - Evaluar Respuesta"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f0000b1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        100
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000006",
+      "name": "IF - Falla"
+    },
+    {
+      "parameters": {
+        "content": "## LOPEST - Salud diaria\n\nUna vez al día, 7:00 en Bogotá (zona horaria del workflow), después de los crons de madrugada.\n\n1. `Set - Config`: `baseUrl` = dominio público de Lopest; `telegramChatId` = chat que recibe la alerta.\n2. Consulta `GET /api/salud` (público, sin secretos; 3 intentos). Un error de red sigue al nodo de evaluación.\n3. Si no responde 200 con `estado: ok`, avisa por Telegram y marca la ejecución como fallida.\n\n**Credencial:** `Telegram - Avisar Falla` usa la credencial n8n *Telegram Bot Lopest* (token de BotFather). El token nunca va en este JSON.\n\nErrores del propio workflow: *Settings → Error workflow* = «LOPEST - Alertas de errores a Telegram».\n\nSin fallas: silencio.",
+        "height": 420,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -420
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000008",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000009",
+      "name": "Telegram - Avisar Falla",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURAR",
+          "name": "Telegram Bot Lopest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ $('Code - Evaluar Respuesta').first().json.mensaje }}"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "9d3c1a20-4b7e-4f51-8a10-6c2e1f000007",
+      "name": "Stop - Marcar Falla"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule - Diaria 7:00": {
+      "main": [
+        [
+          {
+            "node": "Set - Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Config": {
+      "main": [
+        [
+          {
+            "node": "HTTP - GET /api/salud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - GET /api/salud": {
+      "main": [
+        [
+          {
+            "node": "Code - Evaluar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Evaluar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "IF - Falla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Falla": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Avisar Falla",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Telegram - Avisar Falla": {
+      "main": [
+        [
+          {
+            "node": "Stop - Marcar Falla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timezone": "America/Bogota",
+    "errorWorkflow": "",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": []
+}
