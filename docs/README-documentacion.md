@@ -20,6 +20,7 @@ docs/
     ├── handoff.md                         → Estado del corte, evidencia y acción inmediata
     ├── plan-ejecucion.md                  → Cola ordenada de unidades de trabajo
     ├── operacion.md                       → Runbook operativo, despliegue y entrega segura
+    ├── auditoria-append-only.md           → Despliegue/rollback de la auditoría append-only
     └── backlog-diseno.md                  → Propuestas de diseño y mejoras sin ratificar
 ```
 
@@ -38,6 +39,7 @@ docs/
 | `estado/handoff.md` | Estado del corte, evidencia demostrada y **una** acción inmediata | **Alta** | — |
 | `estado/plan-ejecucion.md` | Cola ordenada de unidades de trabajo pendientes | **Alta** | — |
 | `estado/operacion.md` | Runbook: Docker Compose, despliegue, entrega segura y scripts | Baja | — |
+| `estado/auditoria-append-only.md` | Auditoría y snapshots append-only: despliegue, rollback y riesgos | Media | Pendiente de aplicar |
 | `estado/backlog-diseno.md` | **Propuestas de diseño sin ratificar** | Alta | No es contrato |
 
 ## Precedencia ante contradicción
