@@ -219,6 +219,7 @@ export default async function CreditoDetallePage({
 
           <AbonoForm
             creditoId={credito.id}
+            creditoVersion={credito.actualizadoEn.toISOString()}
             fechaPrestamo={credito.fechaPrestamo}
             todayValue={toDateInputValue(obtenerHoyColombia())}
           />
@@ -237,6 +238,7 @@ export default async function CreditoDetallePage({
 
             <ExtensionTermForm
               creditoId={credito.id}
+              creditoVersion={credito.actualizadoEn.toISOString()}
               reversibleSnapshotId={credito.extensionSnapshots[0]?.id ?? null}
             />
           </div>

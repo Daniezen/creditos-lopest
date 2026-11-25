@@ -9,6 +9,7 @@ import {
   requireMutationUser,
 } from "@/server/auth/scope";
 
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { fieldErrorsOf, parseInput, type FieldErrors } from "@/server/validation/input";
 import type { z } from "zod";
 
@@ -30,6 +31,8 @@ interface ActualizarClienteInput extends CrearClienteMinimoInput {
   id: string;
   carpetaAdjuntosUrl?: string;
   estadoDocumentos?: "FALTAN_DOCUMENTOS" | "DOCUMENTOS_CARGADOS";
+  /** `actualizadoEn.toISOString()` the edit screen loaded (optimistic lock). */
+  version: string;
 }
 
 interface EliminarClienteInput {
@@ -183,7 +186,7 @@ export async function actualizarCliente(
   } catch (error) {
     return invalidInput(error);
   }
-  const { id, ...campos } = data;
+  const { id, version, ...campos } = data;
   const { cedula } = campos;
 
   try {
@@ -210,15 +213,21 @@ export async function actualizarCliente(
       };
     }
 
-    await prisma.cliente.update({
+    // Optimistic lock: write only if the row is still the version the form
+    // loaded. `updateMany` is one UPDATE, so the version check and the write
+    // happen under the same row lock; zero rows means someone else saved
+    // (an edit, a document upload, an owner transfer) after this form loaded.
+    const updated = await prisma.cliente.updateMany({
       where: {
         id,
+        actualizadoEn: updatedAtMatches(version),
       },
       data: {
         ...campos,
         accionPor: user.id,
       },
     });
+    assertVersionClaimed(updated.count);
 
     revalidatePath("/clientes");
     revalidatePath(`/clientes/${id}`);

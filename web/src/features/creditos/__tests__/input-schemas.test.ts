@@ -11,6 +11,9 @@ import { todayInBogota } from "../../../server/validation/input";
 const firstMessage = (result: { success: boolean; error?: { issues: Array<{ message: string }> } }) =>
   result.success ? undefined : result.error?.issues[0]?.message;
 
+const version = "2026-03-01T15:04:05.123Z";
+const lock = { creditoVersion: version, idempotencyKey: "3f1c2b9e-1111-4a2b-9c3d-000000000001" };
+
 const condiciones = {
   fechaPrestamo: "2026-03-01",
   monto: "1.000.000",
@@ -22,15 +25,15 @@ const condiciones = {
 
 describe("registrarAbonoSchema", () => {
   it("parses a typical abono", () => {
-    const parsed = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "$ 250.000", fechaAbono: "2026-01-10" });
+    const parsed = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "$ 250.000", fechaAbono: "2026-01-10", ...lock });
     expect(parsed.montoAbono).toBe(250000);
     expect(parsed.fechaAbono.getTime()).toBe(new Date(2026, 0, 10).getTime());
   });
 
   it("defaults a blank date to today in Bogota, as before", () => {
-    const parsed = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "1000", fechaAbono: "  " });
+    const parsed = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "1000", fechaAbono: "  ", ...lock });
     expect(parsed.fechaAbono.getTime()).toBe(todayInBogota().getTime());
-    const absent = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "1000" });
+    const absent = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "1000", ...lock });
     expect(absent.fechaAbono.getTime()).toBe(todayInBogota().getTime());
   });
 
@@ -44,6 +47,18 @@ describe("registrarAbonoSchema", () => {
     );
   });
 
+  it("requires the credit version and a well-formed operation key", () => {
+    const parsed = registrarAbonoSchema.parse({ creditoId: "c1", montoAbono: "10", ...lock });
+    expect(parsed.creditoVersion.toISOString()).toBe(version);
+    expect(firstMessage(registrarAbonoSchema.safeParse({ creditoId: "c1", montoAbono: "10", idempotencyKey: lock.idempotencyKey }))).toBe(
+      "Falta la versión del registro. Recarga la página e inténtalo de nuevo.",
+    );
+    expect(firstMessage(registrarAbonoSchema.safeParse({ creditoId: "c1", montoAbono: "10", ...lock, creditoVersion: "ayer" }))).toBe(
+      "La versión del registro no es válida. Recarga la página.",
+    );
+    expect(registrarAbonoSchema.safeParse({ creditoId: "c1", montoAbono: "10", ...lock, idempotencyKey: "x'; --" }).success).toBe(false);
+  });
+
   it("validates the reversal reason length", () => {
     expect(reversarAbonoSchema.parse({ creditoId: "c1", abonoEventoId: "e1", motivo: "  " }).motivo).toBeNull();
     expect(firstMessage(reversarAbonoSchema.safeParse({ creditoId: "c1", abonoEventoId: "e1", motivo: "x".repeat(501) }))).toBe(
@@ -54,11 +69,11 @@ describe("registrarAbonoSchema", () => {
 
 describe("extenderPlazoSchema", () => {
   it.each(["1", " 12 ", "60"])("accepts %j", (value) => {
-    expect(extenderPlazoSchema.parse({ creditoId: "c1", cuotasExtra: value }).cuotasExtra).toBe(Number(value));
+    expect(extenderPlazoSchema.parse({ creditoId: "c1", cuotasExtra: value, creditoVersion: version }).cuotasExtra).toBe(Number(value));
   });
 
   it.each(["0", "61", "2.5", "abc", "-1"])("rejects %j with the historical message", (value) => {
-    expect(firstMessage(extenderPlazoSchema.safeParse({ creditoId: "c1", cuotasExtra: value }))).toBe(
+    expect(firstMessage(extenderPlazoSchema.safeParse({ creditoId: "c1", cuotasExtra: value, creditoVersion: version }))).toBe(
       "Ingresa un número entero de cuotas extra entre 1 y 60.",
     );
   });
@@ -110,7 +125,7 @@ describe("crédito schemas", () => {
   });
 
   it("validates edit and soft delete", () => {
-    expect(firstMessage(actualizarCreditoSchema.safeParse({ id: "", form: condiciones }))).toBe("Crédito inválido.");
+    expect(firstMessage(actualizarCreditoSchema.safeParse({ id: "", form: condiciones, version }))).toBe("Crédito inválido.");
     expect(firstMessage(eliminarCreditoSchema.safeParse({ id: "c1", motivo: "corto" }))).toBe(
       "Indica un motivo de eliminación entre 10 y 500 caracteres.",
     );

@@ -8,7 +8,7 @@
  */
 import { z } from "zod";
 
-import { entityId, optionalText } from "@/server/validation/input";
+import { entityId, optionalText, rowVersion } from "@/server/validation/input";
 
 const optionalField = optionalText({ max: 500, tooLong: "Uno de los campos supera 500 caracteres." });
 
@@ -46,6 +46,10 @@ export const actualizarClienteSchema = crearClienteSchema.extend({
     .enum(["FALTAN_DOCUMENTOS", "DOCUMENTOS_CARGADOS"], { error: "El estado de documentos no es válido." })
     .optional()
     .transform((value) => value ?? "FALTAN_DOCUMENTOS"),
+  // `actualizadoEn` the edit screen loaded (optimistic lock). Document
+  // uploads and owner transfers also bump it, so a stale form cannot put back
+  // an old folder link or document state.
+  version: rowVersion,
 });
 
 export const eliminarClienteSchema = z.object({ id: clienteId });

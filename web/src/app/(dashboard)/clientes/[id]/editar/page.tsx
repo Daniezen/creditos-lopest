@@ -51,7 +51,7 @@ export default async function EditarClientePage({
         </Link>
       </section>
 
-      <ClienteForm cliente={cliente} />
+      <ClienteForm cliente={cliente} version={cliente.actualizadoEn.toISOString()} />
     </main>
   );
 }

@@ -79,6 +79,7 @@ export default async function EditarCreditoPage({
 
       <CreditEditForm
         creditoId={credito.id}
+        version={credito.actualizadoEn.toISOString()}
         canEditFinancial={canEditFinancial}
         initialForm={initialForm}
         nota={credito.nota ?? ""}

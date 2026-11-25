@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { calcularSaldoCapitalActual } from "@/features/creditos/current-capital-balance";
 import { toFinancialEventImage, toSnapshotJson, financialImageMatches, type FinancialEventImage } from "@/features/creditos/abonos/snapshot";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { incrementoPlazoMeses, recalcularCuotasSoloInteres } from "./extension-policy";
 import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
@@ -54,6 +55,9 @@ export async function extenderPlazoSoloInteres(
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
+      // Optimistic lock on the credit row: the person decided on the schedule
+      // they saw; any later payment, abono or extension wins.
+      assertVersionClaimed((await tx.credito.updateMany({ where: { id: creditoId, actualizadoEn: updatedAtMatches(input.creditoVersion) }, data: { accionPor: user.id } })).count);
       const credito = await tx.credito.findUnique({ where: { id: creditoId }, include: { eventos: { orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }] }, extensionSnapshots: { where: { revertidoEn: null }, take: 1 } } });
       if (!credito) throw new Error("El crédito no existe.");
       if (credito.estado === EstadoCredito.CANCELADO) throw new Error("No se puede extender un crédito cancelado.");
@@ -108,6 +112,9 @@ export async function reversarExtensionPlazo(
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
+      // Optimistic lock on the credit row: the person decided on the schedule
+      // they saw; any later payment, abono or extension wins.
+      assertVersionClaimed((await tx.credito.updateMany({ where: { id: creditoId, actualizadoEn: updatedAtMatches(input.creditoVersion) }, data: { accionPor: user.id } })).count);
       const snapshot = await tx.extensionPlazoSnapshot.findUnique({ where: { id: snapshotId } });
       if (!snapshot || snapshot.creditoId !== creditoId || snapshot.revertidoEn) throw new Error("La extensión no existe, no pertenece al crédito o ya fue revertida.");
       const expectedExisting = snapshot.eventosDespues as unknown as FinancialEventImage[];

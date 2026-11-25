@@ -26,7 +26,7 @@ describe("crearClienteSchema", () => {
 });
 
 describe("actualizarClienteSchema", () => {
-  const base = { id: "cl1", cedula: "1", nombre: "Ana" };
+  const base = { id: "cl1", cedula: "1", nombre: "Ana", version: "2026-03-01T15:04:05.123Z" };
 
   it("defaults the document state like the action did", () => {
     expect(actualizarClienteSchema.parse(base).estadoDocumentos).toBe("FALTAN_DOCUMENTOS");
@@ -43,6 +43,14 @@ describe("actualizarClienteSchema", () => {
     expect(actualizarClienteSchema.parse({ ...base, carpetaAdjuntosUrl: "" }).carpetaAdjuntosUrl).toBeNull();
     expect(firstMessage(actualizarClienteSchema.safeParse({ ...base, carpetaAdjuntosUrl: "javascript:alert(1)" }))).toBe(
       "El enlace de la carpeta debe empezar por http:// o https://.",
+    );
+  });
+
+  it("requires the version the form loaded", () => {
+    const { version: _omit, ...sinVersion } = base;
+    void _omit;
+    expect(firstMessage(actualizarClienteSchema.safeParse(sinVersion))).toBe(
+      "Falta la versión del registro. Recarga la página e inténtalo de nuevo.",
     );
   });
 

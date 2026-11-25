@@ -5,10 +5,24 @@
  */
 import { z } from "zod";
 
-import { entityId, moneyInput, optionalText, pastOrTodayDateInput, todayInBogota } from "@/server/validation/input";
+import {
+  entityId,
+  moneyInput,
+  operationKey,
+  optionalText,
+  pastOrTodayDateInput,
+  rowVersion,
+  todayInBogota,
+} from "@/server/validation/input";
 
 /** FormData fields read by `registrarAbonoCapital`. */
-export const REGISTRAR_ABONO_FIELDS = ["creditoId", "montoAbono", "fechaAbono"] as const;
+export const REGISTRAR_ABONO_FIELDS = [
+  "creditoId",
+  "montoAbono",
+  "fechaAbono",
+  "creditoVersion",
+  "idempotencyKey",
+] as const;
 
 export const registrarAbonoSchema = z.object({
   creditoId: entityId("creditoId"),
@@ -21,6 +35,11 @@ export const registrarAbonoSchema = z.object({
     (value) => (typeof value === "string" && value.trim() ? value : undefined),
     pastOrTodayDateInput("la fecha del abono", "La fecha del abono no puede estar en el futuro.").optional(),
   ).transform((date) => date ?? todayInBogota()),
+  // Version of the credit the person saw; the abono is computed against that
+  // balance, so a newer credit (another payment, abono or extension) must win.
+  creditoVersion: rowVersion,
+  // One key per logical abono, reused on double click / network retry.
+  idempotencyKey: operationKey,
 });
 
 export type RegistrarAbonoInput = z.output<typeof registrarAbonoSchema>;

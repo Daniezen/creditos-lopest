@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
 import { puedeBorrarseCredito } from "@/features/creditos/deletion-policy";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { fieldErrorsOf, parseInput, type FieldErrors } from "@/server/validation/input";
 import type { z } from "zod";
@@ -29,6 +30,8 @@ interface ActualizarCreditoInput {
   id: string;
   form: SimulatorFormState;
   nota?: string;
+  /** `actualizadoEn.toISOString()` the edit screen loaded (optimistic lock). */
+  version: string;
 }
 
 interface EliminarCreditoInput {
@@ -77,13 +80,23 @@ export async function actualizarCredito(
   } catch (error) {
     return invalidInput(error);
   }
-  const { id, nota } = parsed;
+  const { id, nota, version } = parsed;
 
   try {
     const { user } = await requireCreditoAccess(id);
     assertCanMutate(user);
 
     const result = await prisma.$transaction(async (tx) => {
+      // Optimistic lock: claim the version the screen loaded before reading
+      // anything. A concurrent edit, payment, abono or extension has moved
+      // `actualizadoEn`, so the claim matches nothing and the edit aborts
+      // instead of regenerating the schedule from stale conditions.
+      const claimed = await tx.credito.updateMany({
+        where: { id, actualizadoEn: updatedAtMatches(version) },
+        data: { accionPor: user.id },
+      });
+      assertVersionClaimed(claimed.count);
+
       const credito = await tx.credito.findUnique({
         where: {
           id,

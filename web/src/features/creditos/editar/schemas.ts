@@ -4,7 +4,7 @@
 import { z } from "zod";
 
 import { condicionesCreditoSchema } from "@/features/creditos/crear/schemas";
-import { entityId, optionalText } from "@/server/validation/input";
+import { entityId, optionalText, rowVersion } from "@/server/validation/input";
 
 const creditoId = z
   .string({ error: "Crédito inválido." })
@@ -18,6 +18,8 @@ export const actualizarCreditoSchema = z.object({
   // Creation caps notes at 1000; edits accept up to 5000 so notes imported
   // from the legacy sheet, which had no cap, never block an edit.
   nota: optionalText({ max: 5000, tooLong: "La nota no puede superar 5000 caracteres." }),
+  // `actualizadoEn` the edit screen loaded (optimistic lock).
+  version: rowVersion,
 });
 
 export const eliminarCreditoSchema = z.object({

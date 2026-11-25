@@ -248,6 +248,44 @@ export function pastOrTodayDateInput(label: string, futureMessage: string) {
   return dateInput(label).refine((date) => date.getTime() <= todayInBogota().getTime(), { error: futureMessage });
 }
 
+// ---------------------------------------------------------------------------
+// Optimistic lock version and idempotency
+// ---------------------------------------------------------------------------
+
+const VERSION_MESSAGE = "Falta la versión del registro. Recarga la página e inténtalo de nuevo.";
+
+/**
+ * The row version a form read (`actualizadoEn.toISOString()`), echoed back so
+ * the service can refuse to overwrite a newer row. See
+ * `@/server/optimistic-lock`.
+ */
+export const rowVersion = z
+  .string({ error: VERSION_MESSAGE })
+  .trim()
+  .min(1, VERSION_MESSAGE)
+  .max(40, "La versión del registro no es válida. Recarga la página.")
+  .transform((value, context) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      context.addIssue({ code: "custom", message: "La versión del registro no es válida. Recarga la página." });
+      return z.NEVER;
+    }
+    return date;
+  });
+
+const OPERATION_KEY_MESSAGE = "No se pudo identificar la operación. Recarga la página e inténtalo de nuevo.";
+
+/**
+ * Client-generated key identifying one logical submission (a UUID from
+ * `crypto.randomUUID()`), reused verbatim on double clicks and retries so the
+ * server can recognise a replay. Restricted to the UUID alphabet because it is
+ * embedded in a unique business code.
+ */
+export const operationKey = z
+  .string({ error: OPERATION_KEY_MESSAGE })
+  .trim()
+  .regex(/^[A-Za-z0-9-]{8,64}$/, OPERATION_KEY_MESSAGE);
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
