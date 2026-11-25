@@ -18,6 +18,8 @@ interface DashboardShellUser {
 interface DashboardShellProps {
   children: React.ReactNode;
   user: DashboardShellUser;
+  /** Current platform version from CHANGELOG.md; null hides the footer link. */
+  version: string | null;
 }
 
 /**
@@ -26,7 +28,7 @@ interface DashboardShellProps {
  * - overlay drawer between 768 and 1199 px;
  * - bottom navigation below 768 px.
  */
-export function DashboardShell({ children, user }: DashboardShellProps) {
+export function DashboardShell({ children, user, version }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
   return (
     <div className="min-h-screen bg-[#f7f3ff] min-[1200px]:flex">
       <div className={styles.desktopSidebar}>
-        <DashboardSidebar />
+        <DashboardSidebar version={version} />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -61,7 +63,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         <main className="min-w-0 pb-28 md:pb-0">{children}</main>
       </div>
 
-      <MobileBottomNav />
+      <MobileBottomNav version={version} />
 
       {drawerOpen ? (
         <div className={styles.drawerLayer}>
@@ -80,6 +82,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
           >
             <DashboardSidebar
               mode="drawer"
+              version={version}
               onNavigate={() => setDrawerOpen(false)}
               onClose={() => setDrawerOpen(false)}
             />

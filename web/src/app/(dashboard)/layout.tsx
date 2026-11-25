@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { requireUser } from "@/server/auth/guards";
+import { getPlatformVersion } from "@/server/versiones/versiones.service";
 
 function resolveLoginProfileImage(
   email: string,
@@ -42,10 +43,11 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
-  const user = await requireUser();
+  const [user, version] = await Promise.all([requireUser(), getPlatformVersion()]);
 
   return (
     <DashboardShell
+      version={version}
       user={{
         ...user,
         image: resolveLoginProfileImage(user.email, user.image),

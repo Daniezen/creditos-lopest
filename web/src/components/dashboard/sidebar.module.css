@@ -65,6 +65,11 @@
   padding: var(--ds-space-3);
 }
 
+/* Version link sits under sign-out: metadata, never competing with actions. */
+.version {
+  margin-top: var(--ds-space-1);
+}
+
 @media (max-width: 1440px) {
   .sidebar {
     width: 250px;
