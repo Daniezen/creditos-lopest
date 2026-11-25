@@ -6,20 +6,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 import { requireRole } from "@/server/auth/guards";
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
-}
-
-function normalizeOptional(value: FormDataEntryValue | null): string | null {
-  return typeof value === "string" ? value.trim() || null : null;
-}
+import { TRANSFER_CREDITO_FIELDS, transferirCreditoSchema } from "@/features/transferencias/schemas";
+import { formFields, parseInput } from "@/server/validation/input";
 
 /**
  * Transfiere el propietario operativo de un credito individual.
@@ -39,9 +27,7 @@ export async function transferirCreditoOwnerAction(
 ): Promise<void> {
   try {
     const admin = await requireRole("ADMIN");
-    const creditoId = leerCampoObligatorio(formData, "creditoId");
-    const targetOwnerUserId = leerCampoObligatorio(formData, "targetOwnerUserId");
-    const reason = normalizeOptional(formData.get("reason"));
+    const { creditoId, targetOwnerUserId, reason } = parseInput(transferirCreditoSchema, formFields(formData, TRANSFER_CREDITO_FIELDS));
 
     const result = await prisma.$transaction(async (tx) => {
       const credito = await tx.credito.findUnique({

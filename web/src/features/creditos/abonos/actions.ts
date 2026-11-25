@@ -14,36 +14,16 @@ import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { obtenerHoyColombia } from "@/lib/formatters";
 import { financialImageChanged, toFinancialEventImage, toSnapshotJson } from "./snapshot";
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
 import type { AbonoFormState } from "./abono-state";
+import { REGISTRAR_ABONO_FIELDS, registrarAbonoSchema } from "./schemas";
 
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
 
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
-}
-
-function parseMontoInput(value: string): number {
-  const cleaned = value
-    .trim()
-    .replace(/\$/g, "")
-    .replace(/\s/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-
-  const parsed = Number(cleaned);
-
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
 
 function esEstadoPendienteOperativo(estado: EstadoEventoFinanciero): boolean {
   return (
@@ -154,34 +134,27 @@ function normalizarFechaSinHora(fecha: Date): Date {
   return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
 }
 
-function parseFechaAbono(value: unknown, hoy: Date): Date {
-  if (typeof value !== "string" || !value.trim()) {
-    return hoy;
-  }
+/** Business code of an abono: credit code + the submission's idempotency key. */
+function codigoAbono(codigoCredito: string, idempotencyKey: string): string {
+  return `${codigoCredito}-ABX-${idempotencyKey}`;
+}
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-  if (!match) {
-    throw new Error("La fecha del abono no tiene un formato válido (AAAA-MM-DD).");
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const parsed = new Date(year, month, day);
-
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month ||
-    parsed.getDate() !== day
-  ) {
-    throw new Error("La fecha del abono no es una fecha válida en el calendario.");
-  }
-
-  if (parsed.getTime() > hoy.getTime()) {
-    throw new Error("La fecha del abono no puede estar en el futuro.");
-  }
-
-  return parsed;
+/** The abono a previous attempt with this key registered on this credit, if any. */
+async function buscarAbonoPorLlave(
+  tx: Prisma.TransactionClient,
+  creditoId: string,
+  idempotencyKey: string,
+) {
+  const credito = await tx.credito.findUnique({ where: { id: creditoId }, select: { codigo: true } });
+  if (!credito) return null;
+  return tx.eventoFinanciero.findFirst({
+    where: {
+      codigo: codigoAbono(credito.codigo, idempotencyKey),
+      creditoId,
+      tipo: TipoEventoFinanciero.ABONO_CAPITAL,
+    },
+    select: { capitalPagado: true, fechaPago: true },
+  });
 }
 
 export async function registrarAbonoCapital(
@@ -190,20 +163,46 @@ export async function registrarAbonoCapital(
 ): Promise<AbonoFormState> {
   let creditoId = "";
   try {
-    creditoId = leerCampoObligatorio(formData, "creditoId");
-    const montoRaw = leerCampoObligatorio(formData, "montoAbono");
-    const montoAbono = parseMontoInput(montoRaw);
-    const hoy = obtenerHoyColombia();
-    const fechaAbono = parseFechaAbono(formData.get("fechaAbono"), hoy);
+    // Shape, amount and Bogota date are validated before any I/O; the
+    // financial checks against the credit's balance stay in the transaction.
+    const input = parseInput(registrarAbonoSchema, formFields(formData, REGISTRAR_ABONO_FIELDS));
+    creditoId = input.creditoId;
+    const { montoAbono, fechaAbono, creditoVersion, idempotencyKey } = input;
 
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
 
-    if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
-      throw new Error("Ingresa un monto de abono válido mayor a cero.");
-    }
+    const outcome = await prisma.$transaction(async (tx) => {
+      // Optimistic lock on the credit row. The claim is one UPDATE, so it
+      // also serialises concurrent abonos on this credit: the second waits
+      // for the first to commit, then matches nothing because the first
+      // moved `actualizadoEn`.
+      const claimed = await tx.credito.updateMany({
+        where: { id: creditoId, actualizadoEn: updatedAtMatches(creditoVersion) },
+        data: { accionPor: user.id },
+      });
 
-    await prisma.$transaction(async (tx) => {
+      if (claimed.count !== 1) {
+        // A lost claim is either a replay of this same abono (double click,
+        // network retry: same idempotency key, stale version) or a real
+        // concurrent change. Under READ COMMITTED this query already sees
+        // the abono the winning transaction committed.
+        const previo = await buscarAbonoPorLlave(tx, creditoId, idempotencyKey);
+        if (!previo) assertVersionClaimed(claimed.count);
+        if (
+          previo &&
+          (Number(previo.capitalPagado) !== montoAbono || previo.fechaPago?.getTime() !== fechaAbono.getTime())
+        ) {
+          // Same key, different amount or date: the first attempt went
+          // through (its response was lost) and the person then changed the
+          // form. Never apply a second abono silently under the same key.
+          throw new Error(
+            `Esta operación ya registró un abono por $${toMoneyDecimalString(Number(previo.capitalPagado))}. Recarga la página para ver el saldo actual.`,
+          );
+        }
+        return "REPETIDO" as const;
+      }
+
       const credito = await tx.credito.findUnique({
         where: {
           id: creditoId,
@@ -265,7 +264,10 @@ export async function registrarAbonoCapital(
 
       const abonoCreado = await tx.eventoFinanciero.create({
         data: {
-          codigo: `${credito.codigo}-ABX-${Date.now()}`,
+          // The idempotency key makes the code deterministic per logical
+          // abono; `codigo` is UNIQUE, so even a path that bypassed the lock
+          // could not insert the same abono twice.
+          codigo: codigoAbono(credito.codigo, idempotencyKey),
           creditoId: credito.id,
           numeroCuota: null,
           tipo: TipoEventoFinanciero.ABONO_CAPITAL,
@@ -339,6 +341,8 @@ export async function registrarAbonoCapital(
           creadoPor: user.id,
         },
       });
+
+      return "REGISTRADO" as const;
     });
 
     revalidatePath("/creditos");
@@ -346,12 +350,16 @@ export async function registrarAbonoCapital(
 
     return {
       ok: true,
-      message: "Abono extraordinario a capital registrado correctamente.",
+      message:
+        outcome === "REPETIDO"
+          ? "El abono ya estaba registrado; no se aplicó dos veces."
+          : "Abono extraordinario a capital registrado correctamente.",
     };
   } catch (error) {
     return {
       ok: false,
       message: error instanceof Error ? error.message : "No se pudo registrar el abono.",
+      fieldErrors: fieldErrorsOf(error),
     };
   }
 }

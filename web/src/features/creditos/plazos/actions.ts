@@ -12,9 +12,12 @@ import { prisma } from "@/lib/prisma";
 import { calcularSaldoCapitalActual } from "@/features/creditos/current-capital-balance";
 import { toFinancialEventImage, toSnapshotJson, financialImageMatches, type FinancialEventImage } from "@/features/creditos/abonos/snapshot";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { incrementoPlazoMeses, recalcularCuotasSoloInteres } from "./extension-policy";
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
 import type { ExtensionTermState } from "./extension-state";
+import { EXTENDER_PLAZO_FIELDS, extenderPlazoSchema, REVERSAR_EXTENSION_FIELDS, reversarExtensionSchema } from "./schemas";
 
 interface SnapshotCreditImage {
   plazoMeses: string;
@@ -23,15 +26,6 @@ interface SnapshotCreditImage {
 }
 
 function money(value: number): string { return value.toFixed(2); }
-function required(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  if (typeof value !== "string" || !value.trim()) throw new Error(`Falta el campo obligatorio ${name}.`);
-  return value.trim();
-}
-function optional(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value.trim() : "";
-}
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "No se pudo completar la operación.";
 }
@@ -55,14 +49,15 @@ export async function extenderPlazoSoloInteres(
 ): Promise<ExtensionTermState> {
   let creditoId = "";
   try {
-    creditoId = required(formData, "creditoId");
-    const cuotasExtra = Number(required(formData, "cuotasExtra"));
-    if (!Number.isInteger(cuotasExtra) || cuotasExtra <= 0 || cuotasExtra > 60) {
-      throw new Error("Ingresa un número entero de cuotas extra entre 1 y 60.");
-    }
+    const input = parseInput(extenderPlazoSchema, formFields(formData, EXTENDER_PLAZO_FIELDS));
+    creditoId = input.creditoId;
+    const { cuotasExtra } = input;
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
+      // Optimistic lock on the credit row: the person decided on the schedule
+      // they saw; any later payment, abono or extension wins.
+      assertVersionClaimed((await tx.credito.updateMany({ where: { id: creditoId, actualizadoEn: updatedAtMatches(input.creditoVersion) }, data: { accionPor: user.id } })).count);
       const credito = await tx.credito.findUnique({ where: { id: creditoId }, include: { eventos: { orderBy: [{ numeroCuota: "asc" }, { creadoEn: "asc" }] }, extensionSnapshots: { where: { revertidoEn: null }, take: 1 } } });
       if (!credito) throw new Error("El crédito no existe.");
       if (credito.estado === EstadoCredito.CANCELADO) throw new Error("No se puede extender un crédito cancelado.");
@@ -100,7 +95,7 @@ export async function extenderPlazoSoloInteres(
     revalidatePath("/creditos"); revalidatePath(`/creditos/${creditoId}`);
     return { ok: true, message: "El plazo se extendió correctamente." };
   } catch (error) {
-    return { ok: false, message: errorMessage(error) };
+    return { ok: false, message: errorMessage(error), fieldErrors: fieldErrorsOf(error) };
   }
 }
 
@@ -110,13 +105,16 @@ export async function reversarExtensionPlazo(
 ): Promise<ExtensionTermState> {
   let creditoId = "";
   try {
-    creditoId = required(formData, "creditoId");
-    const snapshotId = required(formData, "snapshotId");
-    const reason = optional(formData, "motivo");
-    if (reason.length > 500) throw new Error("El motivo no puede superar 500 caracteres.");
+    const input = parseInput(reversarExtensionSchema, formFields(formData, REVERSAR_EXTENSION_FIELDS));
+    creditoId = input.creditoId;
+    const { snapshotId } = input;
+    const reason = input.motivo;
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
+      // Optimistic lock on the credit row: the person decided on the schedule
+      // they saw; any later payment, abono or extension wins.
+      assertVersionClaimed((await tx.credito.updateMany({ where: { id: creditoId, actualizadoEn: updatedAtMatches(input.creditoVersion) }, data: { accionPor: user.id } })).count);
       const snapshot = await tx.extensionPlazoSnapshot.findUnique({ where: { id: snapshotId } });
       if (!snapshot || snapshot.creditoId !== creditoId || snapshot.revertidoEn) throw new Error("La extensión no existe, no pertenece al crédito o ya fue revertida.");
       const expectedExisting = snapshot.eventosDespues as unknown as FinancialEventImage[];
@@ -145,6 +143,6 @@ export async function reversarExtensionPlazo(
     revalidatePath("/creditos"); revalidatePath(`/creditos/${creditoId}`);
     return { ok: true, message: "La última extensión se revirtió correctamente." };
   } catch (error) {
-    return { ok: false, message: errorMessage(error) };
+    return { ok: false, message: errorMessage(error), fieldErrors: fieldErrorsOf(error) };
   }
 }

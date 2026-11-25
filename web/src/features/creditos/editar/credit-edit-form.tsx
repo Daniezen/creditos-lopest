@@ -14,6 +14,8 @@ import type { SimulatorFormState } from "@/features/simulador-creditos/types";
 
 interface CreditEditFormProps {
   creditoId: string;
+  /** `credito.actualizadoEn.toISOString()` as loaded (optimistic lock). */
+  version: string;
   canEditFinancial: boolean;
   initialForm: SimulatorFormState;
   nota: string;
@@ -30,6 +32,7 @@ const TIPOS: TipoAmortizacion[] = ["Amortización Fija", "Solo Interés"];
 
 export function CreditEditForm({
   creditoId,
+  version,
   canEditFinancial,
   initialForm,
   nota,
@@ -60,6 +63,7 @@ export function CreditEditForm({
         id: creditoId,
         form,
         nota: note,
+        version,
       });
 
       if (!result.ok) {

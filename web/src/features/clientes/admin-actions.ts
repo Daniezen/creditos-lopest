@@ -6,20 +6,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 import { requireRole } from "@/server/auth/guards";
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
-}
-
-function normalizeOptional(value: FormDataEntryValue | null): string | null {
-  return typeof value === "string" ? value.trim() || null : null;
-}
+import { TRANSFER_CLIENTE_FIELDS, transferirClienteSchema } from "@/features/transferencias/schemas";
+import { formFields, parseInput } from "@/server/validation/input";
 
 /**
  * Transfiere el propietario principal/documental de un cliente completo.
@@ -35,9 +23,7 @@ export async function transferirClienteOwnerAction(
 ): Promise<void> {
   try {
     const admin = await requireRole("ADMIN");
-    const clienteId = leerCampoObligatorio(formData, "clienteId");
-    const targetOwnerUserId = leerCampoObligatorio(formData, "targetOwnerUserId");
-    const reason = normalizeOptional(formData.get("reason"));
+    const { clienteId, targetOwnerUserId, reason } = parseInput(transferirClienteSchema, formFields(formData, TRANSFER_CLIENTE_FIELDS));
 
     const result = await prisma.$transaction(async (tx) => {
       const cliente = await tx.cliente.findUnique({

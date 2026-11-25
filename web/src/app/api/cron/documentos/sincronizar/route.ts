@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { entityId } from "@/server/validation/input";
 import {
   reconcileClientDocuments,
   type ReconcileClientDocumentsResult,
@@ -18,6 +20,23 @@ type CronReconciliationResult =
       error: string;
     };
 
+/**
+ * n8n posts `{ cursor?, limit? }`. An empty or non-JSON body still means
+ * "first page, default size" (the `catch` above), and an out-of-range limit is
+ * still clamped by `normalizeLimit`; what the schema refuses is a cursor that
+ * is not an id, which Prisma would otherwise receive verbatim.
+ */
+const cronBodySchema = z.preprocess(
+  // A JSON body that is not an object (`null`, `[]`, `"x"`) keeps the old
+  // "use defaults" behaviour.
+  (value) => (value !== null && typeof value === "object" && !Array.isArray(value) ? value : {}),
+  z.object({
+    cursor: entityId("cursor").optional(),
+    // Non-numeric limits used to fall back to the default; they still do.
+    limit: z.unknown().transform((value) => (typeof value === "number" ? value : undefined)),
+  }),
+);
+
 const DEFAULT_BATCH_SIZE = 10;
 const MAX_BATCH_SIZE = 25;
 
@@ -28,10 +47,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      cursor?: string;
-      limit?: number;
-    };
+    const parsedBody = cronBodySchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { ok: false, error: parsedBody.error.issues[0]?.message ?? "Cuerpo inválido." },
+        { status: 400 },
+      );
+    }
+    const body = parsedBody.data;
     const limit = normalizeLimit(body.limit);
     const clientes = await prisma.cliente.findMany({
       where: {

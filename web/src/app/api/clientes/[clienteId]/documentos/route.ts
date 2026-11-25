@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 import { reconcileClientDocuments } from "@/server/drive/client-documents-reconciliation.service";
+import { entityId } from "@/server/validation/input";
 import {
   trashDriveFile,
   uploadClientDocumentToDrive,
@@ -20,6 +22,8 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
+const clienteIdParamSchema = z.object({ clienteId: entityId("clienteId") });
+
 interface RouteContext {
   params: Promise<{ clienteId: string }>;
 }
@@ -31,6 +35,9 @@ export async function POST(request: Request, context: RouteContext) {
   const { clienteId } = await context.params;
 
   try {
+    // Validate the id read above; it stays usable by the failure logs either way.
+    const params = clienteIdParamSchema.safeParse({ clienteId });
+    if (!params.success) return errorResponse("Cliente inválido.", 400);
     const { user } = await requireClienteAccess(clienteId);
     assertCanMutate(user);
 

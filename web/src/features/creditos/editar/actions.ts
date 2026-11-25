@@ -7,7 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { eventoTieneActividadFinanciera } from "@/features/creditos/financial-activity";
 import { puedeBorrarseCredito } from "@/features/creditos/deletion-policy";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
+import { fieldErrorsOf, parseInput, type FieldErrors } from "@/server/validation/input";
+import type { z } from "zod";
 
 import {
   mapEstadoCuotaToPrisma,
@@ -21,10 +24,14 @@ import {
 
 import type { SimulatorFormState } from "@/features/simulador-creditos/types";
 
+import { actualizarCreditoSchema, eliminarCreditoSchema } from "./schemas";
+
 interface ActualizarCreditoInput {
   id: string;
   form: SimulatorFormState;
   nota?: string;
+  /** `actualizadoEn.toISOString()` the edit screen loaded (optimistic lock). */
+  version: string;
 }
 
 interface EliminarCreditoInput {
@@ -41,7 +48,17 @@ type CreditMutationResult =
   | {
       ok: false;
       error: string;
+      fieldErrors?: FieldErrors;
     };
+
+/** Result for a payload that failed its schema, before any I/O. */
+function invalidInput(error: unknown): CreditMutationResult {
+  return {
+    ok: false,
+    error: error instanceof Error ? error.message : "Los datos del crédito no son válidos.",
+    fieldErrors: fieldErrorsOf(error),
+  };
+}
 
 function eventoPuedeRegenerarse(evento: {
   tipo: string;
@@ -57,20 +74,29 @@ function eventoPuedeRegenerarse(evento: {
 export async function actualizarCredito(
   input: ActualizarCreditoInput,
 ): Promise<CreditMutationResult> {
-  const id = input.id.trim();
-
-  if (!id) {
-    return {
-      ok: false,
-      error: "Crédito inválido.",
-    };
+  let parsed: z.output<typeof actualizarCreditoSchema>;
+  try {
+    parsed = parseInput(actualizarCreditoSchema, input);
+  } catch (error) {
+    return invalidInput(error);
   }
+  const { id, nota, version } = parsed;
 
   try {
     const { user } = await requireCreditoAccess(id);
     assertCanMutate(user);
 
     const result = await prisma.$transaction(async (tx) => {
+      // Optimistic lock: claim the version the screen loaded before reading
+      // anything. A concurrent edit, payment, abono or extension has moved
+      // `actualizadoEn`, so the claim matches nothing and the edit aborts
+      // instead of regenerating the schedule from stale conditions.
+      const claimed = await tx.credito.updateMany({
+        where: { id, actualizadoEn: updatedAtMatches(version) },
+        data: { accionPor: user.id },
+      });
+      assertVersionClaimed(claimed.count);
+
       const credito = await tx.credito.findUnique({
         where: {
           id,
@@ -109,7 +135,7 @@ export async function actualizarCredito(
             id,
           },
           data: {
-            nota: input.nota?.trim() || null,
+            nota,
             accionPor: user.id,
           },
         });
@@ -119,7 +145,7 @@ export async function actualizarCredito(
         };
       }
 
-      const condiciones = normalizarCondicionesCredito(input.form);
+      const condiciones = normalizarCondicionesCredito(parsed.form);
 
       const cronograma = generarCronogramaSimulado({
         fechaPrestamo: condiciones.fechaPrestamo,
@@ -156,7 +182,7 @@ export async function actualizarCredito(
           tipoAmortizacion: mapTipoAmortizacionToPrisma(
             condiciones.tipoAmortizacion,
           ),
-          nota: input.nota?.trim() || null,
+          nota,
           accionPor: user.id,
         },
       });
@@ -215,14 +241,13 @@ export async function actualizarCredito(
 export async function eliminarCredito(
   input: EliminarCreditoInput,
 ): Promise<CreditMutationResult> {
-  const id = input.id.trim();
-
-  if (!id) {
-    return {
-      ok: false,
-      error: "Crédito inválido.",
-    };
+  let parsed: z.output<typeof eliminarCreditoSchema>;
+  try {
+    parsed = parseInput(eliminarCreditoSchema, input);
+  } catch (error) {
+    return invalidInput(error);
   }
+  const { id, motivo } = parsed;
 
   try {
     const { user } = await requireCreditoAccess(id);
@@ -250,14 +275,6 @@ export async function eliminarCredito(
 
       if (!credito) {
         throw new Error("El crédito no existe.");
-      }
-
-      const motivo = input.motivo.trim();
-
-      if (motivo.length < 10 || motivo.length > 500) {
-        throw new Error(
-          "Indica un motivo de eliminación entre 10 y 500 caracteres.",
-        );
       }
 
       if (!puedeBorrarseCredito(credito.eventos)) {

@@ -7,6 +7,8 @@ import { AlertTriangle, Save, Trash2 } from "lucide-react";
 import { actualizarCliente, eliminarCliente } from "../actions";
 
 interface ClienteFormProps {
+  /** `cliente.actualizadoEn.toISOString()` as loaded (optimistic lock). */
+  version: string;
   cliente: {
     id: string;
     cedula: string;
@@ -22,7 +24,7 @@ interface ClienteFormProps {
   };
 }
 
-export function ClienteForm({ cliente }: ClienteFormProps) {
+export function ClienteForm({ cliente, version }: ClienteFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export function ClienteForm({ cliente }: ClienteFormProps) {
       const result = await actualizarCliente({
         id: cliente.id,
         ...form,
+        version,
       });
 
       if (!result.ok) {

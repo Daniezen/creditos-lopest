@@ -6,10 +6,12 @@ import { EstadoCredito, EstadoEventoFinanciero, TipoEventoFinanciero } from "@pr
 import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
+import { formFields, parseInput } from "@/server/validation/input";
 
 import { isAbonoReversible } from "./reversibility";
 import { puedeRevertirAbonoRecalculando, recalcularSoloInteresTrasReversion } from "./recalculated-reversal-policy";
 import type { FinancialEventImage } from "./snapshot";
+import { REVERSAR_ABONO_FIELDS, reversarAbonoSchema } from "./schemas";
 
 interface SnapshotCredit {
   estado: EstadoCredito;
@@ -18,10 +20,10 @@ interface SnapshotCredit {
 
 /** Restores only installments changed by the abono and preserves unrelated payments. */
 export async function reversarAbonoCapital(formData: FormData): Promise<void> {
-  const creditoId = required(formData, "creditoId");
-  const abonoEventoId = required(formData, "abonoEventoId");
-  const motivo = optional(formData, "motivo");
-  if (motivo.length > 500) throw new Error("El motivo no puede superar 500 caracteres.");
+  const { creditoId, abonoEventoId, motivo } = parseInput(
+    reversarAbonoSchema,
+    formFields(formData, REVERSAR_ABONO_FIELDS),
+  );
 
   const { user } = await requireCreditoAccess(creditoId);
   assertCanMutate(user);
@@ -136,17 +138,4 @@ export async function reversarAbonoCapital(formData: FormData): Promise<void> {
 
   revalidatePath("/creditos");
   revalidatePath(`/creditos/${creditoId}`);
-}
-
-function required(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-  return value.trim();
-}
-
-function optional(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value.trim() : "";
 }
