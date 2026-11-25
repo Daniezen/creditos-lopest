@@ -5,7 +5,23 @@ Versiones de Lopest Créditos. Cada versión agrupa sus cambios por módulo y se
 ## [Sin publicar]
 ### General
 - Añadida la versión de la plataforma al pie del menú lateral, que abre Novedades: la lista de versiones con lo que cambió en cada módulo.
+- Mejorada la seguridad de la aplicación: el navegador recibe protecciones adicionales y cualquier página nueva queda privada por defecto.
+### Clientes
+- Mejorados los formularios de clientes: los datos se revisan antes de guardar y los errores se muestran junto a cada campo.
+- Añadido el aviso cuando otra persona modificó el mismo cliente mientras lo editabas, para no sobrescribir sus cambios.
+### Créditos
+- Mejorados los formularios de créditos, pagos, abonos y plazos: los datos se revisan antes de guardar y los errores se muestran junto a cada campo.
+- Añadido el aviso cuando otra persona modificó el mismo crédito mientras lo editabas, para no sobrescribir sus cambios.
+- Corregido el registro doble de un abono al hacer doble clic o al reintentar con mala conexión.
+### Reportes
+- Cambiadas las gráficas de evolución y proyección a Apache ECharts, más nítidas y adaptadas al tamaño de la pantalla.
 ### Técnico
+- Sustituido Recharts por Apache ECharts 6.0.0 detrás del componente único `Chart` de `web/src/design-system/`, con tema construido desde los tokens.
+- Añadidas cabeceras de seguridad (HSTS, CSP base, sin `x-powered-by`), comparación de secretos de cron en tiempo constante y `src/proxy.ts` con rutas públicas explícitas (default-deny).
+- Añadidos el logger estructurado `server/observability/log.ts`, el endpoint público `/api/salud` y los flujos n8n de salud diaria y alertas por Telegram (sin importar).
+- Añadida la migración que hace append-only `audit_logs` y los snapshots de abonos y plazos (pendiente de aplicar en producción).
+- Añadidos `scripts/operacion/backup-db.sh` y `prueba-restauracion.sh`, con su runbook en `docs/estado/operacion.md` §9 (cron pendiente de activar).
+- Añadida validación con zod en Server Actions y route handlers, bloqueo optimista sobre `updatedAt` e idempotencia en el registro de abonos.
 - Añadido el sistema de versiones: `web/CHANGELOG.md` como fuente única, el parser `features/versiones/changelog-format.ts` (sin imports, ejecutable por Node con type stripping), el validador `scripts/versiones/check-changelog.mjs` antes de `next build` y el publicador `pnpm version:publicar`. La imagen copia `CHANGELOG.md` junto a `server.js`, y la ruta `/novedades` lo lee en servidor; la sección Técnico y el bloque sin publicar solo llegan a ADMIN.
 
 ## [1.0.0] - 2026-09-02
