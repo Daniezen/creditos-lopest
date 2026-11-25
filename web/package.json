@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/versiones/check-changelog.mjs && next build",
+    "version:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/versiones/check-changelog.mjs",
+    "version:publicar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/versiones/publicar-version.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

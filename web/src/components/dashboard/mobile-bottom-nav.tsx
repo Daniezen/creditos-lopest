@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { BarChart3, LogOut, MoreHorizontal } from "lucide-react";
 import { signOut } from "next-auth/react";
 
+import { VersionFooterLink } from "@/components/versiones/version-footer-link";
 import { dashboardNavigation } from "@/config/navigation";
 
 /**
@@ -13,7 +14,12 @@ import { dashboardNavigation } from "@/config/navigation";
  * actions into a restrained bottom sheet. Lopest's color remains recognizable,
  * but selection no longer depends on a saturated gradient or heavy shadow.
  */
-export function MobileBottomNav() {
+interface MobileBottomNavProps {
+  /** Current platform version, shown at the end of «Más opciones». */
+  version?: string | null;
+}
+
+export function MobileBottomNav({ version = null }: MobileBottomNavProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -79,6 +85,8 @@ export function MobileBottomNav() {
               <LogOut className="h-5 w-5 text-violet-700" />
               <span>Cerrar sesión</span>
             </button>
+
+            <VersionFooterLink version={version} onNavigate={() => setMoreOpen(false)} />
           </section>
         </div>
       ) : null}

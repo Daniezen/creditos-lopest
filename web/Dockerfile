@@ -63,6 +63,8 @@ ARG PRISMA_GENERATE_DATABASE_URL="postgresql://lopest_app_user:dummy_password@lo
 # a la base real para generar Prisma Client.
 RUN DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm exec prisma generate
 
+# `pnpm build` corre primero scripts/versiones/check-changelog.mjs: un
+# CHANGELOG.md mal formado detiene aquí la imagen (docs/specs/versiones.md §6).
 # Next build puede cargar módulos server-side que importan Prisma.
 # Mantener DATABASE_URL dummy aquí evita acoplar el build a la base real.
 RUN DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm build
@@ -107,6 +109,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Version history read at runtime by src/server/versiones (cwd = /app, beside
+# server.js). Copied explicitly because the standalone trace does not include
+# files read with fs; without it the app keeps working and hides the version.
+# `pnpm build` already validated it (scripts/versiones/check-changelog.mjs).
+COPY --from=builder /app/CHANGELOG.md ./CHANGELOG.md
 
 USER nextjs
 

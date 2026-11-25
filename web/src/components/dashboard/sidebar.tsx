@@ -10,11 +10,15 @@ import { actionRecipes } from "@/design-system/recipes/actions";
 import { dashboardNavigation } from "@/config/navigation";
 import lopestLogo from "@/assets/lopest-logo.png";
 
+import { VersionFooterLink } from "@/components/versiones/version-footer-link";
+
 import { LogoutButton } from "./logout-button";
 import styles from "./sidebar.module.css";
 
 interface DashboardSidebarProps {
   mode?: "desktop" | "drawer";
+  /** Current platform version; the footer link opens Novedades. */
+  version?: string | null;
   onNavigate?: () => void;
   onClose?: () => void;
 }
@@ -30,6 +34,7 @@ interface DashboardSidebarProps {
  */
 export function DashboardSidebar({
   mode = "desktop",
+  version = null,
   onNavigate,
   onClose,
 }: DashboardSidebarProps) {
@@ -148,6 +153,9 @@ export function DashboardSidebar({
 
       <div className={[styles.logout, "border-t border-slate-200"].join(" ")}>
         <LogoutButton />
+        <div className={styles.version}>
+          <VersionFooterLink version={version} onNavigate={onNavigate} />
+        </div>
       </div>
     </aside>
   );
