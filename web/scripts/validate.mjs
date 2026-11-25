@@ -30,8 +30,13 @@ run("ESLint", "pnpm", ["lint"]);
 
 run("TypeScript", "pnpm", ["exec", "tsc", "--noEmit"]);
 
+// The VPS has ~8 GB shared with Postgres, n8n and the live app; Node's default
+// heap ceiling made `next build` die mid-compile once the Casa y Negocio module
+// landed. 3.5 GB is enough for the build and still leaves room for the rest.
+// An explicit NODE_OPTIONS from the caller wins.
 run("Next build", "pnpm", ["build"], {
   DATABASE_URL: dummyDatabaseUrl,
+  NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=3584",
 });
 
 console.log("\n[validate] OK: lint, typecheck y build pasaron.");
