@@ -51,7 +51,33 @@ export const CHART_TOKENS = {
     animationDuration: "--ds-duration-slow",
   },
   dash: { grid: "--ds-chart-grid-dash" },
+  /**
+   * Casa y Negocio palette (approved canvas): Negocio ink, Casa teal, Ahorro
+   * gold, a faint ink for what is still expected, and an ink tooltip like the
+   * module's popovers. Same furniture sizes as the base theme.
+   */
+  casaNegocio: {
+    negocio: "--dataviz-cn-negocio",
+    negocioSoft: "--dataviz-cn-negocio-soft",
+    casa: "--dataviz-cn-casa",
+    casaSoft: "--dataviz-cn-casa-soft",
+    ahorro: "--dataviz-cn-ahorro",
+    projected: "--dataviz-cn-projected",
+    grid: "--dataviz-cn-grid",
+    cursor: "--dataviz-cn-cursor",
+    axisText: "--dataviz-cn-axis-text",
+    text: "--dataviz-cn-text",
+    tooltipSurface: "--dataviz-cn-tooltip-surface",
+    tooltipText: "--dataviz-cn-tooltip-text",
+  },
 } as const;
+
+/**
+ * Which palette a chart is drawn with. `lopest` is the current app; the
+ * `casa-negocio` palette belongs to the new visual language and is used only
+ * inside /casa-negocio until the rest of the app is redesigned.
+ */
+export type ChartPalette = "lopest" | "casa-negocio";
 
 /**
  * CSS-only tokens a chart uses through classes or inline `var()` (the HTML
@@ -63,11 +89,13 @@ export const CHART_CSS = {
 } as const;
 
 type ColorRole = keyof typeof CHART_TOKENS.color;
+type CasaNegocioRole = keyof typeof CHART_TOKENS.casaNegocio;
 type SizeRole = keyof typeof CHART_TOKENS.size;
 
 /** Resolved values: what an ECharts option can actually use. */
 export type ChartTheme = {
   color: Record<ColorRole, string>;
+  casaNegocio: Record<CasaNegocioRole, string>;
   size: Record<SizeRole, number>;
   dash: { grid: number[] };
   fontFamily: string;
@@ -117,6 +145,7 @@ export function resolveChartTheme(
 ): ChartTheme {
   return {
     color: mapRoles(CHART_TOKENS.color, (variable) => read(variable).trim()),
+    casaNegocio: mapRoles(CHART_TOKENS.casaNegocio, (variable) => read(variable).trim()),
     size: mapRoles(CHART_TOKENS.size, (variable) => toNumber(read(variable), rootFontSizePx)),
     dash: { grid: toDash(read(CHART_TOKENS.dash.grid)) },
     fontFamily,
@@ -124,15 +153,52 @@ export function resolveChartTheme(
 }
 
 /**
- * The ECharts theme object, registered once by `Chart`. Whatever an option
- * does not set falls back to these values, which is what keeps every chart
- * of the app alike: options declare data and roles, not furniture.
+ * Furniture colors per palette. `series` is the default order ECharts gives
+ * to series an option does not color itself.
  */
-export function buildEchartsTheme(theme: ChartTheme) {
-  const { color: c, size: s, fontFamily } = theme;
+function paletteColors(theme: ChartTheme, palette: ChartPalette) {
+  if (palette === "casa-negocio") {
+    const c = theme.casaNegocio;
+    return {
+      series: [c.negocio, c.casa, c.ahorro, c.negocioSoft, c.casaSoft, c.projected],
+      grid: c.grid,
+      cursor: c.cursor,
+      axisText: c.axisText,
+      text: c.text,
+      tooltipSurface: c.tooltipSurface,
+      tooltipBorder: c.tooltipSurface,
+      tooltipText: c.tooltipText,
+    };
+  }
+  const c = theme.color;
+  return {
+    series: [c.realizedPrimary, c.realizedSecondary, c.projectedPrimary, c.projectedSecondary],
+    grid: c.grid,
+    cursor: c.cursor,
+    axisText: c.axisText,
+    text: c.text,
+    tooltipSurface: c.tooltipSurface,
+    tooltipBorder: c.tooltipBorder,
+    tooltipText: c.text,
+  };
+}
+
+/** Name under which `Chart` registers each palette's ECharts theme. */
+export function echartsThemeName(palette: ChartPalette): string {
+  return palette === "lopest" ? "lopest" : `lopest-${palette}`;
+}
+
+/**
+ * The ECharts theme object, registered once per palette by `Chart`. Whatever
+ * an option does not set falls back to these values, which is what keeps
+ * every chart of the app alike: options declare data and roles, not furniture.
+ */
+export function buildEchartsTheme(theme: ChartTheme, palette: ChartPalette = "lopest") {
+  const { size: s, fontFamily } = theme;
+  const c = paletteColors(theme, palette);
   const axisLabel = { color: c.axisText, fontSize: s.axisFont, fontFamily };
   return {
-    color: [c.realizedPrimary, c.realizedSecondary, c.projectedPrimary, c.projectedSecondary],
+    color: c.series,
     backgroundColor: "transparent",
     textStyle: { fontFamily, fontSize: s.labelFont, color: c.text },
     animationDuration: s.animationDuration,
@@ -154,7 +220,7 @@ export function buildEchartsTheme(theme: ChartTheme) {
       backgroundColor: c.tooltipSurface,
       borderColor: c.tooltipBorder,
       borderWidth: s.axisStroke,
-      textStyle: { color: c.text, fontSize: s.tooltipFont, fontFamily },
+      textStyle: { color: c.tooltipText, fontSize: s.tooltipFont, fontFamily },
       // The tooltip is an HTML box, so it can consume CSS tokens directly.
       extraCssText: `border-radius: ${CHART_CSS.tooltipRadius}; box-shadow: ${CHART_CSS.tooltipShadow};`,
       axisPointer: { type: "shadow", shadowStyle: { color: c.cursor } },
