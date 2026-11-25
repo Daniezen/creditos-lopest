@@ -193,3 +193,190 @@ export const cnPaperRecipes = {
     "flex flex-col gap-5.5 rounded-b-[var(--ds-radius-xl)] border border-t-0 border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] p-7 max-md:rounded-none max-md:border-0 max-md:px-4 max-md:py-4.5 max-md:gap-3.5",
   empty: "min-h-[var(--ds-chart-height-empty)]",
 } as const;
+
+/** Notices of spec §5: attention (amber) and problem (red), beside what they affect. */
+export const cnNoticeRecipes = {
+  base: "inline-flex items-start gap-2 rounded-[var(--ds-radius-md)] px-3 py-2 text-[length:var(--text-cn-eyebrow)] leading-[var(--leading-normal)]",
+  atencion: "bg-[var(--cn-color-attention-surface)] text-[var(--cn-color-attention-text)]",
+  problema: "bg-[var(--cn-color-problem-surface)] text-[var(--cn-color-problem-text)]",
+  icon: "mt-px size-4 flex-none",
+  action: `ml-1 font-[var(--font-weight-semibold)] text-current underline underline-offset-2 ${focus}`,
+} as const;
+
+/** Tablero pieces (`Main.dc.html`). */
+export const cnTableroRecipes = {
+  row: "flex flex-wrap items-stretch gap-5.5 max-md:order-3 max-md:gap-3.5",
+  card: "min-w-0 rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] px-6 py-5.5 max-md:px-4 max-md:py-4",
+  sectionTitle: cnTypeRecipes.section,
+
+  /* Por dónde pasó la plata */
+  path: "flex flex-[999_1_var(--ds-cn-path-min)] flex-col gap-1.5",
+  pathTitle: `${cnTypeRecipes.section} mb-2.5`,
+  pathStep: "grid grid-cols-[var(--ds-cn-path-label)_minmax(0,1fr)] items-start gap-4 max-md:grid-cols-1 max-md:gap-2",
+  pathHead: "flex items-baseline gap-2.5 pt-0.5",
+  pathNumber:
+    "inline-flex size-[var(--ds-cn-step)] flex-none items-center justify-center rounded-full bg-[var(--cn-color-ink)] text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-bold)] text-[var(--cn-color-on-ink)]",
+  pathStepTitle: "text-[length:var(--text-cn-input)] font-[var(--font-weight-semibold)]",
+  pathTotal: cnTypeRecipes.figureSm,
+  pathNote: "text-xs text-[var(--cn-color-text-secondary)]",
+  pathNoteProblem: "text-xs text-[var(--cn-color-problem)]",
+  pathBar: "flex h-[var(--ds-cn-path-bar)] gap-0.75",
+  pathSegment: "min-w-1 flex-shrink basis-0 rounded-md",
+  pathCaptions: "mt-1.5 flex gap-0.75",
+  pathCaption: "min-w-1 flex-shrink basis-0 overflow-visible whitespace-nowrap",
+  pathCaptionLabel: "block text-xs font-[var(--font-weight-semibold)]",
+  pathCaptionValue: "block text-xs text-[var(--cn-color-text-secondary)]",
+  pathArrowRow: "grid grid-cols-[var(--ds-cn-path-label)_minmax(0,1fr)] gap-4 max-md:grid-cols-1",
+  pathArrowTrack: "relative h-6.5",
+  pathArrow: "absolute top-0 -translate-x-1/2 text-lg leading-6.5",
+  pathArrowFaint: "text-[var(--cn-color-text-faint)]",
+  pathArrowCasa: "text-[var(--cn-color-casa)]",
+  swatch: {
+    ink: "bg-[var(--cn-color-ink)]",
+    "ink-soft": "bg-[var(--cn-color-text-secondary)]",
+    "ink-faint": "bg-[var(--cn-color-text-faint)]",
+    "ink-line": "bg-[var(--cn-color-border-dashed)]",
+    track: "bg-[var(--cn-color-track)]",
+    casa: "bg-[var(--cn-color-casa)]",
+    "casa-soft": "bg-[var(--cn-color-casa-soft)]",
+    ahorro: "bg-[var(--cn-color-ahorro)]",
+  },
+  tone: {
+    ink: "text-[var(--cn-color-text)]",
+    casa: "text-[var(--cn-color-casa)]",
+    ahorro: "text-[var(--cn-color-ahorro-text)]",
+    problem: "text-[var(--cn-color-problem)]",
+  },
+
+  /* Calendario compacto */
+  calendar:
+    "relative flex-[0_0_var(--ds-cn-cal-width)] px-5.5 py-5 max-md:flex-[1_1_100%]",
+  calendarHead: "mb-2.5 flex items-baseline justify-between",
+  calendarLegend: "flex gap-2.5",
+  legendDot: "size-[var(--ds-cn-dot-md)] rounded-full",
+  legendSquare: "size-[var(--ds-cn-dot-md)] rounded-xs",
+  calendarGrid:
+    "relative grid grid-cols-[repeat(7,minmax(0,var(--ds-cn-cal-cell)))] gap-x-[var(--ds-cn-cal-gap-x)] gap-y-[var(--ds-cn-cal-gap-y)]",
+  weekday:
+    "h-[var(--ds-cn-cal-head)] text-center text-[length:var(--text-2xs)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-faint)]",
+  cell: `flex aspect-square w-full max-w-[var(--ds-cn-cal-cell)] flex-col items-center justify-center gap-0.75 rounded-full border-0 bg-transparent p-0 text-[var(--cn-color-text)] enabled:cursor-pointer disabled:cursor-default aria-expanded:bg-[var(--cn-color-selected)] aria-expanded:shadow-[var(--cn-shadow-selected)] ${focus}`,
+  cellPast: "text-[var(--cn-color-text-muted)]",
+  cellToday:
+    "bg-[var(--cn-color-action)] text-[var(--cn-color-on-ink)] aria-expanded:bg-[var(--cn-color-action)] aria-expanded:shadow-none",
+  cellNumber: "text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-medium)] leading-none",
+  cellNumberToday: "font-[var(--font-weight-bold)]",
+  cellDots: "flex h-[var(--ds-cn-dot)] gap-0.5",
+  cellDot: "size-[var(--ds-cn-dot)] rounded-full",
+  cellSquare: "size-[var(--ds-cn-dot)] rounded-xs",
+  cellDotOnToday: "bg-[var(--cn-color-on-ink)]",
+  eventDot: {
+    cobro: "bg-[var(--cn-color-ink)]",
+    casa: "bg-[var(--cn-color-casa)]",
+    falta: "bg-[var(--cn-color-problem)]",
+    ahorro: "bg-[var(--cn-color-ahorro)]",
+  },
+  eventDotOnInk: {
+    cobro: "bg-[var(--cn-color-on-ink-soft)]",
+    casa: "bg-[var(--cn-color-casa)]",
+    falta: "bg-[var(--cn-color-problem)]",
+    ahorro: "bg-[var(--cn-color-ahorro)]",
+  },
+  dayPopover:
+    "absolute z-[2] flex w-[var(--ds-cn-popover-narrow)] max-w-full flex-col gap-2 rounded-[var(--ds-radius-tab)] bg-[var(--cn-color-ink)] px-3.5 py-3 text-[var(--cn-color-on-ink)] shadow-[var(--cn-shadow-overlay)]",
+  dayPopHead: "flex items-center justify-between",
+  dayPopDate: "text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)]",
+  dayPopClose: `inline-flex size-7 items-center justify-center rounded-[var(--ds-radius-sm)] border-0 bg-transparent text-base text-[var(--cn-color-on-ink-soft)] cursor-pointer ${focus}`,
+  dayPopItem: "flex items-baseline gap-2",
+  dayPopDot: "size-[var(--ds-cn-dot-md)] flex-none rounded-full",
+  dayPopSquare: "size-[var(--ds-cn-dot-md)] flex-none rounded-xs",
+  dayPopText: "flex-1 text-[length:var(--text-cn-eyebrow)] leading-snug",
+  dayPopAction: `flex-none text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-on-ink)] underline ${focus}`,
+
+  /* Las cuentas del mes */
+  equations: "flex flex-col gap-4.5 max-md:order-1 max-md:gap-3.5 max-md:bg-transparent max-md:p-0",
+  equationsTitle: `${cnTypeRecipes.section} max-md:sr-only`,
+  equationRow: "flex flex-wrap items-center gap-x-3 gap-y-2.5 max-md:hidden",
+  equationName: `${cnTypeRecipes.eyebrow} w-[var(--ds-cn-equation-name)]`,
+  operator: "text-[length:var(--text-cn-figure-lg)] font-[var(--font-weight-light)] text-[var(--cn-color-operator)]",
+  term: "inline-flex flex-col rounded-[var(--ds-radius-tab)] bg-[var(--cn-color-well)] px-3.5 py-2",
+  termResult: "bg-[var(--cn-color-ink)]",
+  termLabel: "text-xs text-[var(--cn-color-text-secondary)]",
+  termLabelResult: "text-xs text-[var(--cn-color-on-ink-soft)]",
+  termValue: `${cnTypeRecipes.figureMd} text-[var(--cn-color-text)]`,
+  termValueResult:
+    "text-[length:var(--text-cn-section)] font-[var(--font-weight-regular)] tabular-nums text-[var(--cn-color-on-ink)]",
+  equationNotice: "-mt-1.5 ml-[calc(var(--ds-cn-equation-name)+var(--spacing)*3)] max-md:m-0",
+  /* Phone: one card per row, the canvas' «cuentas» list. */
+  equationCard: "flex flex-col rounded-[var(--ds-radius-panel)] bg-[var(--cn-color-surface)] p-4 md:hidden",
+  equationCardName: `${cnTypeRecipes.eyebrow} mb-2 text-[length:var(--text-xs)]`,
+  equationLine: "flex items-baseline justify-between py-1.5",
+  equationLineLabel: "text-sm text-[var(--cn-color-text-secondary)]",
+  equationLineValue: "text-[length:var(--text-cn-input)] tabular-nums",
+  equationLineResult: cnTypeRecipes.figureMd,
+  equationCardNotice: "mt-2",
+
+  /* Dónde está la plata */
+  money: "flex flex-[1_1_var(--ds-cn-money-min)] flex-col gap-4",
+  moneyHead: "flex flex-wrap items-baseline justify-between gap-2",
+  moneyTotal: cnTypeRecipes.figureXl,
+  moneyBar: "flex h-4.5 gap-0.75 overflow-hidden rounded-full",
+  moneySegment: "h-4.5 flex-shrink basis-0",
+  moneyGrid: "grid grid-cols-[repeat(auto-fit,minmax(var(--ds-cn-account-min),1fr))] gap-3",
+  account: "flex items-start gap-2.5",
+  accountSwatch: "mt-1.25 size-2.5 flex-none rounded-[var(--ds-radius-chip)]",
+  accountName: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-secondary)]",
+  accountBalance: cnTypeRecipes.figureXsMedium,
+  accountStatus: {
+    neutral: "text-xs text-[var(--cn-color-text-secondary)]",
+    ok: "text-xs text-[var(--cn-color-ok)]",
+    atencion: "text-xs text-[var(--cn-color-attention-text)]",
+    problema: "text-xs text-[var(--cn-color-problem)]",
+  },
+
+  /* En la calle */
+  street:
+    "flex min-w-0 flex-[1_1_var(--ds-cn-street-min)] flex-col justify-between gap-3 rounded-[var(--ds-radius-card)] border-2 border-dashed border-[var(--cn-color-border-dashed)] bg-transparent px-6 py-5.5 max-md:px-4 max-md:py-4",
+  streetAmount: cnTypeRecipes.figureXl,
+  streetCount: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-secondary)]",
+  streetLink: `flex items-center justify-between gap-2 rounded-[var(--ds-radius-md)] bg-[var(--cn-color-well)] px-3 py-2.5 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text)] no-underline hover:bg-[var(--cn-color-track)] ${focus}`,
+
+  /* Sobres */
+  /* Phones follow `TableroMovil.dc.html`: next action, equations, envelopes, then the rest. */
+  envelopes: "flex flex-col gap-3.5 max-md:order-2",
+  envelopesHead: "flex flex-wrap items-baseline justify-between gap-2",
+  envelopesSummary: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-muted)]",
+  envelopesGrid:
+    "grid grid-cols-[repeat(auto-fit,minmax(var(--ds-cn-envelope-min),1fr))] gap-3.5 max-md:-mx-4 max-md:flex max-md:gap-2.5 max-md:overflow-x-auto max-md:px-4",
+  envelope:
+    "relative overflow-hidden rounded-[var(--ds-radius-lg)] bg-[var(--cn-color-surface)] px-4.5 pb-4 pt-7.5 max-md:w-[var(--ds-cn-envelope-mobile)] max-md:flex-none max-md:px-3.5 max-md:pb-3.5",
+  envelopeRing: {
+    ok: "shadow-[var(--cn-ring-soft)]",
+    cerca: "shadow-[var(--cn-ring-attention)]",
+    pasado: "shadow-[var(--cn-ring-problem)]",
+  },
+  envelopeFlap: "absolute left-0 top-0 h-[var(--ds-cn-flap)] w-full",
+  envelopeFlapFill: {
+    ok: "fill-[var(--cn-color-flap)]",
+    cerca: "fill-[var(--cn-color-attention-tint)]",
+    pasado: "fill-[var(--cn-color-problem-tint)]",
+  },
+  envelopeName: "relative text-sm font-[var(--font-weight-semibold)]",
+  envelopeLeft: `${cnTypeRecipes.figureLg} mt-1.5 max-md:text-[length:var(--text-cn-figure-sm)]`,
+  envelopeLeftOver: "text-[var(--cn-color-problem)]",
+  envelopeSub: "text-xs text-[var(--cn-color-text-muted)]",
+  envelopeTrack: "mt-2.5 h-1.5 overflow-hidden rounded-full bg-[var(--cn-color-track)]",
+  envelopeFill: {
+    ok: "h-1.5 bg-[var(--cn-color-ink)]",
+    cerca: "h-1.5 bg-[var(--cn-color-attention)]",
+    pasado: "h-1.5 bg-[var(--cn-color-problem)]",
+  },
+
+  /* Phone: the first thing to do */
+  next: `flex items-center gap-3 rounded-[var(--ds-radius-panel)] bg-[var(--cn-color-surface)] p-3.5 text-[var(--cn-color-text)] no-underline shadow-[var(--cn-shadow-panel-active)] md:hidden ${focus}`,
+  nextBadge:
+    "inline-flex size-7.5 flex-none items-center justify-center rounded-full bg-[var(--cn-color-action)] text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-bold)] text-[var(--cn-color-on-ink)]",
+  nextBody: "flex-1",
+  nextTitle: "block text-[length:var(--text-cn-input)] font-[var(--font-weight-semibold)]",
+  nextDetail: "block text-xs text-[var(--cn-color-link)]",
+  nextMore: "text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)]",
+} as const;

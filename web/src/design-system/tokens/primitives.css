@@ -89,4 +89,10 @@
   --ds-cn-equation-name: 5.375rem;
   --ds-cn-fab: 3.75rem;
   --ds-cn-field-min: 10.625rem;
+  --ds-cn-account-min: 9.375rem;
+  --ds-cn-envelope-min: 11.875rem;
+  --ds-cn-envelope-mobile: 8.75rem;
+  --ds-cn-path-min: 38.75rem;
+  --ds-cn-money-min: 32.5rem;
+  --ds-cn-street-min: 16.25rem;
 }
