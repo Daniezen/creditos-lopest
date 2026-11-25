@@ -12,21 +12,15 @@ import {
   requireTransferenciasUser,
 } from "./queries";
 
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
+
+import {
+  TRANSFER_CLIENTE_FIELDS,
+  TRANSFER_CREDITO_FIELDS,
+  transferirClienteSchema,
+  transferirCreditoSchema,
+} from "./schemas";
 import type { TransferActionState } from "./state";
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
-}
-
-function normalizeOptional(value: FormDataEntryValue | null): string | null {
-  return typeof value === "string" ? value.trim() || null : null;
-}
 
 async function obtenerTargetOwner(tx: Prisma.TransactionClient, targetOwnerUserId: string) {
   const targetOwner = await tx.user.findUnique({
@@ -54,9 +48,7 @@ export async function transferirClienteCompletoAction(
 ): Promise<TransferActionState> {
   try {
     const user = await requireTransferenciasUser();
-    const clienteId = leerCampoObligatorio(formData, "clienteId");
-    const targetOwnerUserId = leerCampoObligatorio(formData, "targetOwnerUserId");
-    const reason = normalizeOptional(formData.get("reason"));
+    const { clienteId, targetOwnerUserId, reason } = parseInput(transferirClienteSchema, formFields(formData, TRANSFER_CLIENTE_FIELDS));
 
     const result = await prisma.$transaction(async (tx) => {
       const cliente = await tx.cliente.findUnique({
@@ -180,6 +172,7 @@ export async function transferirClienteCompletoAction(
         error instanceof Error
           ? error.message
           : "No se pudo transferir el cliente completo.",
+      fieldErrors: fieldErrorsOf(error),
     };
   }
 }
@@ -190,9 +183,10 @@ export async function transferirCreditoIndividualAction(
 ): Promise<TransferActionState> {
   try {
     const user = await requireTransferenciasUser();
-    const creditoId = leerCampoObligatorio(formData, "creditoId");
-    const targetOwnerUserId = leerCampoObligatorio(formData, "targetOwnerUserId");
-    const reason = normalizeOptional(formData.get("reason"));
+    const { creditoId, targetOwnerUserId, reason } = parseInput(
+      transferirCreditoSchema,
+      formFields(formData, TRANSFER_CREDITO_FIELDS),
+    );
 
     const result = await prisma.$transaction(async (tx) => {
       const credito = await tx.credito.findUnique({
@@ -298,6 +292,7 @@ export async function transferirCreditoIndividualAction(
         error instanceof Error
           ? error.message
           : "No se pudo transferir el crédito.",
+      fieldErrors: fieldErrorsOf(error),
     };
   }
 }

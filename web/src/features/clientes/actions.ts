@@ -9,6 +9,10 @@ import {
   requireMutationUser,
 } from "@/server/auth/scope";
 
+import { fieldErrorsOf, parseInput, type FieldErrors } from "@/server/validation/input";
+import type { z } from "zod";
+
+import { actualizarClienteSchema, crearClienteSchema, eliminarClienteSchema } from "./schemas";
 import type { ClienteSelectorOption } from "./types";
 
 interface CrearClienteMinimoInput {
@@ -40,6 +44,7 @@ type CrearClienteMinimoResult =
   | {
       ok: false;
       error: string;
+      fieldErrors?: FieldErrors;
     };
 
 type ClienteMutationResult =
@@ -50,6 +55,7 @@ type ClienteMutationResult =
   | {
       ok: false;
       error: string;
+      fieldErrors?: FieldErrors;
     };
 
 function isUniqueConstraintError(error: unknown): boolean {
@@ -61,8 +67,13 @@ function isUniqueConstraintError(error: unknown): boolean {
   );
 }
 
-function normalizeOptional(value: string | undefined): string | null {
-  return value?.trim() || null;
+/** Result for a payload that failed its schema, before any I/O. */
+function invalidInput(error: unknown): { ok: false; error: string; fieldErrors?: FieldErrors } {
+  return {
+    ok: false,
+    error: error instanceof Error ? error.message : "Los datos del cliente no son válidos.",
+    fieldErrors: fieldErrorsOf(error),
+  };
 }
 
 /**
@@ -101,21 +112,11 @@ function eventoTieneActividadFinanciera(evento: {
 export async function crearClienteMinimo(
   input: CrearClienteMinimoInput,
 ): Promise<CrearClienteMinimoResult> {
-  const cedula = input.cedula.trim();
-  const nombre = input.nombre.trim();
-
-  if (!cedula) {
-    return {
-      ok: false,
-      error: "La cédula es obligatoria.",
-    };
-  }
-
-  if (!nombre) {
-    return {
-      ok: false,
-      error: "El nombre del cliente es obligatorio.",
-    };
+  let data: z.output<typeof crearClienteSchema>;
+  try {
+    data = parseInput(crearClienteSchema, input);
+  } catch (error) {
+    return invalidInput(error);
   }
 
   try {
@@ -123,14 +124,7 @@ export async function crearClienteMinimo(
 
     const cliente = await prisma.cliente.create({
       data: {
-        cedula,
-        nombre,
-        direccion: normalizeOptional(input.direccion),
-        empresa: normalizeOptional(input.empresa),
-        telefono: normalizeOptional(input.telefono),
-        recomienda: normalizeOptional(input.recomienda),
-        contacto: normalizeOptional(input.contacto),
-        contacto2: normalizeOptional(input.contacto2),
+        ...data,
         ownerUserId: user.id,
         accionPor: user.id,
       },
@@ -183,30 +177,14 @@ export async function crearClienteMinimo(
 export async function actualizarCliente(
   input: ActualizarClienteInput,
 ): Promise<ClienteMutationResult> {
-  const id = input.id.trim();
-  const cedula = input.cedula.trim();
-  const nombre = input.nombre.trim();
-
-  if (!id) {
-    return {
-      ok: false,
-      error: "Cliente inválido.",
-    };
+  let data: z.output<typeof actualizarClienteSchema>;
+  try {
+    data = parseInput(actualizarClienteSchema, input);
+  } catch (error) {
+    return invalidInput(error);
   }
-
-  if (!cedula) {
-    return {
-      ok: false,
-      error: "La cédula es obligatoria.",
-    };
-  }
-
-  if (!nombre) {
-    return {
-      ok: false,
-      error: "El nombre del cliente es obligatorio.",
-    };
-  }
+  const { id, ...campos } = data;
+  const { cedula } = campos;
 
   try {
     const { user } = await requireClienteAccess(id);
@@ -237,16 +215,7 @@ export async function actualizarCliente(
         id,
       },
       data: {
-        cedula,
-        nombre,
-        direccion: normalizeOptional(input.direccion),
-        empresa: normalizeOptional(input.empresa),
-        telefono: normalizeOptional(input.telefono),
-        recomienda: normalizeOptional(input.recomienda),
-        contacto: normalizeOptional(input.contacto),
-        contacto2: normalizeOptional(input.contacto2),
-        carpetaAdjuntosUrl: normalizeOptional(input.carpetaAdjuntosUrl),
-        estadoDocumentos: input.estadoDocumentos ?? "FALTAN_DOCUMENTOS",
+        ...campos,
         accionPor: user.id,
       },
     });
@@ -279,13 +248,11 @@ export async function actualizarCliente(
 export async function eliminarCliente(
   input: EliminarClienteInput,
 ): Promise<ClienteMutationResult> {
-  const id = input.id.trim();
-
-  if (!id) {
-    return {
-      ok: false,
-      error: "Cliente inválido.",
-    };
+  let id: string;
+  try {
+    ({ id } = parseInput(eliminarClienteSchema, input));
+  } catch (error) {
+    return invalidInput(error);
   }
 
   try {

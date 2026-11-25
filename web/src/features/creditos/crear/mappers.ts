@@ -10,11 +10,8 @@ import type {
   TipoAmortizacion,
 } from "@/domain/creditos/simulador/tipos";
 
-import {
-  parseDateInputValue,
-  parseNumericInput,
-  parseTasaMensualInput,
-} from "@/lib/formatters";
+import { parseNumericInput, parseTasaMensualInput } from "@/lib/formatters";
+import { dateInput, moneyInput, parseInput } from "@/server/validation/input";
 
 import type { SimulatorFormState } from "@/features/simulador-creditos/types";
 
@@ -60,8 +57,17 @@ export function normalizarCondicionesCredito(
     throw new Error("El tipo de crédito no es válido.");
   }
 
-  const fechaPrestamo = parseDateInputValue(form.fechaPrestamo);
-  const monto = parseNumericInput(form.monto);
+  // Same parsers as before (local-midnight date, Colombian money format); the
+  // shared schemas add the rejections the bare parsers lacked: impossible
+  // calendar dates and amounts with sub-cent parts or beyond float precision.
+  const fechaPrestamo = parseInput(dateInput("la fecha del préstamo"), form.fechaPrestamo);
+  const monto = parseInput(
+    moneyInput({
+      required: "El valor del préstamo es obligatorio.",
+      invalid: "El valor del préstamo debe ser mayor a cero.",
+    }),
+    form.monto,
+  );
   const plazoMeses = parseNumericInput(form.plazoMeses);
   const tasaMensual = parseTasaMensualInput(form.tasaMensual);
 

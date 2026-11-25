@@ -12,7 +12,17 @@ import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
+
 import type { UpdatePaymentDateState } from "./payment-date-state";
+import {
+  actualizarFechaPagoSchema,
+  CREDITO_FIELDS,
+  creditoIdSchema,
+  CUOTA_FIELDS,
+  cuotaSchema,
+  FECHA_PAGO_FIELDS,
+} from "./schemas";
 
 function obtenerHoyColombia(): Date {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -46,16 +56,6 @@ function estadoPendientePorFecha(fechaProgramada: Date, fechaReferencia: Date) {
   return fechaProgramada.getTime() < fechaReferencia.getTime()
     ? EstadoEventoFinanciero.ATRASADO
     : EstadoEventoFinanciero.PENDIENTE;
-}
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
 }
 
 async function sincronizarEstadoCredito(
@@ -96,8 +96,7 @@ async function sincronizarEstadoCredito(
 }
 
 export async function registrarPagoCuota(formData: FormData): Promise<void> {
-  const eventoId = leerCampoObligatorio(formData, "eventoId");
-  const creditoId = leerCampoObligatorio(formData, "creditoId");
+  const { eventoId, creditoId } = parseInput(cuotaSchema, formFields(formData, CUOTA_FIELDS));
   const hoy = obtenerHoyColombia();
 
   const { user } = await requireCreditoAccess(creditoId);
@@ -163,20 +162,10 @@ export async function actualizarFechaPagoCuota(
   formData: FormData,
 ): Promise<UpdatePaymentDateState> {
   try {
-    const eventoId = leerCampoObligatorio(formData, "eventoId");
-    const creditoId = leerCampoObligatorio(formData, "creditoId");
-    const fechaPagoRaw = leerCampoObligatorio(formData, "fechaPago");
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaPagoRaw);
-
-    if (!match) throw new Error("La fecha real de pago no tiene un formato válido.");
-
-    const fechaPago = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    if (fechaPago.getFullYear() !== Number(match[1]) || fechaPago.getMonth() !== Number(match[2]) - 1 || fechaPago.getDate() !== Number(match[3])) {
-      throw new Error("La fecha real de pago no es válida.");
-    }
-
-    const hoy = obtenerHoyColombia();
-    if (fechaPago.getTime() > hoy.getTime()) throw new Error("La fecha real de pago no puede estar en el futuro.");
+    const { eventoId, creditoId, fechaPago } = parseInput(
+      actualizarFechaPagoSchema,
+      formFields(formData, FECHA_PAGO_FIELDS),
+    );
 
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
@@ -237,13 +226,16 @@ export async function actualizarFechaPagoCuota(
     revalidatePath(`/creditos/${creditoId}`);
     return { ok: true, message: "Fecha real de pago actualizada." };
   } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : "No se pudo actualizar la fecha real de pago." };
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "No se pudo actualizar la fecha real de pago.",
+      fieldErrors: fieldErrorsOf(error),
+    };
   }
 }
 
 export async function reversarPagoCuota(formData: FormData): Promise<void> {
-  const eventoId = leerCampoObligatorio(formData, "eventoId");
-  const creditoId = leerCampoObligatorio(formData, "creditoId");
+  const { eventoId, creditoId } = parseInput(cuotaSchema, formFields(formData, CUOTA_FIELDS));
   const hoy = obtenerHoyColombia();
 
   const { user } = await requireCreditoAccess(creditoId);
@@ -305,7 +297,7 @@ export async function reversarPagoCuota(formData: FormData): Promise<void> {
 export async function actualizarCuotasVencidasCredito(
   formData: FormData,
 ): Promise<void> {
-  const creditoId = leerCampoObligatorio(formData, "creditoId");
+  const { creditoId } = parseInput(creditoIdSchema, formFields(formData, CREDITO_FIELDS));
   const hoy = obtenerHoyColombia();
 
   const { user } = await requireCreditoAccess(creditoId);

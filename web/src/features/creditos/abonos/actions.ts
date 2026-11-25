@@ -14,36 +14,15 @@ import { prisma } from "@/lib/prisma";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { obtenerHoyColombia } from "@/lib/formatters";
 import { financialImageChanged, toFinancialEventImage, toSnapshotJson } from "./snapshot";
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
 import type { AbonoFormState } from "./abono-state";
+import { REGISTRAR_ABONO_FIELDS, registrarAbonoSchema } from "./schemas";
 
 function toMoneyDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
 
-
-function leerCampoObligatorio(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Falta el campo obligatorio ${name}.`);
-  }
-
-  return value.trim();
-}
-
-function parseMontoInput(value: string): number {
-  const cleaned = value
-    .trim()
-    .replace(/\$/g, "")
-    .replace(/\s/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-
-  const parsed = Number(cleaned);
-
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
 
 function esEstadoPendienteOperativo(estado: EstadoEventoFinanciero): boolean {
   return (
@@ -154,54 +133,20 @@ function normalizarFechaSinHora(fecha: Date): Date {
   return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
 }
 
-function parseFechaAbono(value: unknown, hoy: Date): Date {
-  if (typeof value !== "string" || !value.trim()) {
-    return hoy;
-  }
-
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-  if (!match) {
-    throw new Error("La fecha del abono no tiene un formato válido (AAAA-MM-DD).");
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const parsed = new Date(year, month, day);
-
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month ||
-    parsed.getDate() !== day
-  ) {
-    throw new Error("La fecha del abono no es una fecha válida en el calendario.");
-  }
-
-  if (parsed.getTime() > hoy.getTime()) {
-    throw new Error("La fecha del abono no puede estar en el futuro.");
-  }
-
-  return parsed;
-}
-
 export async function registrarAbonoCapital(
   _previousState: AbonoFormState,
   formData: FormData,
 ): Promise<AbonoFormState> {
   let creditoId = "";
   try {
-    creditoId = leerCampoObligatorio(formData, "creditoId");
-    const montoRaw = leerCampoObligatorio(formData, "montoAbono");
-    const montoAbono = parseMontoInput(montoRaw);
-    const hoy = obtenerHoyColombia();
-    const fechaAbono = parseFechaAbono(formData.get("fechaAbono"), hoy);
+    // Shape, amount and Bogota date are validated before any I/O; the
+    // financial checks against the credit's balance stay in the transaction.
+    const input = parseInput(registrarAbonoSchema, formFields(formData, REGISTRAR_ABONO_FIELDS));
+    creditoId = input.creditoId;
+    const { montoAbono, fechaAbono } = input;
 
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
-
-    if (!Number.isFinite(montoAbono) || montoAbono <= 0) {
-      throw new Error("Ingresa un monto de abono válido mayor a cero.");
-    }
 
     await prisma.$transaction(async (tx) => {
       const credito = await tx.credito.findUnique({
@@ -352,6 +297,7 @@ export async function registrarAbonoCapital(
     return {
       ok: false,
       message: error instanceof Error ? error.message : "No se pudo registrar el abono.",
+      fieldErrors: fieldErrorsOf(error),
     };
   }
 }

@@ -14,7 +14,9 @@ import { toFinancialEventImage, toSnapshotJson, financialImageMatches, type Fina
 import { recordAuditLogTx } from "@/server/audit/audit-log";
 import { assertCanMutate, requireCreditoAccess } from "@/server/auth/scope";
 import { incrementoPlazoMeses, recalcularCuotasSoloInteres } from "./extension-policy";
+import { fieldErrorsOf, formFields, parseInput } from "@/server/validation/input";
 import type { ExtensionTermState } from "./extension-state";
+import { EXTENDER_PLAZO_FIELDS, extenderPlazoSchema, REVERSAR_EXTENSION_FIELDS, reversarExtensionSchema } from "./schemas";
 
 interface SnapshotCreditImage {
   plazoMeses: string;
@@ -23,15 +25,6 @@ interface SnapshotCreditImage {
 }
 
 function money(value: number): string { return value.toFixed(2); }
-function required(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  if (typeof value !== "string" || !value.trim()) throw new Error(`Falta el campo obligatorio ${name}.`);
-  return value.trim();
-}
-function optional(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value.trim() : "";
-}
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "No se pudo completar la operación.";
 }
@@ -55,11 +48,9 @@ export async function extenderPlazoSoloInteres(
 ): Promise<ExtensionTermState> {
   let creditoId = "";
   try {
-    creditoId = required(formData, "creditoId");
-    const cuotasExtra = Number(required(formData, "cuotasExtra"));
-    if (!Number.isInteger(cuotasExtra) || cuotasExtra <= 0 || cuotasExtra > 60) {
-      throw new Error("Ingresa un número entero de cuotas extra entre 1 y 60.");
-    }
+    const input = parseInput(extenderPlazoSchema, formFields(formData, EXTENDER_PLAZO_FIELDS));
+    creditoId = input.creditoId;
+    const { cuotasExtra } = input;
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
@@ -100,7 +91,7 @@ export async function extenderPlazoSoloInteres(
     revalidatePath("/creditos"); revalidatePath(`/creditos/${creditoId}`);
     return { ok: true, message: "El plazo se extendió correctamente." };
   } catch (error) {
-    return { ok: false, message: errorMessage(error) };
+    return { ok: false, message: errorMessage(error), fieldErrors: fieldErrorsOf(error) };
   }
 }
 
@@ -110,10 +101,10 @@ export async function reversarExtensionPlazo(
 ): Promise<ExtensionTermState> {
   let creditoId = "";
   try {
-    creditoId = required(formData, "creditoId");
-    const snapshotId = required(formData, "snapshotId");
-    const reason = optional(formData, "motivo");
-    if (reason.length > 500) throw new Error("El motivo no puede superar 500 caracteres.");
+    const input = parseInput(reversarExtensionSchema, formFields(formData, REVERSAR_EXTENSION_FIELDS));
+    creditoId = input.creditoId;
+    const { snapshotId } = input;
+    const reason = input.motivo;
     const { user } = await requireCreditoAccess(creditoId);
     assertCanMutate(user);
     await prisma.$transaction(async (tx) => {
@@ -145,6 +136,6 @@ export async function reversarExtensionPlazo(
     revalidatePath("/creditos"); revalidatePath(`/creditos/${creditoId}`);
     return { ok: true, message: "La última extensión se revirtió correctamente." };
   } catch (error) {
-    return { ok: false, message: errorMessage(error) };
+    return { ok: false, message: errorMessage(error), fieldErrors: fieldErrorsOf(error) };
   }
 }

@@ -20,6 +20,9 @@ import {
 } from "./mappers";
 
 import type { SimulatorFormState } from "@/features/simulador-creditos/types";
+import { fieldErrorsOf, parseInput, type FieldErrors } from "@/server/validation/input";
+
+import { crearCreditoSchema, type CrearCreditoInput } from "./schemas";
 
 interface CrearCreditoDesdeWizardInput {
   clienteId: string;
@@ -39,6 +42,7 @@ type CrearCreditoDesdeWizardResult =
   | {
       ok: false;
       error: string;
+      fieldErrors?: FieldErrors;
       possibleDuplicates?: Array<{
         codigo: string;
         monto: number;
@@ -60,33 +64,25 @@ type CrearCreditoDesdeWizardResult =
 export async function crearCreditoDesdeWizard(
   input: CrearCreditoDesdeWizardInput,
 ): Promise<CrearCreditoDesdeWizardResult> {
-  const clienteId = input.clienteId.trim();
-  const idempotencyKey = input.idempotencyKey.trim();
-  const nota = input.nota?.trim() || null;
-
-  if (nota && nota.length > 1000) {
-    return { ok: false, error: "La nota no puede superar 1000 caracteres." };
-  }
-
-  if (!clienteId) {
+  // Validate the whole payload before touching the database. Validation
+  // failures are returned (not thrown) to keep this action's result contract.
+  let parsed: CrearCreditoInput;
+  try {
+    parsed = parseInput(crearCreditoSchema, input);
+  } catch (error) {
     return {
       ok: false,
-      error: "Selecciona un cliente antes de guardar.",
+      error: error instanceof Error ? error.message : "Los datos del crédito no son válidos.",
+      fieldErrors: fieldErrorsOf(error),
     };
   }
-
-  if (!idempotencyKey) {
-    return {
-      ok: false,
-      error: "No se pudo identificar la operación. Reinicia el flujo e inténtalo de nuevo.",
-    };
-  }
+  const { clienteId, idempotencyKey, nota } = parsed;
 
   try {
     const { user } = await requireClienteAccess(clienteId);
     assertCanMutate(user);
 
-    const condiciones = normalizarCondicionesCredito(input.form);
+    const condiciones = normalizarCondicionesCredito(parsed.form);
 
     const resultado = await prisma.$transaction(async (tx) => {
       const creditoExistente = await tx.credito.findUnique({
@@ -157,12 +153,12 @@ export async function crearCreditoDesdeWizard(
         tipoAmortizacion: mapTipoAmortizacionToPrisma(condiciones.tipoAmortizacion),
         monto: condiciones.monto,
       }, existente));
-      if (posiblesDuplicados.length > 0 && !input.confirmarPosibleDuplicado) {
+      if (posiblesDuplicados.length > 0 && !parsed.confirmarPosibleDuplicado) {
         const error = new Error("POSIBLE_DUPLICADO");
         Object.assign(error, { posiblesDuplicados });
         throw error;
       }
-      const motivoDuplicado = input.motivoDuplicado?.trim() ?? "";
+      const motivoDuplicado = parsed.motivoDuplicado?.trim() ?? "";
       if (posiblesDuplicados.length > 0 && motivoDuplicado.length < 10) {
         throw new Error("Indica por qué el nuevo crédito es diferente del existente.");
       }
