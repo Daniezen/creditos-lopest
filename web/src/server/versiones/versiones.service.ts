@@ -4,6 +4,7 @@ import path from "node:path";
 import { currentVersion, parseChangelog, type Changelog } from "@/features/versiones/changelog-format";
 import { selectVisibleVersions, type VisibleVersion } from "@/features/versiones/version-visibility";
 import { hasRole, type AppRole } from "@/server/auth/guards";
+import { logEvent } from "@/server/observability/log";
 
 /**
  * Read side of Lopest's version history — `docs/specs/versiones.md`.
@@ -28,7 +29,8 @@ function loadChangelog(): Promise<Changelog | null> {
     changelogLoad = readFile(path.join(process.cwd(), "CHANGELOG.md"), "utf8")
       .then(parseChangelog)
       .catch((error: unknown) => {
-        console.error("[versiones] CHANGELOG.md no se pudo leer:", error instanceof Error ? error.message : error);
+        // Structured line instead of console.*: the logger is the only console writer.
+        logEvent("error", "versiones.changelog_no_legible", {}, error);
         // Not memoized as a failure: the next caller tries again.
         changelogLoad = null;
         return null;
