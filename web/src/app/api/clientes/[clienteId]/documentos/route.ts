@@ -9,6 +9,7 @@ import {
   trashDriveFile,
   uploadClientDocumentToDrive,
 } from "@/server/drive/google-drive.service";
+import { logEvent } from "@/server/observability/log";
 
 export const runtime = "nodejs";
 
@@ -26,9 +27,10 @@ interface RouteContext {
 /** Uploads exactly one client document per request. */
 export async function POST(request: Request, context: RouteContext) {
   let uploadedDriveFileId: string | null = null;
+  // Resolved outside `try` so the failure logs below can correlate by client.
+  const { clienteId } = await context.params;
 
   try {
-    const { clienteId } = await context.params;
     const { user } = await requireClienteAccess(clienteId);
     assertCanMutate(user);
 
@@ -139,10 +141,7 @@ export async function POST(request: Request, context: RouteContext) {
         reason: "UPLOAD",
       });
     } catch (reconciliationError) {
-      console.error("Drive post-upload reconciliation failed", {
-        clienteId,
-        error: reconciliationError,
-      });
+      logEvent("warn", "drive.reconciliacion_post_carga_fallida", { clienteId, userId: user.id }, reconciliationError);
     }
 
     return NextResponse.json({
@@ -155,14 +154,11 @@ export async function POST(request: Request, context: RouteContext) {
       try {
         await trashDriveFile(uploadedDriveFileId);
       } catch (compensationError) {
-        console.error("Drive compensation failed", {
-          driveFileId: uploadedDriveFileId,
-          error: compensationError,
-        });
+        logEvent("error", "drive.compensacion_fallida", { clienteId, driveFileId: uploadedDriveFileId }, compensationError);
       }
     }
 
-    console.error("Client document upload failed", { error });
+    logEvent("error", "drive.carga_documento_fallida", { clienteId }, error);
     return errorResponse(
       error instanceof Error ? error.message : "No se pudo adjuntar el archivo.",
       500,

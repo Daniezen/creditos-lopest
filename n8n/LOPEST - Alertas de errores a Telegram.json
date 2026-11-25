@@ -1,0 +1,112 @@
+{
+  "name": "LOPEST - Alertas de errores a Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "7e1b2c30-5d8f-4a61-9b20-3f4e5a000001",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7e1b2c30-5d8f-4a61-9b20-3f4e5a0000a1",
+              "name": "telegramChatId",
+              "value": "CONFIGURAR-CHAT-ID",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        100
+      ],
+      "id": "7e1b2c30-5d8f-4a61-9b20-3f4e5a000002",
+      "name": "Set - Config"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegramChatId }}",
+        "text": "={{ 'Error en ' + ($json.workflow?.name ?? 'workflow desconocido') + '\\nNodo: ' + String($json.execution?.lastNodeExecuted ?? $json.trigger?.error?.node?.name ?? 'desconocido') + '\\nError: ' + String($json.execution?.error?.message ?? $json.trigger?.error?.message ?? 'sin mensaje').slice(0, 1000) + ($json.execution?.url ? '\\n' + $json.execution.url : '') }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        100
+      ],
+      "id": "7e1b2c30-5d8f-4a61-9b20-3f4e5a000003",
+      "name": "Telegram - Enviar alerta",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURAR",
+          "name": "Telegram Bot Lopest"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## LOPEST - Alertas de errores a Telegram\n\nRecibe el error de cualquier workflow que lo tenga como *Error workflow* y lo envía al chat `telegramChatId` (en `Set - Config`) con la credencial n8n *Telegram Bot Lopest*. El token nunca va en este JSON.",
+        "height": 220,
+        "width": 440
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -200
+      ],
+      "id": "7e1b2c30-5d8f-4a61-9b20-3f4e5a000004",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Config": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": []
+}

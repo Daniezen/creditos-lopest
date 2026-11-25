@@ -20,6 +20,7 @@ import {
 } from "./mappers";
 
 import type { SimulatorFormState } from "@/features/simulador-creditos/types";
+import { logEvent } from "@/server/observability/log";
 
 interface CrearCreditoDesdeWizardInput {
   clienteId: string;
@@ -256,7 +257,7 @@ export async function crearCreditoDesdeWizard(
       codigo: resultado.codigo,
     };
   } catch (error) {
-    console.error("Error al crear crédito desde wizard:", error);
+    logEvent("error", "credito.creacion_fallida", { clienteId }, error);
     const possibleDuplicates = error && typeof error === "object" && "posiblesDuplicados" in error
       ? (error.posiblesDuplicados as Array<{ codigo: string; monto: unknown; fechaPrestamo: Date; ownerUser: { nombre: string; email: string } | null }>).map((item) => ({
           codigo: item.codigo,
