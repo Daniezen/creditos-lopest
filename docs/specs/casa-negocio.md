@@ -12,8 +12,9 @@ ya sabe (desembolsos, cuotas cobradas con capital e interés, cartera, mora) ent
 
 ## 1. Alcance de esta unidad
 
-- Solo el módulo `/casa-negocio` y sus pestañas. **No se tocan** Créditos, Clientes, Simulador,
-  Transferencias ni Reportes: su rediseño se planea vista por vista después.
+- Solo el módulo `/casa-negocio` y sus pestañas. **No se tocan visualmente** Créditos, Clientes, Simulador,
+  Transferencias ni Reportes: su rediseño se planea vista por vista después. El **backend** de esos módulos sí
+  se ajusta donde la lógica lo pida (p. ej. `cuentaId` opcional en pagos y desembolsos, castigo de préstamos).
 - El riel lateral nuevo (oscuro, replegado, `Sidebar.dc.html`) y la ausencia de topbar aplican
   **solo a este módulo** por ahora.
 - Lo que en el lienzo toca Créditos (`CreditosDueno`, `PrestamoPerdido`, `RegistrarPago`) queda
