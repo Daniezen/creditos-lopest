@@ -116,6 +116,23 @@
   --cn-color-problem-text: var(--lopest-cn-problem-text);
 
   --cn-shadow-overlay: var(--lopest-cn-shadow-ink);
+  --cn-shadow-panel-active: inset 0 0 0 2px var(--cn-color-action);
+  --cn-shadow-selected: inset 0 0 0 2px var(--cn-color-action);
+
+  /* Month line marks: a 2 px state ring and a 4 px halo of the ground they sit on. */
+  --cn-mark-halo: 0 0 0 4px var(--cn-color-surface);
+  --cn-mark-ring-ink: 0 0 0 2px var(--cn-color-ink), var(--cn-mark-halo);
+  --cn-mark-ring-problem: 0 0 0 2px var(--cn-color-problem), var(--cn-mark-halo);
+  --cn-mark-ring-ahorro: 0 0 0 2px var(--cn-color-ahorro), var(--cn-mark-halo);
+  --cn-mark-ring-on-ink: 0 0 0 2px var(--cn-color-ink);
+  --cn-mark-ring-on-ink-light: 0 0 0 2px var(--cn-color-on-ink);
+  --cn-mark-ring-on-ink-problem: 0 0 0 2px var(--cn-color-problem);
+  --cn-mark-ring-on-ink-ahorro: 0 0 0 2px var(--cn-color-ahorro);
+
+  /* Envelope state rings (inset, so the card keeps its size). */
+  --cn-ring-soft: inset 0 0 0 1px var(--cn-color-border-soft);
+  --cn-ring-attention: inset 0 0 0 2px var(--cn-color-attention-ring);
+  --cn-ring-problem: inset 0 0 0 2px var(--cn-color-problem-ring);
   --cn-focus-ring: 0 0 0 3px color-mix(in srgb, var(--cn-color-focus) 45%, transparent);
 
   /* Chart roles for the module palette, read by themes/lopest-chart.ts. */

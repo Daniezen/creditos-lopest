@@ -2,6 +2,7 @@ import { cnShellRecipes } from "@/design-system/recipes/casa-negocio";
 
 import { ModuleBottomNav } from "./module-bottom-nav";
 import { ModuleRail } from "./module-rail";
+import { ModuleUserProvider } from "./module-user-context";
 import type { ModuleUser } from "./user-avatar";
 
 interface CasaNegocioShellProps {
@@ -20,7 +21,9 @@ export function CasaNegocioShell({ children, user, version }: CasaNegocioShellPr
     <div className={cnShellRecipes.root}>
       <ModuleRail user={user} version={version} />
       <main className={cnShellRecipes.main}>
-        <div className={cnShellRecipes.column}>{children}</div>
+        <div className={cnShellRecipes.column}>
+          <ModuleUserProvider user={user}>{children}</ModuleUserProvider>
+        </div>
       </main>
       <ModuleBottomNav version={version} />
     </div>
