@@ -1,33 +1,7 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { requireUser } from "@/server/auth/guards";
+import { resolveLoginProfileImage } from "@/server/auth/login-profile-image";
 import { getPlatformVersion } from "@/server/versiones/versiones.service";
-
-function resolveLoginProfileImage(
-  email: string,
-  fallback: string | null,
-): string | null {
-  const normalizedEmail = email.trim().toLowerCase();
-  const profiles = [
-    {
-      email: process.env.LOGIN_PROFILE_DANIEL_EMAIL,
-      image: process.env.LOGIN_PROFILE_DANIEL_IMAGE || "/login/daniel.jpg",
-    },
-    {
-      email: process.env.LOGIN_PROFILE_PADRE_EMAIL,
-      image: process.env.LOGIN_PROFILE_PADRE_IMAGE || "/login/padre.jpg",
-    },
-    {
-      email: process.env.LOGIN_PROFILE_MADRE_EMAIL,
-      image: process.env.LOGIN_PROFILE_MADRE_IMAGE || "/login/madre.jpg",
-    },
-  ];
-
-  const profile = profiles.find(
-    (item) => item.email?.trim().toLowerCase() === normalizedEmail,
-  );
-
-  return profile?.image ?? fallback;
-}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

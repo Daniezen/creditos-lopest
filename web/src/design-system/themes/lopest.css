@@ -53,3 +53,67 @@
   --lopest-dataviz-grid: #e2e8f0;
   --lopest-dataviz-cursor: #f1f5f9;
 }
+
+/*
+  ============================================================================
+  Casa y Negocio visual language (approved canvas, 25-nov-2026).
+  Source: docs/design-system/lienzo-casa-negocio/*.dc.html and
+  docs/specs/casa-negocio.md §6. It is the base of the app-wide redesign;
+  until each view is redesigned only /casa-negocio consumes it, through the
+  `--cn-*` semantic roles in tokens/semantic.css. Nothing above changes.
+  ============================================================================
+*/
+:root {
+  /* Ink: structure and what is already done. Plum, not black. */
+  --lopest-cn-ink: #24123f;
+  --lopest-cn-ink-raised: #3b2463;
+  --lopest-cn-ink-label: #5b3d8a;
+  --lopest-cn-ink-soft: #6b5a86;
+  --lopest-cn-ink-muted: #857899;
+  --lopest-cn-ink-faint: #a89cc0;
+  --lopest-cn-ink-ghost: #c4bad3;
+  --lopest-cn-ink-line: #d6cce4;
+  --lopest-cn-on-ink: #ffffff;
+  --lopest-cn-on-ink-soft: #c9bfdc;
+
+  /* Grounds: lienzo behind everything, warm paper under the folder tabs. */
+  --lopest-cn-lienzo: #f4f2f7;
+  --lopest-cn-paper: #fbf8f4;
+  --lopest-cn-surface: #ffffff;
+  --lopest-cn-border: #e7e1ef;
+  --lopest-cn-border-soft: #ece6f3;
+  --lopest-cn-track: #efeaf6;
+  --lopest-cn-well: #f6f3fa;
+  --lopest-cn-flap: #f3eff8;
+
+  /* Violet: only the action of right now. */
+  --lopest-cn-action: #7c3aed;
+  --lopest-cn-action-hover: #6d28d9;
+  --lopest-cn-action-ring: #8b5cf6;
+  --lopest-cn-action-on-ink: #a78bfa;
+  --lopest-cn-link: #5b21b6;
+  --lopest-cn-brand-from: #8b5cf6;
+  --lopest-cn-brand-to: #c026d3;
+
+  /* Identities. Negocio is the ink itself. */
+  --lopest-cn-casa: #0f766e;
+  --lopest-cn-casa-soft: #5fb3a9;
+  --lopest-cn-ahorro: #b8860b;
+  --lopest-cn-ahorro-text: #8a6d0b;
+
+  /* States, each with its tint; used only under a real condition. */
+  --lopest-cn-ok: #15803d;
+  --lopest-cn-attention: #d97706;
+  --lopest-cn-attention-ring: #fcd34d;
+  --lopest-cn-attention-tint: #fef3c7;
+  --lopest-cn-attention-surface: #fef6e7;
+  --lopest-cn-attention-text: #92400e;
+  --lopest-cn-problem: #b91c1c;
+  --lopest-cn-problem-ring: #fca5a5;
+  --lopest-cn-problem-soft: #fecaca;
+  --lopest-cn-problem-tint: #fee2e2;
+  --lopest-cn-problem-surface: #fef2f2;
+  --lopest-cn-problem-text: #991b1b;
+
+  --lopest-cn-shadow-ink: 0 18px 40px rgb(36 18 63 / 25%);
+}

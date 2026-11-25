@@ -10,7 +10,13 @@ import type { ComposeOption } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
 
 import { dataVizRecipes } from "../recipes/data-viz";
-import { buildEchartsTheme, resolveChartTheme, type ChartTheme } from "../themes/lopest-chart";
+import {
+  buildEchartsTheme,
+  echartsThemeName,
+  resolveChartTheme,
+  type ChartPalette,
+  type ChartTheme,
+} from "../themes/lopest-chart";
 
 /**
  * The one way Lopest draws a chart: Apache ECharts, pinned to 6.0.0 (the
@@ -23,7 +29,7 @@ import { buildEchartsTheme, resolveChartTheme, type ChartTheme } from "../themes
  * keeps charts sharp at any zoom, printable, and their text as text.
  *
  * THEME. Built once, at first mount, from the CSS tokens
- * (`themes/lopest-chart.ts`) and registered under `THEME`. An option never
+ * (`themes/lopest-chart.ts`) and registered per palette (`echartsThemeName`). An option never
  * writes colors or sizes of its own: when it needs a role (which series is
  * "projected", the bar radius) it receives the resolved `ChartTheme` by
  * passing `option` as a function.
@@ -45,22 +51,29 @@ export type ChartOption = ComposeOption<
   BarSeriesOption | GridComponentOption | TooltipComponentOption | LegendComponentOption
 >;
 
-export type { ChartTheme };
+export type { ChartPalette, ChartTheme };
 
-const THEME = "lopest";
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 let resolvedTheme: ChartTheme | null = null;
+const registeredPalettes = new Set<ChartPalette>();
 
-/** Resolves and registers the theme once per page load; tokens do not change at runtime. */
-function ensureTheme(): ChartTheme {
-  if (resolvedTheme) return resolvedTheme;
-  const rootStyles = getComputedStyle(document.documentElement);
-  resolvedTheme = resolveChartTheme(
-    (variable) => rootStyles.getPropertyValue(variable),
-    Number.parseFloat(rootStyles.fontSize) || 16,
-    getComputedStyle(document.body).fontFamily,
-  );
-  echarts.registerTheme(THEME, buildEchartsTheme(resolvedTheme));
+/**
+ * Resolves the tokens once per page load (they do not change at runtime) and
+ * registers each palette's ECharts theme the first time a chart asks for it.
+ */
+function ensureTheme(palette: ChartPalette = "lopest"): ChartTheme {
+  if (!resolvedTheme) {
+    const rootStyles = getComputedStyle(document.documentElement);
+    resolvedTheme = resolveChartTheme(
+      (variable) => rootStyles.getPropertyValue(variable),
+      Number.parseFloat(rootStyles.fontSize) || 16,
+      getComputedStyle(document.body).fontFamily,
+    );
+  }
+  if (!registeredPalettes.has(palette)) {
+    echarts.registerTheme(echartsThemeName(palette), buildEchartsTheme(resolvedTheme, palette));
+    registeredPalettes.add(palette);
+  }
   return resolvedTheme;
 }
 
@@ -83,9 +96,11 @@ export type ChartProps = {
   label: string;
   scroll?: ChartScroll;
   className?: string;
+  /** Palette of the theme; `casa-negocio` only inside that module. Fixed for the chart's life. */
+  palette?: ChartPalette;
 };
 
-export function Chart({ option, height, label, scroll, className }: ChartProps) {
+export function Chart({ option, height, label, scroll, className, palette = "lopest" }: ChartProps) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
 
@@ -93,8 +108,8 @@ export function Chart({ option, height, label, scroll, className }: ChartProps) 
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    ensureTheme();
-    const chart = echarts.init(element, THEME, { renderer: "svg" });
+    ensureTheme(palette);
+    const chart = echarts.init(element, echartsThemeName(palette), { renderer: "svg" });
     chartRef.current = chart;
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(element);
@@ -103,6 +118,8 @@ export function Chart({ option, height, label, scroll, className }: ChartProps) 
       chart.dispose();
       chartRef.current = null;
     };
+    // The palette is part of the instance; a chart never switches palettes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Every option change replaces the previous one (`notMerge`): a chart is a
@@ -111,10 +128,10 @@ export function Chart({ option, height, label, scroll, className }: ChartProps) 
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
-    const resolved = typeof option === "function" ? option(ensureTheme()) : option;
+    const resolved = typeof option === "function" ? option(ensureTheme(palette)) : option;
     const reduced = window.matchMedia(REDUCED_MOTION).matches;
     chart.setOption({ ...resolved, animation: !reduced }, { notMerge: true });
-  }, [option]);
+  }, [option, palette]);
 
   const drawing = (
     <div

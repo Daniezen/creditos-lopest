@@ -1,7 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildEchartsTheme, CHART_TOKENS, resolveChartTheme, toDash, toNumber } from "../themes/lopest-chart";
+import {
+  buildEchartsTheme,
+  CHART_TOKENS,
+  echartsThemeName,
+  resolveChartTheme,
+  toDash,
+  toNumber,
+} from "../themes/lopest-chart";
 
 const DS = join(__dirname, "..");
 const CSS = ["tokens/primitives.css", "themes/lopest.css", "tokens/semantic.css", "tokens/typography.css"]
@@ -40,7 +47,12 @@ describe("resolveChartTheme over the real tokens", () => {
   const theme = resolveChartTheme(readToken, 16, "Geist");
 
   it("defines every chart token in CSS", () => {
-    const names = [...Object.values(CHART_TOKENS.color), ...Object.values(CHART_TOKENS.size), CHART_TOKENS.dash.grid];
+    const names = [
+      ...Object.values(CHART_TOKENS.color),
+      ...Object.values(CHART_TOKENS.casaNegocio),
+      ...Object.values(CHART_TOKENS.size),
+      CHART_TOKENS.dash.grid,
+    ];
     expect(names.filter((name) => readToken(name) === "")).toEqual([]);
   });
 
@@ -56,5 +68,19 @@ describe("resolveChartTheme over the real tokens", () => {
     expect(echartsTheme.color[0]).toBe(theme.color.realizedPrimary);
     expect(echartsTheme.valueAxis.splitLine.lineStyle.type).toEqual([3, 3]);
     expect(echartsTheme.textStyle.fontFamily).toBe("Geist");
+  });
+
+  it("keeps the base palette by default and draws Casa y Negocio with its own", () => {
+    expect(echartsThemeName("lopest")).toBe("lopest");
+    expect(buildEchartsTheme(theme).color).toEqual(buildEchartsTheme(theme, "lopest").color);
+
+    const cn = buildEchartsTheme(theme, "casa-negocio");
+    // Negocio ink, Casa teal, Ahorro gold: the canvas identities, in that order.
+    expect(cn.color.slice(0, 3)).toEqual(["#24123f", "#0f766e", "#b8860b"]);
+    expect(cn.tooltip.backgroundColor).toBe("#24123f");
+    expect(cn.tooltip.textStyle.color).toBe("#ffffff");
+    // Furniture sizes are shared, not duplicated.
+    expect(cn.valueAxis.splitLine.lineStyle.type).toEqual([3, 3]);
+    expect(echartsThemeName("casa-negocio")).not.toBe("lopest");
   });
 });

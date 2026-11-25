@@ -41,3 +41,58 @@
   --ds-chart-legend-reserve: 24px;
   --ds-chart-height-empty: 300px;
 }
+
+/*
+  Casa y Negocio geometry (approved canvas). Shared by the module rail, the
+  folder header, the month line and the Tablero pieces.
+*/
+:root {
+  --ds-radius-tab: 0.875rem;
+  --ds-radius-card: 1.25rem;
+  --ds-radius-panel: 1.125rem;
+  --ds-radius-chip: 0.1875rem;
+  --ds-radius-icon: 0.625rem;
+
+  --ds-cn-rail-width: 5.5rem;
+  --ds-cn-rail-item: 4.25rem;
+  --ds-cn-rail-icon-w: 2.5rem;
+  --ds-cn-rail-icon-h: 2rem;
+  --ds-cn-content-max: 85rem;
+  --ds-cn-bottom-nav-reserve: 7.5rem;
+  --ds-cn-bottom-nav-height: 4.75rem;
+
+  --ds-cn-line-height: 6.5rem;
+  --ds-cn-line-inset: 2.5rem;
+  --ds-cn-line-row: 0.9375rem;
+  --ds-cn-line-nudge: 0.875rem;
+  --ds-cn-line-hoy: 2.5rem;
+  --ds-cn-popover-width: 16.25rem;
+  --ds-cn-popover-narrow: 15.625rem;
+
+  --ds-cn-mark: 0.875rem;
+  --ds-cn-mark-sm: 0.75rem;
+  --ds-cn-mark-md: 0.8125rem;
+  --ds-cn-dot: 0.3125rem;
+  --ds-cn-dot-md: 0.4375rem;
+  --ds-cn-swatch: 0.5625rem;
+
+  --ds-cn-cal-cell: 2.875rem;
+  --ds-cn-cal-gap-x: 0.125rem;
+  --ds-cn-cal-gap-y: 0.25rem;
+  --ds-cn-cal-head: 1.0625rem;
+  --ds-cn-cal-width: 24.5rem;
+
+  --ds-cn-path-label: 12.5rem;
+  --ds-cn-path-bar: 1.875rem;
+  --ds-cn-flap: 1.625rem;
+  --ds-cn-step: 1.625rem;
+  --ds-cn-equation-name: 5.375rem;
+  --ds-cn-fab: 3.75rem;
+  --ds-cn-field-min: 10.625rem;
+  --ds-cn-account-min: 9.375rem;
+  --ds-cn-envelope-min: 11.875rem;
+  --ds-cn-envelope-mobile: 8.75rem;
+  --ds-cn-path-min: 38.75rem;
+  --ds-cn-money-min: 32.5rem;
+  --ds-cn-street-min: 16.25rem;
+}

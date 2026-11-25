@@ -58,3 +58,94 @@
     --layout-topbar-height: 64px;
   }
 }
+
+/*
+  Casa y Negocio semantic roles. Views of the module consume only these
+  (through recipes/casa-negocio.ts); values live in themes/lopest.css.
+*/
+:root {
+  --cn-color-ink: var(--lopest-cn-ink);
+  --cn-color-ink-raised: var(--lopest-cn-ink-raised);
+  --cn-color-on-ink: var(--lopest-cn-on-ink);
+  --cn-color-on-ink-soft: var(--lopest-cn-on-ink-soft);
+
+  --cn-color-text: var(--lopest-cn-ink);
+  --cn-color-text-label: var(--lopest-cn-ink-label);
+  --cn-color-text-secondary: var(--lopest-cn-ink-soft);
+  --cn-color-text-muted: var(--lopest-cn-ink-muted);
+  --cn-color-text-faint: var(--lopest-cn-ink-faint);
+  --cn-color-operator: var(--lopest-cn-ink-ghost);
+  --cn-color-link: var(--lopest-cn-link);
+
+  --cn-color-lienzo: var(--lopest-cn-lienzo);
+  --cn-color-paper: var(--lopest-cn-paper);
+  --cn-color-surface: var(--lopest-cn-surface);
+  --cn-color-border: var(--lopest-cn-border);
+  --cn-color-border-soft: var(--lopest-cn-border-soft);
+  --cn-color-border-dashed: var(--lopest-cn-ink-line);
+  --cn-color-track: var(--lopest-cn-track);
+  --cn-color-well: var(--lopest-cn-well);
+  --cn-color-flap: var(--lopest-cn-flap);
+  --cn-color-selected: var(--lopest-cn-track);
+
+  --cn-color-action: var(--lopest-cn-action);
+  --cn-color-action-hover: var(--lopest-cn-action-hover);
+  --cn-color-action-ring: var(--lopest-cn-action-ring);
+  --cn-color-action-on-ink: var(--lopest-cn-action-on-ink);
+  --cn-color-focus: var(--lopest-cn-action-ring);
+  --cn-brand-mark: linear-gradient(135deg, var(--lopest-cn-brand-from), var(--lopest-cn-brand-to));
+
+  --cn-color-negocio: var(--lopest-cn-ink);
+  --cn-color-negocio-label: var(--lopest-cn-ink-label);
+  --cn-color-casa: var(--lopest-cn-casa);
+  --cn-color-casa-soft: var(--lopest-cn-casa-soft);
+  --cn-color-ahorro: var(--lopest-cn-ahorro);
+  --cn-color-ahorro-text: var(--lopest-cn-ahorro-text);
+
+  --cn-color-ok: var(--lopest-cn-ok);
+  --cn-color-attention: var(--lopest-cn-attention);
+  --cn-color-attention-ring: var(--lopest-cn-attention-ring);
+  --cn-color-attention-tint: var(--lopest-cn-attention-tint);
+  --cn-color-attention-surface: var(--lopest-cn-attention-surface);
+  --cn-color-attention-text: var(--lopest-cn-attention-text);
+  --cn-color-problem: var(--lopest-cn-problem);
+  --cn-color-problem-ring: var(--lopest-cn-problem-ring);
+  --cn-color-problem-soft: var(--lopest-cn-problem-soft);
+  --cn-color-problem-tint: var(--lopest-cn-problem-tint);
+  --cn-color-problem-surface: var(--lopest-cn-problem-surface);
+  --cn-color-problem-text: var(--lopest-cn-problem-text);
+
+  --cn-shadow-overlay: var(--lopest-cn-shadow-ink);
+  --cn-shadow-panel-active: inset 0 0 0 2px var(--cn-color-action);
+  --cn-shadow-selected: inset 0 0 0 2px var(--cn-color-action);
+
+  /* Month line marks: a 2 px state ring and a 4 px halo of the ground they sit on. */
+  --cn-mark-halo: 0 0 0 4px var(--cn-color-surface);
+  --cn-mark-ring-ink: 0 0 0 2px var(--cn-color-ink), var(--cn-mark-halo);
+  --cn-mark-ring-problem: 0 0 0 2px var(--cn-color-problem), var(--cn-mark-halo);
+  --cn-mark-ring-ahorro: 0 0 0 2px var(--cn-color-ahorro), var(--cn-mark-halo);
+  --cn-mark-ring-on-ink: 0 0 0 2px var(--cn-color-ink);
+  --cn-mark-ring-on-ink-light: 0 0 0 2px var(--cn-color-on-ink);
+  --cn-mark-ring-on-ink-problem: 0 0 0 2px var(--cn-color-problem);
+  --cn-mark-ring-on-ink-ahorro: 0 0 0 2px var(--cn-color-ahorro);
+
+  /* Envelope state rings (inset, so the card keeps its size). */
+  --cn-ring-soft: inset 0 0 0 1px var(--cn-color-border-soft);
+  --cn-ring-attention: inset 0 0 0 2px var(--cn-color-attention-ring);
+  --cn-ring-problem: inset 0 0 0 2px var(--cn-color-problem-ring);
+  --cn-focus-ring: 0 0 0 3px color-mix(in srgb, var(--cn-color-focus) 45%, transparent);
+
+  /* Chart roles for the module palette, read by themes/lopest-chart.ts. */
+  --dataviz-cn-negocio: var(--lopest-cn-ink);
+  --dataviz-cn-negocio-soft: var(--lopest-cn-ink-soft);
+  --dataviz-cn-casa: var(--lopest-cn-casa);
+  --dataviz-cn-casa-soft: var(--lopest-cn-casa-soft);
+  --dataviz-cn-ahorro: var(--lopest-cn-ahorro);
+  --dataviz-cn-projected: var(--lopest-cn-ink-faint);
+  --dataviz-cn-grid: var(--lopest-cn-track);
+  --dataviz-cn-cursor: var(--lopest-cn-well);
+  --dataviz-cn-axis-text: var(--lopest-cn-ink-muted);
+  --dataviz-cn-text: var(--lopest-cn-ink);
+  --dataviz-cn-tooltip-surface: var(--lopest-cn-ink);
+  --dataviz-cn-tooltip-text: var(--lopest-cn-on-ink);
+}
