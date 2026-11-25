@@ -51,6 +51,7 @@
   --ds-radius-card: 1.25rem;
   --ds-radius-panel: 1.125rem;
   --ds-radius-chip: 0.1875rem;
+  --ds-radius-icon: 0.625rem;
 
   --ds-cn-rail-width: 5.5rem;
   --ds-cn-rail-item: 4.25rem;
@@ -58,6 +59,7 @@
   --ds-cn-rail-icon-h: 2rem;
   --ds-cn-content-max: 85rem;
   --ds-cn-bottom-nav-reserve: 7.5rem;
+  --ds-cn-bottom-nav-height: 4.75rem;
 
   --ds-cn-line-height: 6.5rem;
   --ds-cn-line-inset: 2.5rem;
