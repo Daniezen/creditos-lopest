@@ -4,7 +4,7 @@
 #
 # Usage (on the VPS, as `deploy`, which is in the `docker` group):
 #   bash scripts/operacion/backup-db.sh
-# Meant to run from the host crontab (see docs/estado/operacion.md §8).
+# Meant to run from the host crontab (see docs/estado/operacion.md §9).
 #
 # What it does, in order. Any failure aborts the run with exit code != 0, a
 # line in syslog (`journalctl -t lopest-backup`) and an ESTADO file that says

@@ -14,7 +14,7 @@
 #      --network none, so the restored data can neither be reached nor reach
 #      anything. A trap removes it on exit, success or failure.
 #   3. Replays the roles file, then pg_restore WITH owners — the same path a
-#      real disaster restore takes (docs/estado/operacion.md §8.4) — so a
+#      real disaster restore takes (docs/estado/operacion.md §9.4) — so a
 #      missing role or a broken ownership chain shows up here, not on the bad day.
 #   4. Runs the same read-only queries on the restored copy and on production:
 #        - the migration ledger (_prisma_migrations: name + checksum + finished),
