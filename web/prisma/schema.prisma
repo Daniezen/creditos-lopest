@@ -95,6 +95,10 @@ model Credito {
   abonoSnapshots      AbonoSnapshot[]
   extensionSnapshots ExtensionPlazoSnapshot[]
 
+  // Casa y Negocio back-references (Prisma-side only, no column on "creditos").
+  cnAsignacionDesembolso CnAsignacionCuenta? @relation("CnAsignacionDesembolso")
+  cnCastigos             CnCastigoCredito[]
+
   @@index([clienteId])
   @@index([ownerUserId])
   @@index([codigo])
@@ -150,6 +154,8 @@ model EventoFinanciero {
   @@index([estado, fechaPago])
   @@index([estado, fechaProgramada])
   abonoSnapshot AbonoSnapshot? @relation("AbonoSnapshotEvent")
+  // Casa y Negocio back-reference (Prisma-side only, no column on "eventos_financieros").
+  cnAsignacion  CnAsignacionCuenta? @relation("CnAsignacionCobro")
 
   @@map("eventos_financieros")
 }
@@ -271,6 +277,9 @@ model User {
 
   clientesPropios Cliente[] @relation("ClienteOwner")
   creditosPropios Credito[] @relation("CreditoOwner")
+
+  // Casa y Negocio back-reference (Prisma-side only, no column on "users").
+  cnPermisos CnPermiso[]
 
   @@index([email])
   @@index([activo])
@@ -397,4 +406,325 @@ enum ProveedorArchivo {
   LOCAL
   S3
   OTRO
+}
+
+// ============================================================================
+// CASA Y NEGOCIO (family module, docs/specs/casa-negocio.md)
+// ============================================================================
+//
+// Every table is prefixed `cn_` so the module stays a self-contained island:
+// it READS "creditos" / "eventos_financieros" and never writes them. What the
+// module needs to say about an existing loan row (which account a payment went
+// into, whether a loan was written off) lives in its own tables that point at
+// the loan row, never in new columns on it.
+//
+// Money is Decimal(18, 2) like the rest of the schema. Actors are stored as
+// `accionPor` (User.id, no FK) following the convention of the existing
+// models; only `CnPermiso` has a real FK to "users", because a permission
+// without its user is meaningless.
+
+/// Which side of the family money an account belongs to.
+enum CnGrupoCuenta {
+  NEGOCIO
+  CASA
+}
+
+/// Physical nature of an account; AHORRO accounts are the savings target.
+enum CnTipoCuenta {
+  EFECTIVO
+  BANCO
+  BILLETERA
+  AHORRO
+}
+
+/// Manual movement kinds. The origin/destination rules per kind are enforced
+/// twice: by the services (with readable messages) and by CHECK constraints
+/// in the migration (so no script can store an impossible movement).
+enum CnTipoMovimiento {
+  GASTO_NEGOCIO // business expense: from a NEGOCIO account, no destination
+  APORTE // capital contribution: into a NEGOCIO account (origin optional, CASA)
+  RETIRO_CASA // money taken home: NEGOCIO account -> CASA account
+  TRASLADO // same-group transfer (e.g. "pasar al ahorro": CASA -> CASA ahorro)
+  GASTO_FIJO // household fixed expense: from a CASA account, FIJO category
+  GASTO_VARIABLE // household variable expense: from a CASA account, VARIABLE category
+  INGRESO_CASA // extra household income: into a CASA account
+}
+
+enum CnClaseGasto {
+  FIJO
+  VARIABLE
+}
+
+enum CnPeriodicidad {
+  MENSUAL
+  ANUAL
+}
+
+/// Per-person capabilities; the string form used in code is `casa_negocio.<x>`.
+enum CnCapacidad {
+  VER
+  ANOTAR
+  CONTAR
+  CONFIGURAR
+}
+
+/// The ten alert rules of spec §5, in the spec's order.
+enum CnCodigoAviso {
+  FIJO_VENCIDO_SIN_PAGAR // 1. problem
+  SOBRE_CERCA_DEL_TOPE // 2. attention, threshold % (90)
+  SOBRES_CIERRE_NEGATIVO // 3. attention
+  CUENTA_SIN_CONTAR // 4. attention, threshold days (7)
+  ARQUEO_NO_CUADRA // 5. problem
+  RETIRO_SUPERA_GANANCIA // 6. problem
+  MOVIMIENTO_DEJA_SIN_SALDO // 7. problem
+  CREDITO_SIN_PAGOS // 8. attention, threshold days (90)
+  GASTO_ANUAL_PROXIMO // 9. attention, threshold days (30)
+  CIERRE_SOBRANTE_SIN_AHORRO // 10. attention
+}
+
+/// Where the money lives. Never deleted once it has history: archived instead.
+model CnCuenta {
+  id String @id @default(cuid())
+
+  nombre String        @unique
+  grupo  CnGrupoCuenta
+  tipo   CnTipoCuenta
+
+  /// Balance on `fechaSaldoInicial` (local midnight, America/Bogota). Every
+  /// movement or assigned payment dated before it is already inside this
+  /// number, so balance math only adds what happened from that day on.
+  saldoInicial      Decimal  @db.Decimal(18, 2)
+  fechaSaldoInicial DateTime
+
+  /// Display order inside its group.
+  orden Int @default(0)
+
+  archivada   Boolean   @default(false)
+  archivadaEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  movimientosOrigen   CnMovimiento[]       @relation("CnMovimientoOrigen")
+  movimientosDestino  CnMovimiento[]       @relation("CnMovimientoDestino")
+  asignaciones        CnAsignacionCuenta[]
+  arqueoDetalles      CnArqueoDetalle[]
+  configuracionAhorro CnConfiguracion[]
+
+  @@index([grupo, archivada])
+  @@map("cn_cuentas")
+}
+
+/// A household expense line: fixed (amount + due day) or variable ("sobre",
+/// monthly cap). Its class can flip in Configuración; the services carry the
+/// category's movements along so none is lost or misfiled.
+model CnCategoriaGasto {
+  id String @id @default(cuid())
+
+  nombre String       @unique
+  clase  CnClaseGasto
+
+  /// FIJO: expected amount per period. VARIABLE: monthly cap. Null = not set yet.
+  monto Decimal? @db.Decimal(18, 2)
+
+  periodicidad CnPeriodicidad @default(MENSUAL)
+  /// 1-12, required for ANUAL (the month it is due).
+  mesAnual     Int?
+  /// 1-31, the due day; clamped to the month's last day when it is shorter.
+  diaPago      Int?
+
+  activa Boolean @default(true)
+  orden  Int     @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  movimientos CnMovimiento[]
+
+  @@index([clase, activa])
+  @@map("cn_categorias_gasto")
+}
+
+/// A manual money movement. Soft-deleted only (`eliminadoEn`), never removed,
+/// so every month can be recalculated exactly as it was seen.
+model CnMovimiento {
+  id String @id @default(cuid())
+
+  /// Client-generated key of the submission; a replay returns the same row.
+  idempotencyKey String? @unique
+
+  tipo CnTipoMovimiento
+
+  /// Calendar day of the movement (local midnight, America/Bogota).
+  fecha DateTime
+  monto Decimal  @db.Decimal(18, 2)
+
+  cuentaOrigenId String?
+  cuentaOrigen   CnCuenta? @relation("CnMovimientoOrigen", fields: [cuentaOrigenId], references: [id], onDelete: Restrict)
+
+  cuentaDestinoId String?
+  cuentaDestino   CnCuenta? @relation("CnMovimientoDestino", fields: [cuentaDestinoId], references: [id], onDelete: Restrict)
+
+  categoriaId String?
+  categoria   CnCategoriaGasto? @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  nota String?
+
+  eliminadoEn       DateTime?
+  eliminadoPor      String?
+  motivoEliminacion String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String
+
+  // Month queries filter by date range, with or without the kind.
+  @@index([fecha])
+  @@index([tipo, fecha])
+  @@index([cuentaOrigenId, fecha])
+  @@index([cuentaDestinoId, fecha])
+  @@index([categoriaId, fecha])
+  @@map("cn_movimientos")
+}
+
+/// Which account an automatic movement went through: a paid installment or
+/// abono (`eventoFinancieroId`, money IN) or a loan disbursement (`creditoId`,
+/// money OUT). Exactly one of the two is set (CHECK in the migration). The
+/// loan tables are not touched; the assignment follows its event if an abono
+/// reversal deletes it (ON DELETE CASCADE).
+model CnAsignacionCuenta {
+  id String @id @default(cuid())
+
+  eventoFinancieroId String?           @unique
+  eventoFinanciero   EventoFinanciero? @relation("CnAsignacionCobro", fields: [eventoFinancieroId], references: [id], onDelete: Cascade)
+
+  creditoId String?  @unique
+  credito   Credito? @relation("CnAsignacionDesembolso", fields: [creditoId], references: [id], onDelete: Cascade)
+
+  cuentaId String
+  cuenta   CnCuenta @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String
+
+  @@index([cuentaId])
+  @@map("cn_asignaciones_cuenta")
+}
+
+/// One cash count session ("arqueo"): when and who. Written once.
+model CnArqueo {
+  id String @id @default(cuid())
+
+  idempotencyKey String? @unique
+
+  /// Moment of the count (full timestamp, not just the day).
+  fecha DateTime
+  nota  String?
+
+  creadoEn  DateTime @default(now())
+  accionPor String
+
+  detalles CnArqueoDetalle[]
+
+  @@index([fecha])
+  @@map("cn_arqueos")
+}
+
+/// Per-account line of an arqueo: what Lopest computed vs what was counted.
+/// `saldoSistema` is computed by the server at save time, never sent by the
+/// browser; `diferencia` = contado - saldoSistema.
+model CnArqueoDetalle {
+  id String @id @default(cuid())
+
+  arqueoId String
+  arqueo   CnArqueo @relation(fields: [arqueoId], references: [id], onDelete: Cascade)
+
+  cuentaId String
+  cuenta   CnCuenta @relation(fields: [cuentaId], references: [id], onDelete: Restrict)
+
+  saldoSistema Decimal @db.Decimal(18, 2)
+  contado      Decimal @db.Decimal(18, 2)
+  diferencia   Decimal @db.Decimal(18, 2)
+
+  @@unique([arqueoId, cuentaId])
+  @@index([cuentaId])
+  @@map("cn_arqueo_detalles")
+}
+
+/// Single-row module settings (id = "default", inserted by the migration).
+model CnConfiguracion {
+  id String @id @default("default")
+
+  /// Monthly target for the household allocation; a goal, not an income.
+  metaAsignacionCasa Decimal?  @db.Decimal(18, 2)
+  /// Optional savings goal and the account it is measured on.
+  metaAhorro         Decimal?  @db.Decimal(18, 2)
+  cuentaAhorroId     String?
+  cuentaAhorro       CnCuenta? @relation(fields: [cuentaAhorroId], references: [id], onDelete: Restrict)
+
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@map("cn_configuracion")
+}
+
+/// One row per alert rule of spec §5 (all ten inserted by the migration).
+model CnReglaAviso {
+  codigo CnCodigoAviso @id
+
+  activa Boolean @default(true)
+  /// Percent or days depending on the rule; null for rules without threshold.
+  umbral Int?
+
+  actualizadoEn DateTime @updatedAt
+  accionPor     String?
+
+  @@map("cn_reglas_aviso")
+}
+
+/// Capability grant: presence of the row means the user has it.
+model CnPermiso {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  capacidad CnCapacidad
+
+  creadoEn  DateTime @default(now())
+  accionPor String?
+
+  @@id([userId, capacidad])
+  @@index([capacidad])
+  @@map("cn_permisos")
+}
+
+/// Loan write-off ("préstamo perdido"). A separate table instead of a new
+/// `EstadoCredito` value: the loan's state is recomputed from its installments
+/// by the Créditos services (an extra enum value would be overwritten on the
+/// next payment and would break every exhaustive switch), and a write-off
+/// carries data an enum cannot hold (amount, date, reason, actor, reversal).
+/// At most one active (non-reverted) row per loan, enforced by the service.
+model CnCastigoCredito {
+  id String @id @default(cuid())
+
+  creditoId String
+  credito   Credito @relation(fields: [creditoId], references: [id], onDelete: Restrict)
+
+  monto  Decimal  @db.Decimal(18, 2)
+  fecha  DateTime
+  motivo String
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  accionPor     String
+
+  revertidoEn     DateTime?
+  revertidoPor    String?
+  motivoReversion String?
+
+  @@index([creditoId])
+  @@index([fecha])
+  @@map("cn_castigos_credito")
 }
