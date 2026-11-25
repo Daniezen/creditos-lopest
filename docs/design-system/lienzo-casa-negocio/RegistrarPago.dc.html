@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cobrar una cuota</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="creditos" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; justify-content: center">
+
+    <section aria-labelledby="cobrar" style="flex: 1 1 560px; max-width: 680px; min-width: 0; padding: 30px; border-radius: 24px; background: #ffffff; border: 1px solid #e7e1ef; display: flex; flex-direction: column; gap: 22px">
+      <div>
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5a86">[Cliente 2] · LP-26-0294</div>
+        <h1 id="cobrar" style="margin: 4px 0 0; font-size: 40px; font-weight: 300; letter-spacing: -0.02em">Cuota 5 <span style="color: #a89cc0">de 12</span></h1>
+      </div>
+
+      <div>
+        <div style="font-size: 52px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1">$ 475.000</div>
+        <div style="display: flex; gap: 3px; height: 10px; margin-top: 14px; border-radius: 999px; overflow: hidden" role="img" aria-label="380 mil de capital y 95 mil de interés">
+          <span style="flex: 380 1 0; background: #24123f"></span>
+          <span style="flex: 95 1 0; background: #0f766e"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px">
+          <span><span style="color: #6b5a86">Capital</span> $ 380.000</span>
+          <span><span style="color: #6b5a86">Interés</span> <span style="color: #0f766e; font-weight: 600">$ 95.000</span></span>
+        </div>
+      </div>
+
+      <div role="group" aria-label="Fecha del pago" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{ fechas }}" as="f" hint-placeholder-count="3">
+          <button type="button" onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif; background: {{ f.bg }}; color: {{ f.fg }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+
+      <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+        <legend style="font-size: 18px; font-weight: 300; margin-bottom: 10px">¿Dónde entró la plata?</legend>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ cuentas }}" as="c" hint-placeholder-count="3">
+            <button type="button" onClick="{{ c.pick }}" aria-pressed="{{ c.pressed }}" style="text-align: left; padding: 16px; border-radius: 18px; border: 0; cursor: pointer; font-family: Geist, system-ui, sans-serif; background: {{ c.bg }}; color: {{ c.fg }}; box-shadow: inset 0 0 0 2px {{ c.ring }}">
+              <div style="font-size: 15px; font-weight: 600">{{ c.nombre }}</div>
+              <div style="font-size: 13px; opacity: 0.75; margin-top: 8px; font-variant-numeric: tabular-nums">{{ c.antes }}</div>
+              <div style="font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums">{{ c.despues }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </fieldset>
+
+      <button type="button" style="min-height: 56px; border-radius: 16px; border: 0; background: #7c3aed; color: #fff; font-weight: 600; font-size: 17px; cursor: pointer; font-family: Geist, system-ui, sans-serif">Cobrar $ 475.000 en {{ cuentaSel }}</button>
+    </section>
+
+    <section aria-labelledby="entregar" style="flex: 1 1 380px; max-width: 460px; min-width: 0; padding: 30px; border-radius: 24px; background: #ffffff; border: 1px solid #e7e1ef; display: flex; flex-direction: column; gap: 18px">
+      <div>
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5a86">Nuevo crédito · paso 3 de 4</div>
+        <h2 id="entregar" style="margin: 4px 0 0; font-size: 32px; font-weight: 300">Entregar $ 3.000.000</h2>
+      </div>
+      <div style="font-size: 18px; font-weight: 300">¿De dónde sale?</div>
+      <sc-for list="{{ origenes }}" as="o" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: {{ o.bg }}; box-shadow: inset 0 0 0 2px {{ o.ring }}">
+          <div>
+            <div style="font-size: 15px; font-weight: 600; color: {{ o.fg }}">{{ o.nombre }}</div>
+            <div style="font-size: 12px; color: {{ o.subFg }}">{{ o.sub }}</div>
+          </div>
+          <span style="font-size: 17px; font-variant-numeric: tabular-nums; color: {{ o.fg }}">{{ o.saldo }}</span>
+        </div>
+      </sc-for>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { cuenta: 'nequi', fecha: 'hoy' }; }
+  renderVals() {
+    const fmt = (n) => '$ ' + n.toLocaleString('es-CO');
+    const cs = [['efectivo', 'Efectivo', 1320000], ['banco', 'Bancolombia', 11900000], ['nequi', 'Nequi', 1600000]];
+    const cuentas = cs.map(([id, nombre, n]) => {
+      const on = this.state.cuenta === id;
+      return { nombre, antes: fmt(n), despues: on ? '→ ' + fmt(n + 475000) : ' ', pressed: on ? 'true' : 'false', bg: on ? '#24123f' : '#fbf8f4', fg: on ? '#ffffff' : '#24123f', ring: on ? '#24123f' : '#ece6f3', pick: () => this.setState({ cuenta: id }) };
+    });
+    const fechas = [['hoy', 'Hoy, 25 nov'], ['ayer', 'Ayer'], ['otra', 'Otra fecha']].map(([id, label]) => {
+      const on = this.state.fecha === id;
+      return { label, pressed: on ? 'true' : 'false', bg: on ? '#efeaf6' : '#ffffff', fg: '#24123f', pick: () => this.setState({ fecha: id }) };
+    });
+    const origenes = [
+      { nombre: 'Bancolombia', saldo: fmt(11900000), sub: 'Queda $ 8.900.000', bg: '#24123f', fg: '#ffffff', subFg: '#c9bfdc', ring: '#24123f' },
+      { nombre: 'Efectivo', saldo: fmt(1320000), sub: 'No alcanza', bg: '#fbf8f4', fg: '#a89cc0', subFg: '#b91c1c', ring: '#ece6f3' },
+      { nombre: 'Nequi', saldo: fmt(1600000), sub: 'No alcanza', bg: '#fbf8f4', fg: '#a89cc0', subFg: '#b91c1c', ring: '#ece6f3' }
+    ];
+    return { cuentas, fechas, origenes, cuentaSel: cs.find((c) => c[0] === this.state.cuenta)[1] };
+  }
+}
+</script>
+</body>
+</html>

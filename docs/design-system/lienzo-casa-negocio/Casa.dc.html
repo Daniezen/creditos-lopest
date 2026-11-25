@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Casa y Negocio · Casa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="casa" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box">
+    <div style="max-width: 1360px; margin: 0 auto">
+      <dc-import name="ModuloTabs" active="casa" hint-size="100%,330px"></dc-import>
+      <div style="background: #fbf8f4; border: 1px solid #e7e1ef; border-top: 0; border-radius: 0 0 24px 24px; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+
+        <section aria-label="Casa este mes" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 16px 20px; border-radius: 20px; background: #e6f2f0">
+          <span style="display: inline-flex; align-items: center; gap: 8px; margin-right: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0f766e"><span style="width: 10px; height: 10px; border-radius: 3px; background: #0f766e"></span>Casa</span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3"></span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Entró</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 5.500.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">−</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Fijos</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 2.727.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">−</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Variables</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 1.940.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">=</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #24123f"><span style="font-size: 11px; color: #c9bfdc">Hoy</span><span style="font-size: 18px; font-weight: 400; color: #fff; font-variant-numeric: tabular-nums">$ 833.000</span></span>
+        </section>
+
+        <section aria-labelledby="anotar-casa" style="padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+            <h2 id="anotar-casa" style="margin: 0; font-size: 22px; font-weight: 300">Anotar en la casa</h2>
+            <div role="group" aria-label="Tipo" style="display: inline-flex; padding: 4px; border-radius: 14px; background: #f3eff8">
+              <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="3">
+                <button type="button" onClick="{{ t.pick }}" aria-pressed="{{ t.pressed }}" style="min-height: 40px; padding: 0 18px; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif; background: {{ t.bg }}; color: {{ t.fg }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ esFijo }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <span style="font-size: 12px; color: #6b5a86">Sin pagar:</span>
+              <sc-for list="{{ pendientes }}" as="p" hint-placeholder-count="2">
+                <button type="button" onClick="{{ p.pick }}" style="min-height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif; border: 1px solid {{ p.border }}; background: {{ p.bg }}; color: {{ p.fg }}">{{ p.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">{{ catLabel }}
+              <select style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box"><sc-for list="{{ catOpts }}" as="o" hint-placeholder-count="4"><option>{{ o }}</option></sc-for></select>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">Monto
+              <input type="text" value="{{ monto }}" placeholder="$ 0" style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box; font-size: 20px; font-weight: 300">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">{{ cuentaLabel }}
+              <select style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box"><option>Cuenta casa</option><option>Nu · ahorro</option></select>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">Fecha
+              <input type="text" value="Hoy, 25 nov" style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box">
+            </label>
+          </div>
+          <div style="display: flex; justify-content: flex-end">
+            <button type="button" style="min-height: 48px; padding: 0 28px; border-radius: 12px; border: 0; background: #7c3aed; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; font-family: Geist, system-ui, sans-serif">Anotar</button>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start">
+          <section aria-label="Libro de la casa" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <sc-for list="{{ dias }}" as="d" hint-placeholder-count="5">
+              <div style="display: flex; gap: 18px; padding: 16px 20px; border-radius: 18px; background: #ffffff">
+                <div style="flex: none; width: 56px; text-align: center">
+                  <div style="font-size: 34px; font-weight: 300; line-height: 1">{{ d.dia }}</div>
+                  <div style="font-size: 12px; color: #857899; margin-top: 2px">{{ d.semana }}</div>
+                </div>
+                <div style="flex: 1; min-width: 0">
+                  <sc-for list="{{ d.movs }}" as="m" hint-placeholder-count="2">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f3eff8">
+                      <span style="flex: none; width: 10px; height: 10px; border-radius: {{ m.forma }}; background: {{ m.color }}" aria-hidden="true"></span>
+                      <div style="flex: 1; min-width: 0">
+                        <div style="font-size: 15px; font-weight: 500">{{ m.nombre }}</div>
+                        <div style="font-size: 12px; color: #857899">{{ m.sub }}</div>
+                      </div>
+                      <div style="font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; color: {{ m.fg }}">{{ m.monto }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </section>
+
+          <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+            <section aria-labelledby="fijos" style="padding: 20px; border-radius: 18px; background: #ffffff">
+              <h2 id="fijos" style="margin: 0 0 10px; font-size: 20px; font-weight: 300">Fijos de noviembre</h2>
+              <sc-for list="{{ fijos }}" as="f" hint-placeholder-count="8">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 9px 0">
+                  <span style="flex: none; width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: {{ f.bg }}; box-shadow: inset 0 0 0 2px {{ f.ring }}; color: #fff" aria-hidden="true">
+                    <sc-if value="{{ f.pagado }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+                  </span>
+                  <div style="flex: 1; min-width: 0">
+                    <div style="font-size: 14px; font-weight: 500; color: {{ f.nameFg }}">{{ f.nombre }}</div>
+                    <div style="font-size: 12px; color: {{ f.subFg }}">{{ f.sub }}</div>
+                  </div>
+                  <div style="font-size: 14px; font-variant-numeric: tabular-nums; color: {{ f.nameFg }}">{{ f.monto }}</div>
+                </div>
+              </sc-for>
+            </section>
+            <section aria-labelledby="sobres-casa" style="padding: 20px; border-radius: 18px; background: #ffffff">
+              <h2 id="sobres-casa" style="margin: 0 0 10px; font-size: 20px; font-weight: 300">Sobres de noviembre</h2>
+              <sc-for list="{{ sobres }}" as="s" hint-placeholder-count="6">
+                <div style="padding: 8px 0">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 14px">
+                    <span style="font-weight: 500">{{ s.nombre }}</span>
+                    <span style="font-variant-numeric: tabular-nums; color: {{ s.fg }}">{{ s.queda }}</span>
+                  </div>
+                  <div style="margin-top: 6px; height: 5px; border-radius: 999px; background: #efeaf6; overflow: hidden"><div style="height: 5px; width: {{ s.ancho }}; background: {{ s.barra }}"></div></div>
+                </div>
+              </sc-for>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tipo: 'fijo', pend: 'seguros' }; }
+  renderVals() {
+    const s = this.state;
+    const fmt = (n) => (n < 0 ? '−$ ' : '$ ') + Math.abs(n).toLocaleString('es-CO');
+    const seg = (on) => on ? { bg: '#0f766e', fg: '#ffffff', pressed: 'true' } : { bg: 'transparent', fg: '#6b5a86', pressed: 'false' };
+    const tipos = [['fijo', 'Fijo'], ['variable', 'Variable'], ['ingreso', 'Ingreso']].map(([id, label]) => ({ label, ...seg(s.tipo === id), pick: () => this.setState({ tipo: id }) }));
+    const PEND = { seguros: ['Seguros Bolo', 170000], funeraria: ['Funeraria', 32000] };
+    const pendientes = Object.entries(PEND).map(([id, [n, m]]) => {
+      const on = s.pend === id;
+      return { label: n + ' · ' + fmt(m), border: on ? '#7c3aed' : '#e7e1ef', bg: on ? '#f3edff' : '#fff', fg: on ? '#5b21b6' : '#24123f', pick: () => this.setState({ pend: id }) };
+    });
+    const C = {
+      fijo: { catLabel: 'Gasto fijo', catOpts: [PEND[s.pend][0], 'Arriendo', 'Internet y TV', 'Crédito Davivienda'], monto: fmt(PEND[s.pend][1]), cuentaLabel: 'Pagado desde' },
+      variable: { catLabel: 'Sobre', catOpts: ['Mercado · quedan $ 1.490.000', 'EPM · quedan $ 158.000', 'Gasolina · quedan $ 14.000', 'Salud · pasado del tope'], monto: '', cuentaLabel: 'Pagado desde' },
+      ingreso: { catLabel: 'De dónde', catOpts: ['Arriendo recibido', 'Regalo', 'Otro'], monto: '', cuentaLabel: 'Recibido en' }
+    }[s.tipo];
+    const K = {
+      fijo: { color: '#24123f', forma: '999px' },
+      variable: { color: '#a89cc0', forma: '999px' },
+      ingreso: { color: '#0f766e', forma: '2px' }
+    };
+    const mv = (k, nombre, sub, n) => ({ ...K[k], nombre, sub, monto: (n > 0 ? '+' : '') + fmt(n), fg: n > 0 ? '#0f766e' : '#24123f' });
+    const dias = [
+      { dia: '24', semana: 'lun', movs: [mv('ingreso', 'Retiro del negocio', 'Bancolombia → Cuenta casa', 2500000)] },
+      { dia: '23', semana: 'dom', movs: [mv('variable', 'Mercado', 'Mercado semanal', -412000)] },
+      { dia: '21', semana: 'vie', movs: [mv('variable', 'Salud', 'Droguería', -72000)] },
+      { dia: '20', semana: 'jue', movs: [mv('fijo', 'Internet y TV', 'Cuenta casa', -120000)] },
+      { dia: '19', semana: 'mié', movs: [mv('variable', 'Gasolina', 'Tanqueo', -186000)] },
+      { dia: '17', semana: 'lun', movs: [mv('fijo', 'Arriendo', 'Cuenta casa', -1787000)] },
+      { dia: '16', semana: 'dom', movs: [mv('fijo', 'Crédito Davivienda', 'Cuota 14 de 36', -820000)] },
+      { dia: '12', semana: 'mié', movs: [mv('variable', 'EPM', 'Servicios', -312000)] },
+      { dia: '1', semana: 'sáb', movs: [mv('ingreso', 'Retiro del negocio', 'Bancolombia → Cuenta casa', 3000000)] }
+    ];
+    const F = {
+      pagado: { pagado: true, bg: '#24123f', ring: '#24123f', nameFg: '#24123f', subFg: '#857899' },
+      vencido: { pagado: false, bg: '#fff', ring: '#b91c1c', nameFg: '#24123f', subFg: '#b91c1c' },
+      noToca: { pagado: false, bg: '#fff', ring: '#e7e1ef', nameFg: '#a89cc0', subFg: '#a89cc0' }
+    };
+    const fijos = [
+      ['Crédito Davivienda', 'Pagado el 16', 820000, 'pagado'],
+      ['Arriendo', 'Pagado el 17', 1787000, 'pagado'],
+      ['Internet y TV', 'Pagado el 20', 120000, 'pagado'],
+      ['Funeraria', 'Venció el 16', 32000, 'vencido'],
+      ['Seguros Bolo', 'Venció el 20', 170000, 'vencido'],
+      ['Impuesto Bolo', 'En junio', 180000, 'noToca'],
+      ['SOAT Bolo', 'En agosto', 660000, 'noToca'],
+      ['Tecnomecánica Bolo', 'En marzo', 360000, 'noToca']
+    ].map(([nombre, sub, m, k]) => ({ nombre, sub, monto: fmt(m), ...F[k] }));
+    const sobre = (nombre, g, tope) => {
+      const p = g / tope, over = p > 1, near = !over && p >= 0.9;
+      return { nombre, queda: over ? 'Pasado ' + fmt(g - tope) : 'Quedan ' + fmt(tope - g), fg: over ? '#b91c1c' : '#24123f', ancho: Math.min(100, Math.round(p * 100)) + '%', barra: over ? '#b91c1c' : near ? '#d97706' : '#0f766e' };
+    };
+    const sobres = [sobre('Mercado', 1210000, 2700000), sobre('EPM', 312000, 470000), sobre('Gasolina', 186000, 200000), sobre('Salud', 72000, 50000), sobre('Entretenimiento', 60000, 150000), sobre('Imprevistos', 100000, 500000)];
+    return { ...C, tipos, pendientes, esFijo: s.tipo === 'fijo', dias, fijos, sobres };
+  }
+}
+</script>
+</body>
+</html>

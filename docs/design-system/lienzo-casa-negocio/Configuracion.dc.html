@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Casa y Negocio · Configuración</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="casa" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box">
+    <div style="max-width: 1360px; margin: 0 auto">
+      <dc-import name="ModuloTabs" active="config" hint-size="100%,330px"></dc-import>
+      <div style="background: #fbf8f4; border: 1px solid #e7e1ef; border-top: 0; border-radius: 0 0 24px 24px; padding: 28px; display: flex; flex-direction: column; gap: 28px">
+
+        <section aria-labelledby="c-cuentas" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="c-cuentas" style="margin: 0; font-size: 22px; font-weight: 300">Cuentas</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+            <sc-for list="{{ cuentas }}" as="c" hint-placeholder-count="5">
+              <div style="padding: 16px; border-radius: 18px; background: #ffffff; display: flex; flex-direction: column; gap: 6px">
+                <span style="width: 28px; height: 6px; border-radius: 999px; background: {{ c.color }}"></span>
+                <span style="font-size: 16px; font-weight: 600">{{ c.nombre }}</span>
+                <span style="font-size: 12px; color: #857899">{{ c.tipo }}</span>
+              </div>
+            </sc-for>
+            <button type="button" style="min-height: 96px; border-radius: 18px; border: 2px dashed #d6cce4; background: transparent; color: #6b5a86; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif">+ Cuenta</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="c-gastos" style="display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px">
+            <h2 id="c-gastos" style="margin: 0; font-size: 22px; font-weight: 300">Gastos de la casa</h2>
+            <label style="display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: #6b5a86">Meta mensual para la casa
+              <input type="text" value="$ 5.500.000" style="width: 150px; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; background: #fff; font-size: 18px; font-weight: 300; font-family: Geist, system-ui, sans-serif; color: #24123f">
+            </label>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+            <sc-for list="{{ columnas }}" as="col" hint-placeholder-count="2">
+              <div style="flex: 1 1 420px; min-width: 0; padding: 16px; border-radius: 20px; background: {{ col.bg }}; display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px">
+                  <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ col.fg }}">{{ col.titulo }}</span>
+                  <span style="font-size: 13px; color: #6b5a86">{{ col.total }}</span>
+                </div>
+                <sc-for list="{{ col.items }}" as="g" hint-placeholder-count="6">
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: #ffffff">
+                    <div style="flex: 1; min-width: 0">
+                      <div style="font-size: 15px; font-weight: 600">{{ g.nombre }}</div>
+                      <div style="font-size: 12px; color: #857899">{{ g.sub }}</div>
+                    </div>
+                    <span style="font-size: 15px; font-variant-numeric: tabular-nums">{{ g.monto }}</span>
+                    <button type="button" onClick="{{ g.mover }}" aria-label="{{ g.moverLabel }}" title="{{ g.moverLabel }}" style="width: 40px; height: 40px; border-radius: 12px; border: 1px solid #e7e1ef; background: #fbf8f4; color: #6b5a86; cursor: pointer; font-size: 16px">{{ g.flecha }}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section aria-labelledby="c-avisos" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="c-avisos" style="margin: 0; font-size: 22px; font-weight: 300">Avisos</h2>
+          <div style="padding: 6px 0; border-radius: 20px; background: #ffffff">
+            <sc-for list="{{ avisos }}" as="a" hint-placeholder-count="10">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 20px; border-top: 1px solid {{ a.borde }}">
+                <button type="button" role="switch" aria-checked="{{ a.checked }}" aria-label="{{ a.texto }}" onClick="{{ a.toggle }}" style="flex: none; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; position: relative; background: {{ a.track }}">
+                  <span style="position: absolute; top: 3px; left: {{ a.knob }}; width: 20px; height: 20px; border-radius: 999px; background: #ffffff"></span>
+                </button>
+                <span style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: {{ a.sev }}" title="{{ a.sevLabel }}"></span>
+                <span style="flex: 1 1 320px; font-size: 15px; color: {{ a.fg }}">{{ a.pre }}<sc-if value="{{ a.tieneValor }}" hint-placeholder-val="{{ false }}"><input type="text" value="{{ a.valor }}" aria-label="Valor" style="width: 52px; margin: 0 6px; min-height: 34px; padding: 0 8px; border-radius: 8px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; text-align: center; color: #24123f"></sc-if>{{ a.post }}</span>
+                <span style="font-size: 12px; color: #857899">{{ a.donde }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section aria-labelledby="c-perm" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="c-perm" style="margin: 0; font-size: 22px; font-weight: 300">Quién puede qué</h2>
+          <div style="padding: 8px 0; border-radius: 20px; background: #ffffff; overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; min-width: 640px">
+              <thead>
+                <tr style="font-size: 12px; color: #857899">
+                  <th scope="col" style="padding: 12px 20px; text-align: left; font-weight: 500">Persona</th>
+                  <sc-for list="{{ capsHead }}" as="h" hint-placeholder-count="4">
+                    <th scope="col" style="padding: 12px; font-weight: 500; text-align: center">{{ h }}</th>
+                  </sc-for>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ personas }}" as="p" hint-placeholder-count="3">
+                  <tr style="border-top: 1px solid #f3eff8">
+                    <th scope="row" style="padding: 14px 20px; text-align: left">
+                      <span style="display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600">
+                        <span style="width: 34px; height: 34px; border-radius: 999px; background: {{ p.avatar }}; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px">{{ p.ini }}</span>
+                        {{ p.nombre }}
+                      </span>
+                    </th>
+                    <sc-for list="{{ p.caps }}" as="c" hint-placeholder-count="4">
+                      <td style="padding: 10px; text-align: center">
+                        <button type="button" role="switch" aria-checked="{{ c.checked }}" aria-label="{{ c.aria }}" onClick="{{ c.toggle }}" style="width: 44px; height: 44px; border-radius: 14px; border: 0; cursor: pointer; background: {{ c.bg }}; color: {{ c.fg }}; box-shadow: inset 0 0 0 2px {{ c.ring }}">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ c.d }}"></path></svg>
+                        </button>
+                      </td>
+                    </sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1750}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      fijo: { arriendo: true, internet: true, davivienda: true, funeraria: true, segBolo: true, tecnoBolo: true, soatBolo: true, impBolo: true, epm: false, mercado: false, gasolina: false, salud: false, segNando: false, soatNando: false },
+      avisos: [true, true, true, true, true, true, true, true, true, true],
+      perm: { padre: ['ver', 'registrar', 'contar', 'config'], madre: ['ver'], hijo: ['ver', 'registrar', 'contar', 'config'] }
+    };
+  }
+  renderVals() {
+    const fmt = (n) => '$ ' + n.toLocaleString('es-CO');
+    const cuentas = [
+      { nombre: 'Efectivo', tipo: 'Negocio · efectivo', color: '#a89cc0' },
+      { nombre: 'Bancolombia', tipo: 'Negocio · banco', color: '#24123f' },
+      { nombre: 'Nequi', tipo: 'Negocio · billetera', color: '#6b5a86' },
+      { nombre: 'Cuenta casa', tipo: 'Casa · banco', color: '#0f766e' },
+      { nombre: 'Nu · ahorro', tipo: 'Casa · ahorro', color: '#b8860b' }
+    ];
+    const defs = [
+      ['arriendo', 'Arriendo', 1787000, 'Cada mes · día 17'],
+      ['internet', 'Internet y TV', 120000, 'Cada mes · día 20'],
+      ['davivienda', 'Crédito Davivienda', 820000, 'Cada mes · día 16'],
+      ['funeraria', 'Funeraria', 32000, 'Cada mes · día 16'],
+      ['segBolo', 'Seguros Bolo', 170000, 'Cada mes · día 20'],
+      ['tecnoBolo', 'Tecnomecánica Bolo', 360000, 'Cada año · marzo'],
+      ['soatBolo', 'SOAT Bolo', 660000, 'Cada año · agosto'],
+      ['impBolo', 'Impuesto Bolo', 180000, 'Cada año · junio'],
+      ['epm', 'EPM', 470000, 'Tope mensual'],
+      ['mercado', 'Mercado', 2700000, 'Tope mensual'],
+      ['gasolina', 'Gasolina', 200000, 'Tope mensual'],
+      ['salud', 'Salud', 50000, 'Tope mensual'],
+      ['segNando', 'Seguros Nando', 0, 'Sin monto'],
+      ['soatNando', 'SOAT Nando', 0, 'Sin monto']
+    ];
+    const item = (id, nombre, m, sub, esFijo) => ({
+      nombre,
+      sub: esFijo ? (sub.startsWith('Tope') || sub === 'Sin monto' ? 'Falta día de pago' : sub) : (sub.startsWith('Cada') ? 'Tope mensual' : sub),
+      monto: m ? fmt(m) : '—',
+      flecha: esFijo ? '→' : '←',
+      moverLabel: esFijo ? 'Pasar ' + nombre + ' a variables' : 'Pasar ' + nombre + ' a fijos',
+      mover: () => this.setState({ fijo: { ...this.state.fijo, [id]: !esFijo } })
+    });
+    const fijos = defs.filter((d) => this.state.fijo[d[0]]).map((d) => item(d[0], d[1], d[2], d[3], true));
+    const vars = defs.filter((d) => !this.state.fijo[d[0]]).map((d) => item(d[0], d[1], d[2], d[3], false));
+    const columnas = [
+      { titulo: 'Fijos · con fecha', fg: '#24123f', bg: '#efeaf6', total: fijos.length + ' gastos', items: fijos },
+      { titulo: 'Variables · con tope', fg: '#0f766e', bg: '#e6f2f0', total: vars.length + ' sobres', items: vars }
+    ];
+    const CAPS = [['ver', 'Ver'], ['registrar', 'Anotar'], ['contar', 'Contar'], ['config', 'Configurar']];
+    const P = [['padre', '[Padre]', 'P', '#24123f'], ['madre', '[Madre]', 'M', '#0f766e'], ['hijo', '[Tú]', 'D', '#6b5a86']];
+    const personas = P.map(([id, nombre, ini, avatar]) => ({
+      nombre, ini, avatar,
+      caps: CAPS.map(([cid, label]) => {
+        const has = this.state.perm[id].includes(cid);
+        return {
+          checked: has ? 'true' : 'false', aria: nombre + ': ' + label,
+          bg: has ? '#24123f' : '#ffffff', fg: has ? '#ffffff' : '#d6cce4', ring: has ? '#24123f' : '#ece6f3',
+          d: has ? 'M5 12l5 5 9-10' : 'M8 12h8',
+          toggle: () => {
+            const cur = this.state.perm[id];
+            this.setState({ perm: { ...this.state.perm, [id]: has ? cur.filter((x) => x !== cid) : [...cur, cid] } });
+          }
+        };
+      })
+    }));
+    const AV = [
+      ['red', 'Un gasto fijo pasa su fecha sin pagar', '', '', 'Tablero · Casa'],
+      ['amber', 'Un sobre llega al ', '90', ' % de su tope', 'Casa · Tablero'],
+      ['amber', 'Si se gasta lo que queda en los sobres, el mes cerraría en negativo', '', '', 'Tablero'],
+      ['amber', 'Una cuenta lleva más de ', '7', ' días sin contar', 'Arqueo · Tablero'],
+      ['red', 'Un arqueo no cuadra', '', '', 'Arqueo · Tablero'],
+      ['red', 'En un mes se lleva a la casa más de lo que ganó el negocio', '', '', 'Tablero · Resumen'],
+      ['red', 'Un préstamo dejaría una cuenta sin saldo', '', '', 'Nuevo crédito'],
+      ['amber', 'Un crédito lleva más de ', '90', ' días sin pagos', 'Tablero · Créditos'],
+      ['amber', 'Un gasto anual vence en menos de ', '30', ' días', 'Tablero · Casa'],
+      ['amber', 'Pasó el cierre y lo que sobró no está en el ahorro', '', '', 'Ahorro · Tablero']
+    ];
+    const avisos = AV.map(([sev, pre, valor, post, donde], i) => {
+      const on = this.state.avisos[i];
+      return {
+        pre, post, valor, tieneValor: !!valor, donde, texto: pre + valor + post,
+        sev: sev === 'red' ? '#b91c1c' : '#d97706', sevLabel: sev === 'red' ? 'Problema' : 'Atención',
+        checked: on ? 'true' : 'false', track: on ? '#24123f' : '#d6cce4', knob: on ? '21px' : '3px', fg: on ? '#24123f' : '#a89cc0',
+        borde: i === 0 ? 'transparent' : '#f3eff8',
+        toggle: () => { const a = this.state.avisos.slice(); a[i] = !a[i]; this.setState({ avisos: a }); }
+      };
+    });
+    return { cuentas, columnas, personas, capsHead: CAPS.map((c) => c[1]), avisos };
+  }
+}
+</script>
+</body>
+</html>

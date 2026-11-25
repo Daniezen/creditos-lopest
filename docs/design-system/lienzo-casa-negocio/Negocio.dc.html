@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Casa y Negocio · Caja del negocio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="casa" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box">
+    <div style="max-width: 1360px; margin: 0 auto">
+      <dc-import name="ModuloTabs" active="negocio" hint-size="100%,330px"></dc-import>
+      <div style="background: #fbf8f4; border: 1px solid #e7e1ef; border-top: 0; border-radius: 0 0 24px 24px; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+
+        <section aria-label="Negocio este mes" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 16px 20px; border-radius: 20px; background: #efeaf6">
+          <span style="display: inline-flex; align-items: center; gap: 8px; margin-right: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #24123f"><span style="width: 10px; height: 10px; border-radius: 3px; background: #24123f"></span>Negocio</span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3"></span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Intereses</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 6.240.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">−</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Gastos</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 180.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">−</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">Perdidos</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 0</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">=</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #24123f"><span style="font-size: 11px; color: #c9bfdc">Ganancia</span><span style="font-size: 18px; font-weight: 400; color: #fff; font-variant-numeric: tabular-nums">$ 6.060.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">−</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #ffffff"><span style="font-size: 11px; color: #6b5a86">A la casa</span><span style="font-size: 18px; font-weight: 300; color: #24123f; font-variant-numeric: tabular-nums">$ 5.500.000</span></span>
+            <span style="font-size: 20px; font-weight: 300; color: #c4bad3">=</span>
+            <span style="display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 12px; background: #24123f"><span style="font-size: 11px; color: #c9bfdc">Reinvertido</span><span style="font-size: 18px; font-weight: 400; color: #fff; font-variant-numeric: tabular-nums">$ 560.000</span></span>
+        </section>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+          <sc-for list="{{ cuentas }}" as="c" hint-placeholder-count="4">
+            <button type="button" onClick="{{ c.pick }}" aria-pressed="{{ c.pressed }}" style="text-align: left; padding: 18px 20px; border: 0; border-radius: 20px; cursor: pointer; font-family: Geist, system-ui, sans-serif; background: {{ c.bg }}; color: {{ c.fg }}">
+              <div style="font-size: 13px; font-weight: 600; opacity: 0.8">{{ c.nombre }}</div>
+              <div style="font-size: 30px; font-weight: 300; margin-top: 6px; font-variant-numeric: tabular-nums">{{ c.saldo }}</div>
+              <div style="font-size: 12px; margin-top: 2px; opacity: 0.75">{{ c.sub }}</div>
+            </button>
+          </sc-for>
+        </div>
+
+        <section aria-labelledby="anotar-neg" style="padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+            <h2 id="anotar-neg" style="margin: 0; font-size: 22px; font-weight: 300">Anotar en el negocio</h2>
+            <div role="group" aria-label="Movimiento" style="display: inline-flex; flex-wrap: wrap; padding: 4px; border-radius: 14px; background: #f3eff8">
+              <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="4">
+                <button type="button" onClick="{{ t.pick }}" aria-pressed="{{ t.pressed }}" style="min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif; background: {{ t.bg }}; color: {{ t.fg }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #6b5a86">Los cobros y los préstamos no se anotan aquí: llegan solos desde Créditos.</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">Monto
+              <input type="text" placeholder="$ 0" style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box; font-size: 20px; font-weight: 300">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">{{ campo1 }}
+              <select style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box"><sc-for list="{{ opts1 }}" as="o" hint-placeholder-count="3"><option>{{ o }}</option></sc-for></select>
+            </label>
+            <sc-if value="{{ doble }}" hint-placeholder-val="{{ true }}">
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">{{ campo2 }}
+                <select style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box"><sc-for list="{{ opts2 }}" as="o" hint-placeholder-count="2"><option>{{ o }}</option></sc-for></select>
+              </label>
+            </sc-if>
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86; min-width: 0">Nota
+              <input type="text" placeholder="{{ notaPh }}" style="min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f; width: 100%; box-sizing: border-box">
+            </label>
+          </div>
+          <div style="display: flex; justify-content: flex-end">
+            <button type="button" style="min-height: 48px; padding: 0 28px; border-radius: 12px; border: 0; background: #7c3aed; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; font-family: Geist, system-ui, sans-serif">Anotar</button>
+          </div>
+        </section>
+
+        <section aria-label="Libro de caja" style="padding: 8px 0; border-radius: 20px; background: #ffffff; overflow-x: auto">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; min-width: 860px">
+            <thead>
+              <tr style="text-align: left; color: #857899; font-size: 12px">
+                <th scope="col" style="padding: 12px 20px; font-weight: 500">Día</th>
+                <th scope="col" style="padding: 12px; font-weight: 500">Movimiento</th>
+                <th scope="col" style="padding: 12px; font-weight: 500">Cuenta</th>
+                <th scope="col" style="padding: 12px; font-weight: 500; text-align: right">Capital</th>
+                <th scope="col" style="padding: 12px; font-weight: 500; text-align: right">Interés</th>
+                <th scope="col" style="padding: 12px; font-weight: 500; text-align: right">Entra / sale</th>
+                <th scope="col" style="padding: 12px 20px; font-weight: 500; text-align: right">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ movs }}" as="m" hint-placeholder-count="9">
+                <tr style="border-top: 1px solid #f3eff8">
+                  <td style="padding: 12px 20px; font-size: 22px; font-weight: 300; width: 48px">{{ m.dia }}</td>
+                  <td style="padding: 12px">
+                    <div style="display: flex; align-items: center; gap: 10px">
+                      <sc-if value="{{ m.auto }}" hint-placeholder-val="{{ false }}">
+                        <span title="Lo trae Lopest desde Créditos" style="flex: none; width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, #8b5cf6, #c026d3); color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">L</span>
+                      </sc-if>
+                      <sc-if value="{{ m.manual }}" hint-placeholder-val="{{ true }}">
+                        <span style="flex: none; width: 22px; height: 22px; border-radius: 7px; background: #f3eff8; display: inline-flex; align-items: center; justify-content: center" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5a86" stroke-width="2.4" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></span>
+                      </sc-if>
+                      <div>
+                        <div style="font-weight: 600">{{ m.tipo }}</div>
+                        <div style="font-size: 12px; color: #857899">{{ m.detalle }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="padding: 12px; color: #6b5a86; white-space: nowrap">{{ m.cuenta }}</td>
+                  <td style="padding: 12px; text-align: right; color: #6b5a86; white-space: nowrap; font-variant-numeric: tabular-nums">{{ m.capital }}</td>
+                  <td style="padding: 12px; text-align: right; color: #6b5a86; white-space: nowrap; font-variant-numeric: tabular-nums">{{ m.interes }}</td>
+                  <td style="padding: 12px; text-align: right; font-size: 16px; white-space: nowrap; font-variant-numeric: tabular-nums; color: {{ m.color }}">{{ m.efecto }}</td>
+                  <td style="padding: 12px 20px; text-align: right; color: #857899; white-space: nowrap; font-variant-numeric: tabular-nums">{{ m.saldo }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tipo: 'retiro', cuenta: 'todas' }; }
+  renderVals() {
+    const s = this.state;
+    const fmt = (n) => (n < 0 ? '−$ ' : '$ ') + Math.abs(n).toLocaleString('es-CO');
+    const dash = '';
+    const raw = [
+      ['24', 'Retiro a la casa', 'Hacia Cuenta casa', 'Bancolombia', 'banco', 0, 0, -2500000, false],
+      ['23', 'Cuota 4 de 12', 'LP-26-0294 · [Cliente 2]', 'Nequi', 'nequi', 380000, 95000, 475000, true],
+      ['22', 'Cuota 9 de 10', 'LP-26-0251 · [Cliente 4]', 'Efectivo', 'efectivo', 500000, 120000, 620000, true],
+      ['20', 'Préstamo entregado', 'LP-26-0310 · [Cliente 1]', 'Bancolombia', 'banco', 3000000, 0, -3000000, true],
+      ['18', 'Gasto del negocio', 'Papelería', 'Efectivo', 'efectivo', 0, 0, -45000, false],
+      ['15', 'Traslado', 'Efectivo → Bancolombia', 'Efectivo → Bancolombia', 'ambos', 0, 0, 0, false],
+      ['10', 'Abono a capital', 'LP-26-0188 · [Cliente 6]', 'Bancolombia', 'banco', 1000000, 0, 1000000, true],
+      ['5', 'Gasto del negocio', 'Comisiones', 'Bancolombia', 'banco', 0, 0, -135000, false],
+      ['1', 'Retiro a la casa', 'Hacia Cuenta casa', 'Bancolombia', 'banco', 0, 0, -3000000, false]
+    ];
+    let saldo = 14820000;
+    const all = raw.map((r) => {
+      const [dia, tipo, detalle, cuenta, c, cap, int, n, auto] = r;
+      const row = { dia, tipo, detalle, cuenta, c, auto, manual: !auto,
+        capital: cap ? fmt(cap) : dash, interes: int ? fmt(int) : dash,
+        efecto: n === 0 ? '$ 1.500.000' : (n > 0 ? '+' : '') + fmt(n),
+        color: n === 0 ? '#857899' : n > 0 ? '#0f766e' : '#24123f',
+        saldo: fmt(saldo) };
+      saldo -= n;
+      return row;
+    });
+    const movs = all.filter((m) => s.cuenta === 'todas' || m.c === s.cuenta || m.c === 'ambos');
+    const cs = [['todas', 'Todo el negocio', 14820000, '3 cuentas'], ['banco', 'Bancolombia', 11900000, 'Sin contar hace 9 días'], ['efectivo', 'Efectivo', 1320000, 'Cuadró el 23'], ['nequi', 'Nequi', 1600000, 'Faltan $ 50.000']];
+    const cuentas = cs.map(([id, nombre, n, sub]) => {
+      const on = s.cuenta === id;
+      return { nombre, sub, saldo: fmt(n), pressed: on ? 'true' : 'false', bg: on ? '#24123f' : '#ffffff', fg: on ? '#ffffff' : '#24123f', pick: () => this.setState({ cuenta: id }) };
+    });
+    const seg = (on) => on ? { bg: '#24123f', fg: '#ffffff', pressed: 'true' } : { bg: 'transparent', fg: '#6b5a86', pressed: 'false' };
+    const tipos = [['gasto', 'Gasto'], ['aporte', 'Aporte'], ['retiro', 'A la casa'], ['traslado', 'Traslado']].map(([id, label]) => ({ label, ...seg(s.tipo === id), pick: () => this.setState({ tipo: id }) }));
+    const neg = ['Bancolombia', 'Efectivo', 'Nequi'];
+    const F = {
+      gasto: { campo1: 'Pagado desde', opts1: neg, doble: false, notaPh: 'Papelería, transporte…' },
+      aporte: { campo1: 'Recibido en', opts1: neg, doble: false, notaPh: 'De dónde viene' },
+      retiro: { campo1: 'Sale de', opts1: neg, doble: true, campo2: 'Llega a', opts2: ['Cuenta casa', 'Nu · ahorro'], notaPh: 'Opcional' },
+      traslado: { campo1: 'Sale de', opts1: neg, doble: true, campo2: 'Llega a', opts2: neg, notaPh: 'Consignación…' }
+    }[s.tipo];
+    return { ...F, tipos, cuentas, movs };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Casa y Negocio · Resumen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="casa" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box">
+    <div style="max-width: 1360px; margin: 0 auto">
+      <dc-import name="ModuloTabs" active="resumen" hint-size="100%,330px"></dc-import>
+      <div style="background: #fbf8f4; border: 1px solid #e7e1ef; border-top: 0; border-radius: 0 0 24px 24px; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+
+        <section aria-labelledby="graf" style="padding: 22px 24px; border-radius: 20px; background: #ffffff">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+            <h2 id="graf" style="margin: 0; font-size: 22px; font-weight: 300">Ganancia y retiros</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #6b5a86">
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; border-radius: 2px; background: #24123f"></span>Ganancia neta</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #0f766e"></span>A la casa</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #fecaca"></span>El capital bajó</span>
+            </div>
+          </div>
+          <div style="overflow-x: auto; margin-top: 12px">
+            <svg viewBox="0 0 1000 290" width="100%" style="min-width: 640px; display: block" role="img" aria-label="Ganancia neta contra retiros a la casa, diciembre 2025 a noviembre 2026. En mayo y julio se retiró más de lo ganado.">
+              <line x1="30" y1="220" x2="990" y2="220" stroke="#ece6f3"></line>
+              <line x1="30" y1="140" x2="990" y2="140" stroke="#f3eff8" stroke-dasharray="3 4"></line>
+              <line x1="30" y1="60" x2="990" y2="60" stroke="#f3eff8" stroke-dasharray="3 4"></line>
+              <text x="24" y="224" text-anchor="end" font-size="12" fill="#6b5a86">0</text>
+              <text x="24" y="144" text-anchor="end" font-size="12" fill="#6b5a86">4 M</text>
+              <text x="24" y="64" text-anchor="end" font-size="12" fill="#6b5a86">8 M</text>
+              <sc-for list="{{ meses }}" as="m" hint-placeholder-count="12">
+                <rect x="{{ m.bx }}" y="{{ m.alertY }}" width="56" height="{{ m.alertH }}" fill="#fee2e2"></rect>
+                <rect x="{{ m.rx }}" y="{{ m.ry }}" width="28" height="{{ m.rh }}" rx="5" fill="#0f766e" opacity="0.85"></rect>
+                <text x="{{ m.cx }}" y="246" text-anchor="middle" font-size="13" font-weight="500" fill="#24123f">{{ m.mes }}</text>
+                <text x="{{ m.cx }}" y="264" text-anchor="middle" font-size="11" fill="#6b5a86">{{ m.ret }}</text>
+              </sc-for>
+              <polyline points="{{ linea }}" fill="none" stroke="#24123f" stroke-width="3" stroke-linejoin="round"></polyline>
+              <sc-for list="{{ meses }}" as="m" hint-placeholder-count="12">
+                <circle cx="{{ m.cx }}" cy="{{ m.gy }}" r="4.5" fill="#ffffff" stroke="#24123f" stroke-width="2.5"></circle>
+                <text x="{{ m.cx }}" y="{{ m.gty }}" text-anchor="middle" font-size="11" font-weight="600" fill="#24123f">{{ m.gan }}</text>
+              </sc-for>
+            </svg>
+          </div>
+          <div style="display: inline-flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 12px; font-size: 13px; background: #fef2f2; color: #991b1b">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+            <span>En mayo y julio se llevó a la casa más de lo que ganó el negocio: el capital bajó $ 2,0 M.</span>
+          </div>
+        </section>
+
+        <section aria-labelledby="evo" style="padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+            <h2 id="evo" style="margin: 0; font-size: 22px; font-weight: 300">Cobros: lo que entró y lo que viene</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #6b5a86">
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #24123f"></span>Interés</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #6b5a86"></span>Capital</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 0; border-top: 2px dashed #b8860b"></span>Lo que tocaba cobrar</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #ece6f3; box-shadow: inset 0 0 0 1px #a89cc0"></span>Por venir</span>
+            </div>
+          </div>
+          <div style="overflow-x: auto">
+            <svg viewBox="0 0 1000 300" width="100%" style="min-width: 760px; display: block" role="img" aria-label="Cobros mensuales de diciembre 2025 a noviembre 2026 y proyección de diciembre 2026 a mayo 2027">
+              <rect x="{{ futX }}" y="10" width="{{ futW }}" height="244" fill="#fbf8f4"></rect>
+              <line x1="40" y1="254" x2="1000" y2="254" stroke="#ece6f3"></line>
+              <line x1="40" y1="174" x2="1000" y2="174" stroke="#f3eff8" stroke-dasharray="3 4"></line>
+              <line x1="40" y1="94" x2="1000" y2="94" stroke="#f3eff8" stroke-dasharray="3 4"></line>
+              <text x="34" y="258" text-anchor="end" font-size="12" fill="#6b5a86">0</text>
+              <text x="34" y="178" text-anchor="end" font-size="12" fill="#6b5a86">8 M</text>
+              <text x="34" y="98" text-anchor="end" font-size="12" fill="#6b5a86">16 M</text>
+              <line x1="{{ hoyX }}" y1="10" x2="{{ hoyX }}" y2="254" stroke="#7c3aed" stroke-width="2"></line>
+              <text x="{{ hoyX }}" y="8" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">HOY</text>
+              <sc-for list="{{ evo }}" as="b" hint-placeholder-count="18">
+                <rect x="{{ b.x }}" y="{{ b.yc }}" width="30" height="{{ b.hc }}" rx="3" fill="{{ b.fc }}" stroke="{{ b.st }}" stroke-dasharray="3 2"></rect>
+                <rect x="{{ b.x }}" y="{{ b.yi }}" width="30" height="{{ b.hi }}" rx="3" fill="{{ b.fi }}" stroke="{{ b.st }}" stroke-dasharray="3 2"></rect>
+                <line x1="{{ b.ex1 }}" y1="{{ b.ey }}" x2="{{ b.ex2 }}" y2="{{ b.ey }}" stroke="#b8860b" stroke-width="2" stroke-dasharray="4 3" opacity="{{ b.eop }}"></line>
+                <text x="{{ b.cx }}" y="{{ b.ty }}" text-anchor="middle" font-size="11" fill="#24123f">{{ b.total }}</text>
+                <text x="{{ b.cx }}" y="274" text-anchor="middle" font-size="12" font-weight="500" fill="{{ b.mesFg }}">{{ b.mes }}</text>
+                <text x="{{ b.cx }}" y="290" text-anchor="middle" font-size="10" fill="#a89cc0">{{ b.anio }}</text>
+              </sc-for>
+            </svg>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px">
+            <sc-for list="{{ evoKpis }}" as="k" hint-placeholder-count="3">
+              <div style="flex: 1 1 220px; padding: 12px 16px; border-radius: 14px; background: #f6f3fa">
+                <div style="font-size: 12px; color: #6b5a86">{{ k.label }}</div>
+                <div style="font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums">{{ k.valor }}</div>
+                <div style="font-size: 12px; color: #6b5a86">{{ k.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: stretch">
+          <section aria-labelledby="atraso" style="flex: 2 1 380px; min-width: 0; padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 14px">
+            <h2 id="atraso" style="margin: 0; font-size: 22px; font-weight: 300">Cómo está pagando la cartera</h2>
+            <div style="display: flex; gap: 3px; height: 16px; border-radius: 999px; overflow: hidden" role="img" aria-label="Cartera por días de atraso">
+              <sc-for list="{{ tramos }}" as="r" hint-placeholder-count="5"><span style="flex: {{ r.flex }} 1 0; background: {{ r.color }}"></span></sc-for>
+            </div>
+            <sc-for list="{{ tramos }}" as="r" hint-placeholder-count="5">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
+                <span style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: {{ r.color }}"></span>
+                <span style="flex: 1; font-size: 14px">{{ r.label }}</span>
+                <span style="font-size: 13px; color: #6b5a86">{{ r.creditos }}</span>
+                <span style="width: 92px; text-align: right; font-size: 15px; font-variant-numeric: tabular-nums">{{ r.valor }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+
+        <section aria-label="Mes a mes" style="overflow-x: auto">
+          <div style="display: flex; gap: 12px; width: max-content; padding-bottom: 6px">
+            <sc-for list="{{ tarjetas }}" as="t" hint-placeholder-count="12">
+              <div style="width: 168px; padding: 16px; border-radius: 18px; background: {{ t.bg }}; color: {{ t.fg }}; display: flex; flex-direction: column; gap: 10px">
+                <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.75">{{ t.mes }}</div>
+                <div>
+                  <div style="font-size: 11px; opacity: 0.7">Ganancia</div>
+                  <div style="font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums">{{ t.ganancia }}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 12px">
+                  <div><div style="opacity: 0.7">A la casa</div><div style="font-weight: 600">{{ t.retiro }}</div></div>
+                  <div><div style="opacity: 0.7">Reinvertido</div><div style="font-weight: 600; color: {{ t.reiFg }}">{{ t.rei }}</div></div>
+                  <div><div style="opacity: 0.7">Casa sobró</div><div style="font-weight: 600">{{ t.sobra }}</div></div>
+                  <div><div style="opacity: 0.7">Ahorro</div><div style="font-weight: 600">{{ t.ahorro }}</div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const M = (n) => (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' M';
+    const mesN = ['Dic', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov'];
+    const gan = [4.2, 4.4, 4.1, 4.6, 4.8, 3.3, 5.1, 5.2, 5.6, 5.8, 6.0, 6.06];
+    const ret = [4.0, 4.0, 4.0, 4.5, 4.5, 5.0, 5.0, 5.5, 5.2, 5.5, 5.5, 5.5];
+    const sob = [0.3, 0.4, 0.2, 0.4, 0.4, 0.0, 0.4, 0.3, 0.6, 0.6, 7.0, 0.6];
+    const aho = [0, 0.3, 0.5, 0.9, 1.3, 1.3, 1.7, 2.0, 2.6, 3.2, 7.0, 7.0];
+    const y = (v) => 220 - v * 20;
+    const step = 80;
+    const meses = mesN.map((mes, i) => {
+      const cx = 70 + i * step;
+      const baja = ret[i] > gan[i];
+      return {
+        mes, cx, bx: cx - 28, rx: cx - 14,
+        ry: y(ret[i]), rh: 220 - y(ret[i]), gy: y(gan[i]),
+        alertY: baja ? 30 : 0, alertH: baja ? 190 : 0,
+        gan: gan[i].toLocaleString('es-CO', { maximumFractionDigits: 1 }), gty: y(gan[i]) - 10,
+        ret: 'casa ' + ret[i].toLocaleString('es-CO', { maximumFractionDigits: 1 })
+      };
+    });
+    const linea = meses.map((m) => m.cx + ',' + m.gy).join(' ');
+    const tarjetas = mesN.map((mes, i) => {
+      const rei = gan[i] - ret[i];
+      const actual = i === mesN.length - 1;
+      return {
+        mes: mes + (i === 0 ? ' 2025' : ' 2026'),
+        ganancia: '$ ' + M(gan[i]), retiro: M(ret[i]), rei: (rei >= 0 ? '+' : '') + M(rei), sobra: M(sob[i]), ahorro: M(aho[i]),
+        reiFg: rei < 0 ? (actual ? '#fca5a5' : '#b91c1c') : (actual ? '#99f6e4' : '#0f766e'),
+        bg: actual ? '#24123f' : '#ffffff', fg: actual ? '#ffffff' : '#24123f'
+      };
+    }).reverse();
+    const meses18 = [['Dic','2025'],['Ene','2026'],['Feb',''],['Mar',''],['Abr',''],['May',''],['Jun',''],['Jul',''],['Ago',''],['Sep',''],['Oct',''],['Nov',''],['Dic',''],['Ene','2027'],['Feb',''],['Mar',''],['Abr',''],['May','']];
+    const capE = [8.6, 8.9, 9.0, 9.4, 9.6, 9.8, 10.1, 10.3, 10.6, 10.9, 11.2, 11.4, 9.8, 9.4, 8.9, 8.1, 7.2, 6.0];
+    const intE = [4.4, 4.5, 4.6, 4.8, 4.9, 5.0, 5.2, 5.3, 5.5, 5.6, 5.8, 5.9, 5.9, 5.6, 5.2, 4.7, 4.1, 3.4];
+    const cumpl = [0.97, 0.95, 0.96, 0.93, 0.95, 0.82, 0.94, 0.9, 0.96, 0.95, 0.97, 0.88];
+    const k = 10;
+    const evo = meses18.map(([mes, anio], i) => {
+      const fut = i >= 12;
+      const f = fut ? 1 : cumpl[i];
+      const c = capE[i] * f, it = intE[i] * f, tot = c + it, esp = capE[i] + intE[i];
+      const x = 52 + i * 52;
+      return {
+        mes, anio, x, cx: x + 15, mesFg: fut ? '#857899' : '#24123f',
+        hc: Math.round(c * k), yc: Math.round(254 - c * k), hi: Math.round(it * k), yi: Math.round(254 - c * k - it * k),
+        fc: fut ? '#ece6f3' : '#6b5a86', fi: fut ? '#d9cdee' : '#24123f', st: fut ? '#a89cc0' : 'none',
+        ex1: x - 4, ex2: x + 34, ey: Math.round(254 - esp * k), eop: fut ? 0 : 1,
+        total: tot.toLocaleString('es-CO', { maximumFractionDigits: 1 }), ty: Math.round(254 - Math.max(tot, fut ? tot : esp) * k) - 8
+      };
+    });
+    const hoyX = 52 + 12 * 52 - 11;
+    const evoKpis = [
+      { label: 'Cobrado en 12 meses', valor: '$ 173,6 M', sub: '93 % de lo que tocaba cobrar' },
+      { label: 'Viene en 6 meses', valor: '$ 78,3 M', sub: 'Si todos pagan a tiempo' },
+      { label: 'De eso, intereses', valor: '$ 28,3 M', sub: 'La cartera baja si no se presta más' }
+    ];
+    const proyData = [['Dic', 9.8, 5.9], ['Ene', 9.4, 5.6], ['Feb', 8.9, 5.2], ['Mar', 8.1, 4.7], ['Abr', 7.2, 4.1], ['May', 6.0, 3.4]];
+    const proy = proyData.map(([mes, c, i]) => ({ mes, total: '$ ' + (c + i).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' M', hc: Math.round(c * 9) + 'px', hi: Math.round(i * 9) + 'px' }));
+    const tramos = [
+      ['Al día', 151.2, 31, '#24123f'], ['1 a 30 días', 18.6, 5, '#6b5a86'], ['31 a 60 días', 5.1, 2, '#a89cc0'],
+      ['61 a 90 días', 3.1, 1, '#d97706'], ['Más de 90 días', 8.4, 3, '#b91c1c']
+    ].map(([label, v, n, color]) => ({ label, color, flex: Math.round(v * 10), valor: '$ ' + v.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' M', creditos: n + (n === 1 ? ' crédito' : ' créditos') }));
+    return { meses, linea, tarjetas, proy, tramos, evo, hoyX, futX: hoyX, futW: 1000 - hoyX, evoKpis };
+  }
+}
+</script>
+</body>
+</html>

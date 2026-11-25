@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Encabezado de Casa y Negocio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="width: 100%; box-sizing: border-box; padding: 26px 32px 0; background: #ffffff; border: 1px solid #e7e1ef; border-bottom: 0; border-radius: 24px 24px 0 0; font-family: Geist, system-ui, sans-serif; color: #24123f">
+  <div style="display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: flex-start; justify-content: space-between">
+    <div style="min-width: 0">
+      <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5a86">Casa y Negocio</div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px">
+        <h1 style="margin: 0; font-size: 44px; font-weight: 300; letter-spacing: -0.02em; line-height: 1.05">Noviembre <span style="color: #a89cc0">2026</span></h1>
+        <button type="button" aria-label="Mes anterior" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #e7e1ef; background: #fff; color: #24123f; cursor: pointer; font-size: 16px">‹</button>
+        <button type="button" aria-label="Mes siguiente" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #e7e1ef; background: #fff; color: #24123f; cursor: pointer; font-size: 16px">›</button>
+      </div>
+    </div>
+
+    <sc-if value="{{ editable }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <button type="button" onClick="{{ toggle }}" aria-expanded="{{ abiertoAria }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; background: #7c3aed; color: #ffffff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          Anotar
+        </button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}">
+      <div style="display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #efeaf6; color: #24123f; font-size: 13px; font-weight: 600">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+        Solo lectura
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ abierto }}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Anotar rápido" style="margin-top: 16px; padding: 18px 20px; border-radius: 18px; background: #fbf8f4; box-shadow: inset 0 0 0 2px #7c3aed; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{ rapidos }}" as="r" hint-placeholder-count="6">
+          <button type="button" onClick="{{ r.pick }}" aria-pressed="{{ r.pressed }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; cursor: pointer; font-size: 13px; font-weight: 600; font-family: Geist, system-ui, sans-serif; background: {{ r.bg }}; color: {{ r.fg }}">
+            <span style="width: 8px; height: 8px; border-radius: 3px; background: {{ r.color }}"></span>{{ r.label }}
+          </button>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86">{{ campoA }}
+          <select style="min-height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f"><sc-for list="{{ optsA }}" as="o" hint-placeholder-count="3"><option>{{ o }}</option></sc-for></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86">Monto
+          <input type="text" placeholder="$ 0" style="min-height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 20px; font-weight: 300; font-family: Geist, system-ui, sans-serif; color: #24123f">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86">{{ campoB }}
+          <select style="min-height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; background: #fff; color: #24123f"><sc-for list="{{ optsB }}" as="o" hint-placeholder-count="3"><option>{{ o }}</option></sc-for></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b5a86">Fecha
+          <input type="text" value="Hoy, 25 nov" style="min-height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid #e7e1ef; font-size: 15px; font-family: Geist, system-ui, sans-serif; color: #24123f">
+        </label>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px">
+        <button type="button" onClick="{{ toggle }}" style="min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid #e7e1ef; background: #fff; color: #24123f; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif">Cerrar</button>
+        <button type="button" style="min-height: 44px; padding: 0 24px; border-radius: 12px; border: 0; background: #7c3aed; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: Geist, system-ui, sans-serif">Guardar</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <div style="margin-top: 18px; position: relative; z-index: 2">
+    <div role="group" aria-label="{{ trackAria }}" style="position: relative; height: 104px; margin: 0 40px">
+      <div style="position: absolute; left: 0; right: 0; top: 30px; height: 4px; border-radius: 999px; background: #efeaf6"></div>
+      <div style="position: absolute; left: 0; top: 30px; height: 4px; border-radius: 999px; background: #24123f; width: {{ hoyPct }}"></div>
+      <div style="position: absolute; top: 8px; left: {{ hoyPct }}; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center">
+        <span style="font-size: 11px; font-weight: 700; color: #7c3aed">HOY</span>
+        <span style="width: 2px; height: 40px; background: #7c3aed; border-radius: 2px"></span>
+      </div>
+      <sc-for list="{{ marcas }}" as="m" hint-placeholder-count="9">
+        <button type="button" onClick="{{ m.pick }}" aria-label="{{ m.titulo }}" aria-pressed="{{ m.pressed }}" style="position: absolute; left: {{ m.left }}; top: 22px; transform: translateX(-50%); padding: 3px 4px; border: 0; border-radius: 8px; background: {{ m.selBg }}; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: Geist, system-ui, sans-serif">
+          <span style="width: {{ m.size }}; height: {{ m.size }}; border-radius: {{ m.radius }}; background: {{ m.bg }}; box-shadow: 0 0 0 {{ m.ring }} {{ m.ringColor }}, 0 0 0 4px #ffffff"></span>
+          <span style="margin-top: {{ m.labelMt }}; font-size: 11px; font-weight: 500; white-space: nowrap; color: {{ m.fg }}">{{ m.label }}</span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ pop }}" hint-placeholder-val="{{ false }}">
+        <div role="dialog" aria-label="{{ popTitulo }}" style="position: absolute; z-index: 3; top: 86px; left: {{ popLeft }}; transform: translateX(-50%); width: 260px; padding: 12px 14px; border-radius: 14px; background: #24123f; color: #ffffff; box-shadow: 0 18px 40px rgb(36 18 63 / 25%)">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+            <span style="font-size: 12px; color: #c9bfdc">{{ popFecha }}</span>
+            <button type="button" onClick="{{ cerrarPop }}" aria-label="Cerrar" style="width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #c9bfdc; cursor: pointer; font-size: 16px">×</button>
+          </div>
+          <div style="font-size: 15px; font-weight: 600">{{ popTitulo }}</div>
+          <div style="font-size: 13px; color: #c9bfdc">{{ popSub }}</div>
+          <sc-if value="{{ popAccion }}" hint-placeholder-val="{{ false }}">
+            <a href="{{ popHref }}" style="display: inline-flex; align-items: center; margin-top: 10px; min-height: 34px; padding: 0 12px; border-radius: 10px; background: #ffffff; color: #24123f; font-size: 13px; font-weight: 600; text-decoration: none">{{ popAccionLabel }}</a>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-for list="{{ dias }}" as="d" hint-placeholder-count="7">
+        <span style="position: absolute; top: 0; left: {{ d.left }}; transform: translateX(-50%); font-size: 11px; color: #a89cc0">{{ d.n }}</span>
+      </sc-for>
+    </div>
+  </div>
+
+  <nav aria-label="Secciones" style="margin-top: 14px; overflow-x: auto">
+    <div style="display: flex; gap: 2px; width: max-content">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="7">
+        <sc-if value="{{ t.sep }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="align-self: center; width: 1px; height: 22px; margin: 0 8px; background: #e7e1ef"></span></sc-if>
+        <a href="{{ t.href }}" aria-current="{{ t.current }}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px; border-radius: 14px 14px 0 0; font-size: 14px; font-weight: {{ t.weight }}; white-space: nowrap; text-decoration: none; background: {{ t.bg }}; color: {{ t.fg }}">
+          <sc-if value="{{ t.punto }}" hint-placeholder-val="{{ false }}"><span style="width: 9px; height: 9px; border-radius: 3px; background: {{ t.color }}" aria-hidden="true"></span></sc-if>
+          {{ t.label }}
+        </a>
+      </sc-for>
+    </div>
+  </nav>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["tablero","casa","negocio","arqueo","ahorro","resumen","config"],"default":"tablero"},"soloLectura":{"editor":"boolean","default":false},"panelAbierto":{"editor":"boolean","default":false},"$preview":{"width":1352,"height":300}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { abierto: props.panelAbierto ?? false, tipo: 'gastoCasa', sel: null }; }
+  renderVals() {
+    const active = this.props.active ?? 'tablero';
+    const readOnly = this.props.soloLectura ?? false;
+    const pos = (d) => ((d - 0.5) / 30 * 100).toFixed(2) + '%';
+    const S = {
+      pagado: { bg: '#24123f', ring: '0px', ringColor: '#24123f', fg: '#6b5a86', size: '14px', radius: '999px' },
+      vencido: { bg: '#fee2e2', ring: '2px', ringColor: '#b91c1c', fg: '#b91c1c', size: '14px', radius: '999px' },
+      entrada: { bg: '#0f766e', ring: '0px', ringColor: '#0f766e', fg: '#0f766e', size: '12px', radius: '3px' },
+      viene: { bg: '#ffffff', ring: '2px', ringColor: '#24123f', fg: '#24123f', size: '12px', radius: '999px' },
+      cierre: { bg: '#ffffff', ring: '2px', ringColor: '#b8860b', fg: '#8a6d0b', size: '13px', radius: '4px' }
+    };
+    // [day, label, kind, title, detail, action label, action href]
+    const raw = [
+      [1, 'Retiro +3,0 M', 'entrada', 'Retiro a la casa', '$ 3.000.000 · Bancolombia → Cuenta casa'],
+      [16, 'Davivienda', 'pagado', 'Crédito Davivienda', '$ 820.000 · pagado el 16'],
+      [16, 'Funeraria', 'vencido', 'Funeraria', '$ 32.000 · sin pagar desde el 16', 'Pagar', 'Casa.dc.html'],
+      [17, 'Arriendo', 'pagado', 'Arriendo', '$ 1.787.000 · pagado el 17'],
+      [20, 'Internet', 'pagado', 'Internet y TV', '$ 120.000 · pagado el 20'],
+      [20, 'Seguros Bolo', 'vencido', 'Seguros Bolo', '$ 170.000 · sin pagar desde el 20', 'Pagar', 'Casa.dc.html'],
+      [24, 'Retiro +2,5 M', 'entrada', 'Retiro a la casa', '$ 2.500.000 · Bancolombia → Cuenta casa'],
+      [25, '5 cobros', 'viene', '5 cuotas por cobrar hoy', '$ 1.720.000 entre 5 clientes', 'Ver cuotas', 'CreditosDueno.dc.html'],
+      [27, '2 cobros', 'viene', '2 cuotas por cobrar', '$ 600.000'],
+      [30, 'Cierre', 'cierre', 'Cierre de noviembre', 'Pasar lo que sobre al ahorro · hoy serían $ 631.000', 'Ir a Ahorro', 'Ahorro.dc.html']
+    ];
+    const sel = this.state.sel;
+    // Markers within two days of an earlier one drop their label one line lower, so labels never collide.
+    const marcas = raw.map(([d, label, k, titulo], i) => {
+      const near = raw.slice(0, i).filter((r) => Math.abs(r[0] - d) <= 2).length;
+      return { ...S[k], label, titulo, left: pos(d), labelMt: (near * 15) + 'px', pressed: sel === i ? 'true' : 'false', selBg: sel === i ? '#efeaf6' : 'transparent', pick: () => this.setState({ sel: sel === i ? null : i }) };
+    });
+    const r = sel === null || sel === undefined ? null : raw[sel];
+    const dias = [1, 5, 10, 15, 20, 25, 30].map((n) => ({ n, left: pos(n) }));
+    const tabsBase = [
+      ['tablero', 'Tablero', 'Main.dc.html', null, false],
+      ['resumen', 'Resumen', 'Resumen.dc.html', null, false],
+      ['casa', 'Casa', 'Casa.dc.html', '#0f766e', true],
+      ['negocio', 'Negocio', 'Negocio.dc.html', '#24123f', false],
+      ['ahorro', 'Ahorro', 'Ahorro.dc.html', '#b8860b', false],
+      ['arqueo', 'Arqueo', 'Arqueo.dc.html', null, false],
+      ['config', 'Configuración', 'Configuracion.dc.html', null, true]
+    ];
+    const tabs = tabsBase.map(([id, label, href, color, sep]) => {
+      const on = id === active;
+      return { label, href, color, sep, punto: !!color, current: on ? 'page' : 'false', bg: on ? '#fbf8f4' : 'transparent', fg: on ? '#24123f' : '#857899', weight: on ? 600 : 500 };
+    });
+    const tipo = this.state.tipo;
+    const R = [['gastoCasa', 'Gasto de la casa', '#0f766e'], ['ingresoCasa', 'Ingreso de la casa', '#0f766e'], ['gastoNeg', 'Gasto del negocio', '#24123f'], ['aporte', 'Aporte', '#24123f'], ['retiro', 'A la casa', '#24123f'], ['traslado', 'Traslado', '#a89cc0']];
+    const rapidos = R.map(([id, label, color]) => ({ label, color, pressed: tipo === id ? 'true' : 'false', bg: tipo === id ? '#24123f' : '#ffffff', fg: tipo === id ? '#ffffff' : '#24123f', pick: () => this.setState({ tipo: id }) }));
+    const negC = ['Bancolombia', 'Efectivo', 'Nequi'];
+    const F = {
+      gastoCasa: ['Categoría', ['Mercado', 'Seguros Bolo · sin pagar', 'Funeraria · sin pagar', 'Gasolina'], 'Pagado desde', ['Cuenta casa', 'Nu · ahorro']],
+      ingresoCasa: ['De dónde', ['Arriendo recibido', 'Regalo', 'Otro'], 'Recibido en', ['Cuenta casa', 'Nu · ahorro']],
+      gastoNeg: ['Concepto', ['Papelería', 'Transporte', 'Comisiones', 'Otro'], 'Pagado desde', negC],
+      aporte: ['De dónde viene', ['Ahorros propios', 'Otro'], 'Recibido en', negC],
+      retiro: ['Sale de', negC, 'Llega a', ['Cuenta casa', 'Nu · ahorro']],
+      traslado: ['Sale de', negC, 'Llega a', negC]
+    }[tipo];
+    return {
+      marcas, dias, tabs, rapidos, readOnly, editable: !readOnly,
+      pop: !!r, popLeft: r ? 'clamp(130px, ' + pos(r[0]) + ', calc(100% - 130px))' : '0', popFecha: r ? (r[0] === 25 ? 'Hoy' : r[0] + ' de noviembre') : '', popTitulo: r ? r[3] : '', popSub: r ? r[4] : '',
+      popAccion: !!(r && r[5]) && !readOnly, popAccionLabel: r ? r[5] : '', popHref: r ? r[6] : '#', cerrarPop: () => this.setState({ sel: null }),
+      abierto: this.state.abierto, abiertoAria: this.state.abierto ? 'true' : 'false', toggle: () => this.setState({ abierto: !this.state.abierto }),
+      campoA: F[0], optsA: F[1], campoB: F[2], optsB: F[3],
+      hoyPct: pos(25),
+      trackAria: 'Noviembre: pagados Davivienda, Arriendo e Internet; sin pagar Funeraria y Seguros Bolo; retiros a la casa el 1 y el 24; hoy es 25; cierre el 30'
+    };
+  }
+}
+</script>
+</body>
+</html>

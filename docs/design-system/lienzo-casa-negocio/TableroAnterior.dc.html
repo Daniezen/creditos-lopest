@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tablero · versión anterior</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f4f2f7;font-family:Geist,system-ui,sans-serif;color:#24123f}
+a{color:#5b21b6}a:hover{color:#24123f}
+</style>
+</helmet>
+<div style="display: flex; align-items: stretch; min-height: 100vh; background: #f4f2f7">
+  <dc-import name="Sidebar" active="casa" hint-size="88px,900px"></dc-import>
+  <main style="flex: 1 1 auto; min-width: 0; padding: 20px 28px 40px; box-sizing: border-box">
+    <div style="max-width: 1360px; margin: 0 auto">
+      <dc-import name="EncabezadoAnterior" active="tablero" solo-lectura="{{ readOnly }}" hint-size="100%,330px"></dc-import>
+      <div style="background: #fbf8f4; border: 1px solid #e7e1ef; border-top: 0; border-radius: 0 0 24px 24px; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: stretch">
+          <section aria-labelledby="flujo" style="flex: 999 1 640px; min-width: 0; padding: 22px 24px; border-radius: 20px; background: #ffffff">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px">
+              <h2 id="flujo" style="margin: 0; font-size: 22px; font-weight: 300">El flujo del mes</h2>
+              <span style="font-size: 13px; color: #857899">$ 16,0 M movidos</span>
+            </div>
+            <div style="overflow-x: auto; margin-top: 12px">
+              <svg viewBox="0 0 1000 300" width="100%" style="min-width: 640px; display: block" role="img" aria-label="Entraron 6,2 millones de intereses y 9,8 de capital cobrado. Salieron 3,0 en préstamos nuevos, 0,2 en gastos y 5,5 a la casa; quedaron 7,4 en caja. La casa gastó 2,7 en fijos y 1,9 en variables y le sobran 0,8.">
+                <sc-for list="{{ bandas }}" as="b" hint-placeholder-count="9">
+                  <path d="{{ b.d }}" fill="{{ b.fill }}" opacity="{{ b.op }}"></path>
+                </sc-for>
+                <sc-for list="{{ nodos }}" as="n" hint-placeholder-count="10">
+                  <rect x="{{ n.x }}" y="{{ n.y }}" width="12" height="{{ n.h }}" rx="3" fill="{{ n.fill }}"></rect>
+                </sc-for>
+                <sc-for list="{{ etiquetas }}" as="t" hint-placeholder-count="11">
+                  <text x="{{ t.x }}" y="{{ t.y }}" text-anchor="{{ t.anchor }}" font-size="{{ t.size }}" font-weight="{{ t.weight }}" fill="{{ t.fill }}" font-family="Geist, system-ui, sans-serif">{{ t.text }}</text>
+                </sc-for>
+              </svg>
+            </div>
+          </section>
+
+          <section aria-labelledby="siguiente" style="flex: 1 1 340px; min-width: 0; padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 10px">
+            <h2 id="siguiente" style="margin: 0 0 4px; font-size: 22px; font-weight: 300">Lo siguiente</h2>
+            <sc-for list="{{ siguiente }}" as="s" hint-placeholder-count="4">
+              <a href="{{ s.href }}" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 16px; text-decoration: none; color: #24123f; background: #fbf8f4; box-shadow: inset 0 0 0 {{ s.ring }} #7c3aed">
+                <span style="flex: none; width: 32px; height: 32px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; background: {{ s.numBg }}; color: {{ s.numFg }}">{{ s.n }}</span>
+                <span style="flex: 1; min-width: 0">
+                  <span style="display: block; font-size: 15px; font-weight: 600">{{ s.titulo }}</span>
+                  <span style="display: block; font-size: 13px; color: {{ s.subFg }}">{{ s.sub }}</span>
+                </span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ s.arrow }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </a>
+            </sc-for>
+          </section>
+        </div>
+
+        <section aria-labelledby="cuentas-mes" style="padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 18px">
+          <h2 id="cuentas-mes" style="margin: 0; font-size: 22px; font-weight: 300">Las cuentas del mes</h2>
+          <sc-for list="{{ ecuaciones }}" as="e" hint-placeholder-count="2">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px">
+              <span style="width: 86px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ e.color }}">{{ e.nombre }}</span>
+              <sc-for list="{{ e.terminos }}" as="t" hint-placeholder-count="7">
+                <span style="font-size: 26px; font-weight: 300; color: #c4bad3">{{ t.op }}</span>
+                <span style="display: inline-flex; flex-direction: column; padding: 8px 14px; border-radius: 14px; background: {{ t.bg }}; box-shadow: inset 0 0 0 {{ t.ring }} {{ t.ringColor }}">
+                  <span style="font-size: 12px; color: #6b5a86">{{ t.label }}</span>
+                  <span style="font-size: 22px; font-weight: {{ t.weight }}; font-variant-numeric: tabular-nums; color: {{ t.fg }}">{{ t.valor }}</span>
+                </span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </section>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: stretch">
+          <section aria-labelledby="plata" style="flex: 1 1 520px; min-width: 0; padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px">
+              <h2 id="plata" style="margin: 0; font-size: 22px; font-weight: 300">Dónde está la plata</h2>
+              <span style="font-size: 34px; font-weight: 300; font-variant-numeric: tabular-nums">$ 22.659.000</span>
+            </div>
+            <div style="display: flex; height: 18px; border-radius: 999px; overflow: hidden; gap: 3px" role="img" aria-label="Reparto de la plata por cuenta">
+              <sc-for list="{{ bolsillos }}" as="b" hint-placeholder-count="5">
+                <span style="height: 18px; flex: {{ b.flex }} 1 0; background: {{ b.color }}"></span>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+              <sc-for list="{{ bolsillos }}" as="b" hint-placeholder-count="5">
+                <div style="display: flex; gap: 10px; align-items: flex-start">
+                  <span style="flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 3px; background: {{ b.color }}"></span>
+                  <div>
+                    <div style="font-size: 13px; color: #6b5a86">{{ b.nombre }}</div>
+                    <div style="font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums">{{ b.saldo }}</div>
+                    <div style="font-size: 12px; color: {{ b.estadoFg }}">{{ b.estado }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section aria-labelledby="calle" style="flex: 1 1 260px; min-width: 0; padding: 22px 24px; border-radius: 20px; background: transparent; border: 2px dashed #d6cce4; display: flex; flex-direction: column; justify-content: space-between; gap: 12px">
+            <h2 id="calle" style="margin: 0; font-size: 22px; font-weight: 300">En la calle</h2>
+            <div>
+              <div style="font-size: 34px; font-weight: 300; font-variant-numeric: tabular-nums">$ 186.400.000</div>
+              <div style="font-size: 13px; color: #6b5a86">42 créditos activos</div>
+            </div>
+            <a href="PrestamoPerdido.dc.html" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #fef2f2; color: #991b1b; text-decoration: none; font-size: 13px; font-weight: 600">
+              <span>$ 8.400.000 con más de 90 días</span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </section>
+        </div>
+
+        <section aria-labelledby="sobres" style="display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px">
+            <h2 id="sobres" style="margin: 0; font-size: 22px; font-weight: 300">Sobres de la casa</h2>
+            <span style="font-size: 13px; color: #857899">Quedan $ 2.130.000 de $ 4.070.000</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px">
+            <sc-for list="{{ sobres }}" as="s" hint-placeholder-count="6">
+              <div style="position: relative; padding: 30px 18px 16px; border-radius: 16px; background: #ffffff; box-shadow: inset 0 0 0 {{ s.ring }} {{ s.ringColor }}; overflow: hidden">
+                <svg viewBox="0 0 200 26" preserveAspectRatio="none" width="100%" height="26" style="position: absolute; left: 0; top: 0" aria-hidden="true"><path d="M0 0 L100 24 L200 0 Z" fill="{{ s.flap }}"></path></svg>
+                <div style="font-size: 14px; font-weight: 600">{{ s.nombre }}</div>
+                <div style="font-size: 26px; font-weight: 300; margin-top: 6px; font-variant-numeric: tabular-nums; color: {{ s.fg }}">{{ s.queda }}</div>
+                <div style="font-size: 12px; color: #857899">{{ s.sub }}</div>
+                <div style="margin-top: 10px; height: 6px; border-radius: 999px; background: #efeaf6; overflow: hidden"><div style="height: 6px; width: {{ s.ancho }}; background: {{ s.barra }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"soloLectura":{"editor":"boolean","default":false,"section":"Vista"},"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const readOnly = this.props.soloLectura ?? false;
+    const fmt = (n) => (n < 0 ? '−$ ' : '$ ') + Math.abs(n).toLocaleString('es-CO');
+    const INK = '#24123f', TEAL = '#0f766e', VIOLET = '#7c3aed';
+    const band = (x0, a0, a1, x1, b0, b1, fill, op) => {
+      const xm = (x0 + x1) / 2;
+      return { fill, op, d: `M${x0} ${a0} C${xm} ${a0} ${xm} ${b0} ${x1} ${b0} L${x1} ${b1} C${xm} ${b1} ${xm} ${a1} ${x0} ${a1} Z` };
+    };
+    const bandas = [
+      band(12, 20, 114, 300, 25, 119, '#5b3d8a', 0.22),
+      band(12, 124, 271, 300, 119, 266, '#5b3d8a', 0.14),
+      band(312, 25, 70, 560, 10, 55, '#5b3d8a', 0.14),
+      band(312, 70, 73, 560, 67, 70, '#5b3d8a', 0.3),
+      band(312, 73, 183, 560, 82, 192, '#5b3d8a', 0.1),
+      band(312, 183, 266, 560, 204, 287, TEAL, 0.22),
+      band(572, 204, 245, 820, 150, 191, TEAL, 0.16),
+      band(572, 245, 274, 820, 203, 232, TEAL, 0.16),
+      band(572, 274, 287, 820, 244, 257, VIOLET, 0.35)
+    ];
+    const nodos = [
+      { x: 0, y: 20, h: 94, fill: INK }, { x: 0, y: 124, h: 147, fill: INK },
+      { x: 300, y: 25, h: 241, fill: INK },
+      { x: 560, y: 10, h: 45, fill: '#6b5a86' }, { x: 560, y: 67, h: 3, fill: '#6b5a86' }, { x: 560, y: 82, h: 110, fill: '#6b5a86' }, { x: 560, y: 204, h: 83, fill: TEAL },
+      { x: 820, y: 150, h: 41, fill: TEAL }, { x: 820, y: 203, h: 29, fill: TEAL }, { x: 820, y: 244, h: 13, fill: VIOLET }
+    ];
+    const t = (x, y, text, o = {}) => ({ x, y, text, anchor: o.anchor || 'start', size: o.size || 14, weight: o.weight || 500, fill: o.fill || INK });
+    const etiquetas = [
+      t(20, 62, 'Intereses'), t(20, 80, '$ 6,2 M', { size: 13, weight: 400, fill: '#6b5a86' }),
+      t(20, 192, 'Capital cobrado'), t(20, 210, '$ 9,8 M', { size: 13, weight: 400, fill: '#6b5a86' }),
+      t(306, 16, 'NEGOCIO', { anchor: 'middle', size: 12, weight: 700, fill: '#6b5a86' }),
+      t(580, 30, 'Préstamos nuevos · $ 3,0 M'),
+      t(580, 72, 'Gastos · $ 0,2 M', { size: 13, fill: '#6b5a86' }),
+      t(580, 140, 'Quedó en caja · $ 7,4 M'),
+      t(580, 242, 'A la casa · $ 5,5 M', { fill: TEAL, weight: 600 }),
+      t(840, 174, 'Fijos · $ 2,7 M', { fill: TEAL }),
+      t(840, 222, 'Variables · $ 1,9 M', { fill: TEAL }),
+      t(840, 255, 'Sobra · $ 0,8 M', { fill: VIOLET, weight: 700 })
+    ];
+    const siguiente = [
+      { titulo: 'Pagar Seguros Bolo', sub: '$ 170.000 · venció el 20', href: 'Casa.dc.html' },
+      { titulo: 'Contar Nequi', sub: 'Faltan $ 50.000', href: 'Arqueo.dc.html' },
+      { titulo: 'Pagar Funeraria', sub: '$ 32.000 · venció el 16', href: 'Casa.dc.html' },
+      { titulo: 'Revisar 3 créditos', sub: 'Más de 90 días sin pago', href: 'PrestamoPerdido.dc.html' }
+    ].map((s, i) => ({
+      ...s, n: i + 1,
+      ring: i === 0 ? '2px' : '0px',
+      numBg: i === 0 ? VIOLET : '#ffffff', numFg: i === 0 ? '#ffffff' : INK,
+      subFg: i === 0 ? '#5b21b6' : '#6b5a86',
+      arrow: i === 0 ? VIOLET : '#a89cc0'
+    }));
+    const term = (op, label, n, o = {}) => ({ op, label, valor: fmt(n), bg: o.result ? '#24123f' : '#f6f3fa', fg: o.result ? '#ffffff' : INK, weight: o.result ? 400 : 300, ring: o.attn ? '2px' : '0px', ringColor: VIOLET });
+    const ecuaciones = [
+      { nombre: 'Negocio', color: '#5b3d8a', terminos: [term('', 'Intereses', 6240000), term('−', 'Gastos', 180000), term('−', 'Perdidos', 0), term('=', 'Ganancia', 6060000, { result: true }), term('−', 'A la casa', 5500000), term('=', 'Reinvertido', 560000, { result: true })] },
+      { nombre: 'Casa', color: TEAL, terminos: [term('', 'Entró', 5500000), term('−', 'Fijos', 2727000), term('−', 'Variables', 1940000), term('=', 'Hoy', 833000, { result: true }), term('−', 'Fijos pendientes', 202000), term('=', 'Al cierre', 631000, { result: true })] }
+    ];
+    const bolsillos = [
+      { nombre: 'Bancolombia', saldo: fmt(11900000), flex: 119, color: '#24123f', estado: 'Sin contar hace 9 días', estadoFg: '#b45309' },
+      { nombre: 'Nu · ahorro', saldo: fmt(7006000), flex: 70, color: '#b8860b', estado: 'Cuadra', estadoFg: '#15803d' },
+      { nombre: 'Nequi', saldo: fmt(1600000), flex: 16, color: '#6b5a86', estado: 'Faltan $ 50.000', estadoFg: '#b91c1c' },
+      { nombre: 'Efectivo', saldo: fmt(1320000), flex: 13, color: '#a89cc0', estado: 'Cuadra', estadoFg: '#15803d' },
+      { nombre: 'Cuenta casa', saldo: fmt(833000), flex: 8, color: TEAL, estado: 'Cuadra', estadoFg: '#15803d' }
+    ];
+    const sobre = (nombre, g, tope) => {
+      const p = g / tope, over = p > 1, near = !over && p >= 0.9;
+      return {
+        nombre,
+        queda: over ? fmt(tope - g) : fmt(tope - g),
+        sub: over ? 'Pasado del tope de ' + fmt(tope) : 'de ' + fmt(tope),
+        fg: over ? '#b91c1c' : INK,
+        ancho: Math.min(100, Math.round(p * 100)) + '%',
+        barra: over ? '#b91c1c' : near ? '#d97706' : '#24123f',
+        ring: over ? '2px' : near ? '2px' : '1px',
+        ringColor: over ? '#fca5a5' : near ? '#fcd34d' : '#ece6f3',
+        flap: over ? '#fee2e2' : near ? '#fef3c7' : '#f3eff8'
+      };
+    };
+    const sobres = [sobre('Mercado', 1210000, 2700000), sobre('EPM', 312000, 470000), sobre('Gasolina', 186000, 200000), sobre('Salud', 72000, 50000), sobre('Entretenimiento', 60000, 150000), sobre('Imprevistos', 100000, 500000)];
+    return { readOnly, bandas, nodos, etiquetas, siguiente, ecuaciones, bolsillos, sobres };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agenda F · dentro de la línea del mes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section aria-label="El mes" style="width: 1300px; box-sizing: border-box; padding: 22px 40px 26px; border-radius: 20px; background: #ffffff; font-family: Geist, system-ui, sans-serif; color: #24123f">
+  <div style="position: relative; height: 150px">
+    <div style="position: absolute; left: 0; right: 0; top: 44px; height: 4px; border-radius: 999px; background: #efeaf6"></div>
+    <div style="position: absolute; left: 0; top: 44px; height: 4px; width: 79.03%; border-radius: 999px; background: #24123f"></div>
+    <div style="position: absolute; top: 20px; left: 79.03%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center">
+      <span style="font-size: 11px; font-weight: 700; color: #7c3aed">HOY</span>
+      <span style="width: 2px; height: 42px; background: #7c3aed"></span>
+    </div>
+    <sc-for list="{{ marcas }}" as="m" hint-placeholder-count="12">
+      <button type="button" onClick="{{ m.pick }}" aria-label="{{ m.titulo }}" style="position: absolute; left: {{ m.left }}; top: {{ m.top }}; transform: translateX(-50%); width: 22px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center">
+        <span style="width: {{ m.size }}; height: {{ m.size }}; border-radius: {{ m.radius }}; background: {{ m.bg }}; box-shadow: 0 0 0 {{ m.ring }} {{ m.ringColor }}, 0 0 0 4px #ffffff"></span>
+      </button>
+    </sc-for>
+    <sc-for list="{{ numeros }}" as="d" hint-placeholder-count="7">
+      <span style="position: absolute; top: 0; left: {{ d.left }}; transform: translateX(-50%); font-size: 11px; color: #a89cc0">{{ d.n }}</span>
+    </sc-for>
+    <div style="position: absolute; left: {{ popLeft }}; top: 78px; transform: translateX(-50%); width: 250px; padding: 12px 14px; border-radius: 14px; background: #24123f; color: #fff; box-shadow: 0 18px 40px rgb(36 18 63 / 22%)">
+      <div style="font-size: 12px; color: #c9bfdc">{{ popFecha }}</div>
+      <div style="font-size: 15px; font-weight: 600; margin-top: 2px">{{ popTitulo }}</div>
+      <div style="font-size: 13px; color: #c9bfdc">{{ popSub }}</div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 18px; font-size: 12px; color: #6b5a86; margin-top: 8px">
+    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 999px; background: #24123f"></span>Hecho</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 999px; background: #fff; box-shadow: 0 0 0 2px #24123f"></span>Por venir</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 999px; background: #fee2e2; box-shadow: 0 0 0 2px #b91c1c"></span>Sin pagar</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 2px; background: #0f766e"></span>Casa</span>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":230}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: 9 }; }
+  renderVals() {
+    const pos = (d) => ((d - 0.5) / 31 * 100).toFixed(2) + '%';
+    const S = {
+      hecho: { bg: '#24123f', ring: '0px', ringColor: '#24123f', size: '12px', radius: '999px' },
+      viene: { bg: '#ffffff', ring: '2px', ringColor: '#24123f', size: '12px', radius: '999px' },
+      falta: { bg: '#fee2e2', ring: '2px', ringColor: '#b91c1c', size: '12px', radius: '999px' },
+      casa: { bg: '#0f766e', ring: '0px', ringColor: '#0f766e', size: '11px', radius: '3px' },
+      ahorro: { bg: '#ffffff', ring: '2px', ringColor: '#b8860b', size: '12px', radius: '3px' }
+    };
+    const raw = [
+      [1, 'casa', '1 nov', 'Retiro a la casa', '$ 3.000.000'],
+      [5, 'hecho', '5 nov', '4 cuotas cobradas', '$ 1.380.000'],
+      [10, 'hecho', '10 nov', '7 cuotas cobradas', '$ 2.600.000'],
+      [15, 'hecho', '15 nov', '5 cuotas cobradas', '$ 1.910.000'],
+      [16, 'falta', '16 nov', 'Funeraria', '$ 32.000 · sin pagar'],
+      [17, 'casa', '17 nov', 'Arriendo', '$ 1.787.000 · pagado'],
+      [20, 'falta', '20 nov', 'Seguros Bolo', '$ 170.000 · sin pagar'],
+      [24, 'casa', '24 nov', 'Retiro a la casa', '$ 2.500.000'],
+      [25, 'viene', 'Hoy', '5 cuotas por cobrar', '$ 1.720.000'],
+      [30, 'ahorro', '30 nov', 'Pasar al ahorro', '$ 631.000'],
+      [31, 'viene', '1 dic', '6 cuotas · retiro a la casa', '$ 2.140.000 por cobrar']
+    ];
+    const marcas = raw.map(([d, k, , titulo], i) => ({ ...S[k], left: pos(d), top: (i > 0 && raw[i - 1][0] >= d - 1 ? 14 : 35) + 'px', titulo, pick: () => this.setState({ sel: i }) }));
+    const s = raw[this.state.sel];
+    const left = Math.min(88, Math.max(10, (s[0] - 0.5) / 31 * 100));
+    return {
+      marcas,
+      numeros: [1, 5, 10, 15, 20, 25, 30].map((n) => ({ n, left: pos(n) })).concat([{ n: '1 dic', left: pos(31) }]),
+      popLeft: left + '%', popFecha: s[2], popTitulo: s[3], popSub: s[4]
+    };
+  }
+}
+</script>
+</body>
+</html>

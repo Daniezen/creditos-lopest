@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agenda D · mes de calor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section aria-labelledby="t" style="width: 920px; box-sizing: border-box; padding: 24px; border-radius: 20px; background: #ffffff; font-family: Geist, system-ui, sans-serif; color: #24123f; display: flex; gap: 24px">
+  <div style="flex: 0 0 470px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px">
+      <h2 id="t" style="margin: 0; font-size: 22px; font-weight: 300">Noviembre, día a día</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px">
+      <sc-for list="{{ semana }}" as="w" hint-placeholder-count="7">
+        <div style="font-size: 11px; font-weight: 700; color: #a89cc0; text-align: center; padding-bottom: 2px">{{ w }}</div>
+      </sc-for>
+      <sc-for list="{{ celdas }}" as="c" hint-placeholder-count="35">
+        <button type="button" onClick="{{ c.pick }}" aria-label="{{ c.aria }}" aria-pressed="{{ c.pressed }}" style="position: relative; aspect-ratio: 1 / 1; border-radius: 10px; border: 0; cursor: pointer; font-family: Geist, system-ui, sans-serif; font-size: 13px; font-weight: 500; background: {{ c.bg }}; color: {{ c.fg }}; box-shadow: inset 0 0 0 {{ c.ringW }} {{ c.ring }}">
+          {{ c.n }}
+          <sc-if value="{{ c.marca }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 5px; top: 5px; width: 7px; height: 7px; border-radius: 999px; background: {{ c.marcaColor }}; box-shadow: 0 0 0 1.5px #ffffff"></span></sc-if>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 12px; color: #6b5a86">
+      <span>Sale</span>
+      <span style="flex: 1; height: 8px; border-radius: 999px; background: linear-gradient(90deg, #0f766e, #cfe8e4, #f6f3fa, #d9cdee, #24123f)"></span>
+      <span>Entra</span>
+    </div>
+    <div style="display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: #6b5a86">
+      <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 999px; background: #b91c1c"></span>Sin pagar</span>
+      <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 999px; background: #b8860b"></span>Ahorro</span>
+    </div>
+  </div>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 13px; color: #6b5a86">{{ detFecha }}</div>
+    <div style="display: flex; gap: 10px">
+      <div style="flex: 1; padding: 12px 14px; border-radius: 14px; background: #f6f3fa"><div style="font-size: 12px; color: #6b5a86">Entró</div><div style="font-size: 22px; font-weight: 300">{{ detIn }}</div></div>
+      <div style="flex: 1; padding: 12px 14px; border-radius: 14px; background: #e6f2f0"><div style="font-size: 12px; color: #0f766e">Salió</div><div style="font-size: 22px; font-weight: 300">{{ detOut }}</div></div>
+    </div>
+    <sc-for list="{{ detItems }}" as="i" hint-placeholder-count="3">
+      <div style="padding: 10px 12px; border-radius: 12px; background: #fbf8f4; font-size: 14px; display: flex; justify-content: space-between; gap: 10px">
+        <span>{{ i.t }}</span><span style="color: {{ i.fg }}; font-variant-numeric: tabular-nums">{{ i.m }}</span>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":920,"height":560}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { dia: 20 }; }
+  renderVals() {
+    const fmt = (n) => '$ ' + n.toLocaleString('es-CO');
+    // Per day: [in, out] in millions, plus the day's notable items.
+    const data = {
+      1: [2.14, 0, [['6 cuotas cobradas', 2140000]]], 5: [1.38, 0.14, [['4 cuotas cobradas', 1380000], ['Comisiones', -135000]]], 10: [3.6, 0, [['7 cuotas + abono', 3600000]]],
+      12: [0, 0.31, [['EPM', -312000]]], 15: [1.91, 0, [['5 cuotas cobradas', 1910000]]], 16: [0, 0.82, [['Crédito Davivienda', -820000], ['Funeraria sin pagar', 0]]],
+      17: [0, 1.79, [['Arriendo', -1787000]]], 18: [0, 0.05, [['Papelería', -45000]]], 19: [0, 0.19, [['Gasolina', -186000]]],
+      20: [2.2, 3.12, [['Cuotas cobradas', 2200000], ['Préstamo entregado', -3000000], ['Internet y TV', -120000], ['Seguros Bolo sin pagar', 0]]],
+      21: [0, 0.07, [['Droguería', -72000]]], 22: [0.62, 0, [['Cuota LP-26-0251', 620000]]], 23: [0.48, 0.41, [['Cuota LP-26-0294', 475000], ['Mercado', -412000]]]
+    };
+    const mark = { 16: '#b91c1c', 20: '#b91c1c', 30: '#b8860b' };
+    const tint = (net) => {
+      if (net > 2) return ['#24123f', '#fff']; if (net > 0.8) return ['#5b3d8a', '#fff']; if (net > 0.1) return ['#d9cdee', '#24123f'];
+      if (net < -2) return ['#0f766e', '#fff']; if (net < -0.8) return ['#5fb3a9', '#fff']; if (net < -0.1) return ['#cfe8e4', '#24123f'];
+      return ['#f6f3fa', '#857899'];
+    };
+    const celdas = [];
+    for (let i = 0; i < 35; i++) {
+      const d = i - 5;
+      if (d < 1 || d > 30) { celdas.push({ n: '', bg: 'transparent', fg: '#fff', ring: 'transparent', ringW: '0px', marca: false, aria: 'vacío', pressed: 'false', pick: () => {} }); continue; }
+      const [inn, out] = data[d] || [0, 0];
+      const futuro = d > 25;
+      const [bg, fg] = futuro ? ['#ffffff', '#a89cc0'] : tint(inn - out);
+      const sel = this.state.dia === d;
+      celdas.push({ n: d, bg, fg, ring: sel ? '#7c3aed' : futuro ? '#ece6f3' : 'transparent', ringW: sel ? '3px' : futuro ? '1px' : '0px', marca: !!mark[d], marcaColor: mark[d] || '#fff', aria: d + ' de noviembre', pressed: sel ? 'true' : 'false', pick: () => this.setState({ dia: d }) });
+    }
+    const [inn, out, items] = data[this.state.dia] || [0, 0, []];
+    return {
+      semana: ['L', 'M', 'M', 'J', 'V', 'S', 'D'], celdas,
+      detFecha: this.state.dia + ' de noviembre', detIn: fmt(Math.round(inn * 1e6)), detOut: fmt(Math.round(out * 1e6)),
+      detItems: items.map(([t, m]) => ({ t, m: m === 0 ? 'sin pagar' : (m > 0 ? '+' : '−') + fmt(Math.abs(m)), fg: m === 0 ? '#b91c1c' : m > 0 ? '#24123f' : '#0f766e' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

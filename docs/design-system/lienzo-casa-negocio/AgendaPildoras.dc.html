@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agenda H · una fila de próximos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5b21b6}
+</style>
+</helmet>
+<section aria-label="Próximo" style="width: 1300px; box-sizing: border-box; padding: 14px 16px; border-radius: 20px; background: #ffffff; font-family: Geist, system-ui, sans-serif; color: #24123f; display: flex; align-items: center; gap: 10px; overflow-x: auto">
+  <sc-for list="{{ pildoras }}" as="p" hint-placeholder-count="5">
+    <a href="#" style="flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 16px; border-radius: 16px; text-decoration: none; background: {{ p.bg }}; color: #24123f; box-shadow: inset 0 0 0 1px {{ p.ring }}">
+      <span style="display: flex; flex-direction: column; align-items: center; line-height: 1">
+        <span style="font-size: 18px; font-weight: 300; color: {{ p.diaFg }}">{{ p.dia }}</span>
+        <span style="font-size: 10px; color: #857899">{{ p.mes }}</span>
+      </span>
+      <span style="width: 1px; height: 28px; background: #e7e1ef"></span>
+      <span style="display: flex; flex-direction: column">
+        <span style="font-size: 14px; font-weight: 600">{{ p.t }}</span>
+        <span style="font-size: 12px; color: #6b5a86; font-variant-numeric: tabular-nums">{{ p.m }}</span>
+      </span>
+    </a>
+  </sc-for>
+  <a href="#" style="flex: none; margin-left: auto; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: #f6f3fa; color: #24123f; font-size: 14px; font-weight: 600; text-decoration: none">Ver el mes</a>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":84}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = (dia, mes, t, m, o = {}) => ({ dia, mes, t, m, bg: o.alerta ? '#fef2f2' : '#fbf8f4', ring: o.alerta ? '#fecaca' : '#f3eff8', diaFg: o.hoy ? '#7c3aed' : o.alerta ? '#b91c1c' : '#24123f' });
+    return {
+      pildoras: [
+        p('!', 'pend.', '2 sin pagar', '$ 202.000', { alerta: true }),
+        p('25', 'hoy', '5 cobros', '+$ 1.720.000', { hoy: true }),
+        p('27', 'vie', '2 cobros', '+$ 600.000'),
+        p('30', 'lun', 'Cierre y ahorro', '$ 631.000 al ahorro'),
+        p('1', 'dic', 'Retiro a la casa', 'Meta $ 5.500.000')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

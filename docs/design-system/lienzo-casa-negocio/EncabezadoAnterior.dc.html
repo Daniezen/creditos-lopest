@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Encabezado · versión anterior</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="width: 100%; box-sizing: border-box; padding: 26px 32px 0; background: #ffffff; border: 1px solid #e7e1ef; border-bottom: 0; border-radius: 24px 24px 0 0; font-family: Geist, system-ui, sans-serif; color: #24123f">
+  <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+    <div style="flex: 999 1 520px; min-width: 0">
+      <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5a86">Casa y Negocio</div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px">
+        <h1 style="margin: 0; font-size: 44px; font-weight: 300; letter-spacing: -0.02em; line-height: 1.05">Noviembre <span style="color: #a89cc0">2026</span></h1>
+        <button type="button" aria-label="Mes anterior" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #e7e1ef; background: #fff; color: #24123f; cursor: pointer; font-size: 16px">‹</button>
+        <button type="button" aria-label="Mes siguiente" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #e7e1ef; background: #fff; color: #24123f; cursor: pointer; font-size: 16px">›</button>
+      </div>
+
+      <div style="margin-top: 22px; overflow-x: auto">
+        <div role="img" aria-label="{{ trackAria }}" style="position: relative; min-width: 560px; height: 104px">
+          <div style="position: absolute; left: 0; right: 0; top: 30px; height: 4px; border-radius: 999px; background: #efeaf6"></div>
+          <div style="position: absolute; left: 0; top: 30px; height: 4px; border-radius: 999px; background: #24123f; width: {{ hoyPct }}"></div>
+          <div style="position: absolute; top: 8px; left: {{ hoyPct }}; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center">
+            <span style="font-size: 11px; font-weight: 700; color: #7c3aed">HOY</span>
+            <span style="width: 2px; height: 40px; background: #7c3aed; border-radius: 2px"></span>
+          </div>
+          <sc-for list="{{ marcas }}" as="m" hint-placeholder-count="7">
+            <div title="{{ m.titulo }}" style="position: absolute; left: {{ m.left }}; top: {{ m.top }}; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px">
+              <span style="width: {{ m.size }}; height: {{ m.size }}; border-radius: {{ m.radius }}; background: {{ m.bg }}; box-shadow: 0 0 0 {{ m.ring }} {{ m.ringColor }}, 0 0 0 5px #ffffff"></span>
+              <span style="margin-top: {{ m.labelMt }}; font-size: 11px; font-weight: 500; white-space: nowrap; color: {{ m.fg }}">{{ m.label }}</span>
+            </div>
+          </sc-for>
+          <sc-for list="{{ dias }}" as="d" hint-placeholder-count="7">
+            <span style="position: absolute; top: 0; left: {{ d.left }}; transform: translateX(-50%); font-size: 11px; color: #a89cc0">{{ d.n }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+      <section aria-label="Cierre del mes" style="padding: 14px 18px; border-radius: 16px; background: #fdf6e3; border: 2px solid #eab308; display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+        <div>
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #713f12">Cierre del mes</div>
+          <div style="font-size: 13px; color: #713f12">30 nov</div>
+        </div>
+        <div style="font-size: 34px; font-weight: 300; line-height: 1; color: #24123f; font-variant-numeric: tabular-nums">5 días</div>
+      </section>
+      <sc-if value="{{ editable }}" hint-placeholder-val="{{ true }}">
+        <nav aria-label="Acciones rápidas" style="display: flex; gap: 18px; justify-content: flex-end; flex-wrap: wrap">
+          <sc-for list="{{ accesos }}" as="a" hint-placeholder-count="3">
+            <a href="{{ a.href }}" style="width: 72px; display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: #24123f; font-size: 12px; font-weight: 600">
+              <span style="width: 48px; height: 48px; border-radius: 999px; background: {{ a.bg }}; color: {{ a.fg }}; display: inline-flex; align-items: center; justify-content: center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ a.d }}"></path></svg>
+              </span>
+              {{ a.label }}
+            </a>
+          </sc-for>
+        </nav>
+      </sc-if>
+      <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}">
+        <div style="align-self: flex-end; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #efeaf6; color: #24123f; font-size: 13px; font-weight: 600">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+          Solo lectura
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <nav aria-label="Secciones" style="margin-top: 26px; overflow-x: auto">
+    <div style="display: flex; gap: 2px; width: max-content">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="7">
+        <a href="{{ t.href }}" aria-current="{{ t.current }}" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; border-radius: 14px 14px 0 0; font-size: 14px; font-weight: {{ t.weight }}; white-space: nowrap; text-decoration: none; background: {{ t.bg }}; color: {{ t.fg }}">{{ t.label }}</a>
+      </sc-for>
+    </div>
+  </nav>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["tablero","casa","negocio","arqueo","ahorro","resumen","config"],"default":"tablero"},"soloLectura":{"editor":"boolean","default":false},"$preview":{"width":1352,"height":330}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'tablero';
+    const readOnly = this.props.soloLectura ?? false;
+    const pos = (d) => ((d - 0.5) / 30 * 100).toFixed(2) + '%';
+    const S = {
+      pagado: { bg: '#24123f', ring: '0px', ringColor: '#24123f', fg: '#6b5a86', size: '14px', radius: '999px' },
+      vencido: { bg: '#fee2e2', ring: '2px', ringColor: '#b91c1c', fg: '#b91c1c', size: '14px', radius: '999px' },
+      entrada: { bg: '#0f766e', ring: '0px', ringColor: '#0f766e', fg: '#0f766e', size: '12px', radius: '3px' }
+    };
+    const raw = [
+      [1, 'Retiro +3,0 M', 'entrada', 'Retiro a la casa: $ 3.000.000'],
+      [16, 'Davivienda', 'pagado', 'Crédito Davivienda: pagado'],
+      [16, 'Funeraria', 'vencido', 'Funeraria: vencido'],
+      [17, 'Arriendo', 'pagado', 'Arriendo: pagado'],
+      [20, 'Internet', 'pagado', 'Internet y TV: pagado'],
+      [20, 'Seguros Bolo', 'vencido', 'Seguros Bolo: vencido'],
+      [24, 'Retiro +2,5 M', 'entrada', 'Retiro a la casa: $ 2.500.000']
+    ];
+    // Markers within two days of an earlier one drop their label one line lower, so labels never collide.
+    const marcas = raw.map(([d, label, k, titulo], i) => {
+      const near = raw.slice(0, i).filter((r) => Math.abs(r[0] - d) <= 2).length;
+      return { ...S[k], label, titulo, left: pos(d), top: '25px', labelMt: (near * 15) + 'px' };
+    });
+    const dias = [1, 5, 10, 15, 20, 25, 30].map((n) => ({ n, left: pos(n) }));
+    const tabsBase = [
+      ['tablero', 'Tablero', 'Main.dc.html'], ['casa', 'Casa', 'Casa.dc.html'], ['negocio', 'Caja del negocio', 'Negocio.dc.html'],
+      ['arqueo', 'Arqueo', 'Arqueo.dc.html'], ['ahorro', 'Ahorro', 'Ahorro.dc.html'], ['resumen', 'Resumen', 'Resumen.dc.html'], ['config', 'Configuración', 'Configuracion.dc.html']
+    ];
+    const tabs = tabsBase.map(([id, label, href]) => {
+      const on = id === active;
+      return { label, href, current: on ? 'page' : 'false', bg: on ? '#fbf8f4' : 'transparent', fg: on ? '#24123f' : '#857899', weight: on ? 600 : 500 };
+    });
+    const accesos = [
+      { label: 'Registrar', href: 'Negocio.dc.html', bg: '#7c3aed', fg: '#ffffff', d: 'M12 5v14M5 12h14' },
+      { label: 'Contar', href: 'Arqueo.dc.html', bg: '#efeaf6', fg: '#24123f', d: 'M12 3v18M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z' },
+      { label: 'Ahorrar', href: 'Ahorro.dc.html', bg: '#efeaf6', fg: '#24123f', d: 'M4 11a7 6 0 0 1 14 0v3l2 1v2h-3l-1 3h-3v-2H9v2H6l-1-3a5 5 0 0 1-1-3zM16 10h.01M9 6l1-3' }
+    ];
+    return {
+      marcas,
+      dias, tabs, accesos, readOnly, editable: !readOnly,
+      hoyPct: pos(25),
+      trackAria: 'Noviembre: pagados Davivienda, Arriendo e Internet; vencidos Funeraria y Seguros Bolo; retiros a la casa el 1 y el 24; hoy es 25'
+    };
+  }
+}
+</script>
+</body>
+</html>

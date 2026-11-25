@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agenda G · mini mes al lado de las cuentas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1300px; display: flex; gap: 22px; align-items: stretch; font-family: Geist, system-ui, sans-serif; color: #24123f">
+  <section aria-label="Las cuentas del mes (como hoy)" style="flex: 1; padding: 22px 24px; border-radius: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 16px; opacity: 0.55">
+    <div style="font-size: 22px; font-weight: 300">Las cuentas del mes</div>
+    <div style="height: 64px; border-radius: 14px; background: #f6f3fa"></div>
+    <div style="height: 64px; border-radius: 14px; background: #f6f3fa"></div>
+  </section>
+  <section aria-labelledby="mini" style="flex: 0 0 420px; padding: 20px 22px; border-radius: 20px; background: #ffffff; display: flex; gap: 18px">
+    <div style="flex: 0 0 182px">
+      <h2 id="mini" style="margin: 0 0 8px; font-size: 15px; font-weight: 600">Noviembre</h2>
+      <div style="display: grid; grid-template-columns: repeat(7, 26px); gap: 0">
+        <sc-for list="{{ celdas }}" as="c" hint-placeholder-count="35">
+          <span style="width: 26px; height: 26px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 999px; font-size: 11px; background: {{ c.bg }}; color: {{ c.fg }}; font-weight: {{ c.w }}">
+            {{ c.n }}
+            <span style="width: 4px; height: 4px; border-radius: 999px; background: {{ c.dot }}"></span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b5a86">Próximo</div>
+      <sc-for list="{{ proximos }}" as="p" hint-placeholder-count="4">
+        <div style="display: flex; gap: 10px; align-items: baseline">
+          <span style="flex: none; width: 32px; font-size: 13px; font-weight: 600; color: {{ p.diaFg }}">{{ p.dia }}</span>
+          <span style="flex: 1; font-size: 13px; line-height: 1.3; color: {{ p.fg }}">{{ p.t }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const marks = { 1: '#0f766e', 5: '#24123f', 10: '#24123f', 15: '#24123f', 16: '#b91c1c', 17: '#0f766e', 20: '#b91c1c', 24: '#0f766e', 25: '#24123f', 27: '#24123f', 30: '#b8860b' };
+    const celdas = [];
+    for (let i = 0; i < 35; i++) {
+      const d = i - 5;
+      if (d < 1 || d > 30) { celdas.push({ n: '', bg: 'transparent', fg: '#fff', w: 400, dot: 'transparent' }); continue; }
+      const hoy = d === 25;
+      celdas.push({ n: d, bg: hoy ? '#7c3aed' : 'transparent', fg: hoy ? '#fff' : d < 25 ? '#a89cc0' : '#24123f', w: hoy ? 700 : 400, dot: hoy ? '#ffffff' : (marks[d] || 'transparent') });
+    }
+    return {
+      celdas,
+      proximos: [
+        { dia: '!', diaFg: '#b91c1c', t: 'Seguros Bolo y Funeraria sin pagar · $ 202.000', fg: '#b91c1c' },
+        { dia: 'Hoy', diaFg: '#7c3aed', t: '5 cuotas por cobrar · $ 1,7 M', fg: '#24123f' },
+        { dia: '30', diaFg: '#24123f', t: 'Pasar $ 631.000 al ahorro', fg: '#24123f' },
+        { dia: '1 dic', diaFg: '#24123f', t: 'Retiro a la casa', fg: '#24123f' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
