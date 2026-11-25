@@ -2,18 +2,17 @@ import { NextResponse } from "next/server";
 
 import { actualizarCuotasVencidas } from "@/features/creditos/pagos/vencidas.service";
 import { prisma } from "@/lib/prisma";
+import { readBearerToken, secretsMatch } from "@/server/security/cron-secret";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Constant-time check of `Authorization: Bearer <CREDITOS_CRON_SECRET>`. */
 function isAuthorized(request: Request): boolean {
-  const expectedSecret = process.env.CREDITOS_CRON_SECRET;
-
-  if (!expectedSecret) {
-    return false;
-  }
-
-  const authHeader = request.headers.get("authorization");
-  return authHeader === `Bearer ${expectedSecret}`;
+  return secretsMatch(
+    readBearerToken(request.headers.get("authorization")),
+    process.env.CREDITOS_CRON_SECRET,
+  );
 }
 
 /**
