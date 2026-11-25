@@ -33,6 +33,21 @@
   --color-danger-border: var(--lopest-color-danger-border);
   --color-danger-soft: var(--lopest-color-danger-soft);
 
+  /*
+    Data visualization roles. ECharts draws into SVG attributes and cannot
+    read var(); `themes/lopest-chart.ts` reads these computed values once.
+  */
+  --dataviz-realized-primary: var(--lopest-dataviz-realized-primary);
+  --dataviz-realized-secondary: var(--lopest-dataviz-realized-secondary);
+  --dataviz-projected-primary: var(--lopest-dataviz-projected-primary);
+  --dataviz-projected-secondary: var(--lopest-dataviz-projected-secondary);
+  --dataviz-grid: var(--lopest-dataviz-grid);
+  --dataviz-cursor: var(--lopest-dataviz-cursor);
+  --dataviz-axis-text: var(--color-text-secondary);
+  --dataviz-text: var(--color-text-primary);
+  --dataviz-tooltip-surface: var(--color-surface-elevated);
+  --dataviz-tooltip-border: var(--lopest-dataviz-grid);
+
   --surface-section: var(--color-surface-primary);
   --surface-overlay: var(--color-surface-elevated);
   --border-section: 1px solid var(--color-border-subtle);

@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useRef, type CSSProperties } from "react";
+import { BarChart } from "echarts/charts";
+import type { BarSeriesOption } from "echarts/charts";
+import { GridComponent, LegendComponent, TooltipComponent } from "echarts/components";
+import type { GridComponentOption, LegendComponentOption, TooltipComponentOption } from "echarts/components";
+import * as echarts from "echarts/core";
+import type { ComposeOption } from "echarts/core";
+import { SVGRenderer } from "echarts/renderers";
+
+import { dataVizRecipes } from "../recipes/data-viz";
+import { buildEchartsTheme, resolveChartTheme, type ChartTheme } from "../themes/lopest-chart";
+
+/**
+ * The one way Lopest draws a chart: Apache ECharts, pinned to 6.0.0 (the
+ * same pin as the sibling platforms), behind this component.
+ *
+ * BUNDLE. ECharts is imported by module from `echarts/core`; only the types
+ * registered below reach the client (bars, grid, tooltip, legend). A chart
+ * that needs another type adds it here, deliberately, and to `ChartOption`,
+ * instead of importing the full `echarts` package elsewhere. The SVG renderer
+ * keeps charts sharp at any zoom, printable, and their text as text.
+ *
+ * THEME. Built once, at first mount, from the CSS tokens
+ * (`themes/lopest-chart.ts`) and registered under `THEME`. An option never
+ * writes colors or sizes of its own: when it needs a role (which series is
+ * "projected", the bar radius) it receives the resolved `ChartTheme` by
+ * passing `option` as a function.
+ *
+ * SIZE. Width is the container's, followed with a `ResizeObserver` (phones,
+ * a folding sidebar, a scroll canvas); height is a token class, so the page
+ * does not jump while charts mount. `scroll` opts into a horizontal scroll
+ * canvas sized per category, for long monthly series.
+ *
+ * ACCESSIBILITY. The drawing is an image (`role="img"`) labelled with what it
+ * shows. Reduced motion disables animation; the preference is read when an
+ * option is applied, so no media-query subscription is kept per chart.
+ */
+
+echarts.use([BarChart, GridComponent, TooltipComponent, LegendComponent, SVGRenderer]);
+
+/** The option a chart may declare: only registered types compile. */
+export type ChartOption = ComposeOption<
+  BarSeriesOption | GridComponentOption | TooltipComponentOption | LegendComponentOption
+>;
+
+export type { ChartTheme };
+
+const THEME = "lopest";
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+let resolvedTheme: ChartTheme | null = null;
+
+/** Resolves and registers the theme once per page load; tokens do not change at runtime. */
+function ensureTheme(): ChartTheme {
+  if (resolvedTheme) return resolvedTheme;
+  const rootStyles = getComputedStyle(document.documentElement);
+  resolvedTheme = resolveChartTheme(
+    (variable) => rootStyles.getPropertyValue(variable),
+    Number.parseFloat(rootStyles.fontSize) || 16,
+    getComputedStyle(document.body).fontFamily,
+  );
+  echarts.registerTheme(THEME, buildEchartsTheme(resolvedTheme));
+  return resolvedTheme;
+}
+
+const HEIGHT = { regular: dataVizRecipes.heightRegular } as const;
+
+export type ChartHeight = keyof typeof HEIGHT;
+
+export type ChartScroll = {
+  /** Number of categories on the x axis: one slot token each. */
+  categories: number;
+  /** Which end is visible first: `end` anchors on the latest month. */
+  anchor: "start" | "end";
+};
+
+export type ChartProps = {
+  /** A static option, or a builder that receives the resolved theme roles. Memoize it. */
+  option: ChartOption | ((theme: ChartTheme) => ChartOption);
+  height: ChartHeight;
+  /** What the chart shows, for assistive technology: «Recaudación mensual de capital e interés». */
+  label: string;
+  scroll?: ChartScroll;
+  className?: string;
+};
+
+export function Chart({ option, height, label, scroll, className }: ChartProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<echarts.ECharts | null>(null);
+
+  // Mount/unmount: one instance per element, resized with its container.
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    ensureTheme();
+    const chart = echarts.init(element, THEME, { renderer: "svg" });
+    chartRef.current = chart;
+    const observer = new ResizeObserver(() => chart.resize());
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      chart.dispose();
+      chartRef.current = null;
+    };
+  }, []);
+
+  // Every option change replaces the previous one (`notMerge`): a chart is a
+  // function of its data, and a merge would keep series the new data lacks.
+  // Declared after the mount effect, so the instance already exists here.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const resolved = typeof option === "function" ? option(ensureTheme()) : option;
+    const reduced = window.matchMedia(REDUCED_MOTION).matches;
+    chart.setOption({ ...resolved, animation: !reduced }, { notMerge: true });
+  }, [option]);
+
+  const drawing = (
+    <div
+      ref={ref}
+      role="img"
+      aria-label={label}
+      className={[dataVizRecipes.drawing, HEIGHT[height], scroll ? "" : className ?? ""].join(" ").trim()}
+    />
+  );
+
+  if (!scroll) return drawing;
+
+  const trackClass = [
+    dataVizRecipes.scrollTrack,
+    scroll.anchor === "end" ? dataVizRecipes.scrollTrackFromEnd : "",
+    className ?? "",
+  ]
+    .join(" ")
+    .trim();
+  // The category count is data, not a visual value: it feeds the canvas recipe's calc().
+  const canvasStyle = { "--chart-categories": scroll.categories } as CSSProperties;
+
+  return (
+    <div className={trackClass}>
+      <div className={dataVizRecipes.scrollCanvas} style={canvasStyle}>
+        {drawing}
+      </div>
+    </div>
+  );
+}
+
+/** Placeholder with the drawing's footprint, for a chart with no data. */
+export function ChartEmptyState({ message }: { message: string }) {
+  return (
+    <div className={dataVizRecipes.emptyState}>
+      <p className={dataVizRecipes.emptyStateText}>{message}</p>
+    </div>
+  );
+}

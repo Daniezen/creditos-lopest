@@ -24,4 +24,20 @@
   --ds-duration-fast: 120ms;
   --ds-duration-normal: 180ms;
   --ds-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ds-duration-slow: 400ms;
+
+  /* Chart geometry. Resolved to numbers by the ECharts theme at mount. */
+  --ds-chart-height-regular: 400px;
+  --ds-chart-category-slot: 60px;
+  --ds-chart-scroll-min-width: 600px;
+  --ds-chart-bar-radius: 4px;
+  --ds-chart-grid-dash: 3 3;
+  --ds-chart-stroke-axis: 1px;
+  --ds-chart-inset-top: 20px;
+  --ds-chart-inset-side: 30px;
+  --ds-chart-inset-start: 40px;
+  --ds-chart-inset-bottom: 5px;
+  --ds-chart-legend-gap: 20px;
+  --ds-chart-legend-reserve: 24px;
+  --ds-chart-height-empty: 300px;
 }

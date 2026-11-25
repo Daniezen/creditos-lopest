@@ -39,4 +39,17 @@
     radial-gradient(circle at 12% 20%, rgb(217 70 239 / 10%), transparent 30%),
     linear-gradient(100deg, #faf5ff 0%, #ffffff 52%, #fff7ed 100%);
   --lopest-title-accent: linear-gradient(90deg, #7c3aed, #d946ef);
+
+  /*
+    Data visualization (consumed through the semantic --dataviz-* roles).
+    Series colors come in role pairs: the realized pair reads as "already in
+    the bank" (blue capital, green interest); the projected pair is one violet
+    hue in two strengths so a forecast never looks like collected money.
+  */
+  --lopest-dataviz-realized-primary: #3b82f6;
+  --lopest-dataviz-realized-secondary: #10b981;
+  --lopest-dataviz-projected-primary: #8b5cf6;
+  --lopest-dataviz-projected-secondary: #c4b5fd;
+  --lopest-dataviz-grid: #e2e8f0;
+  --lopest-dataviz-cursor: #f1f5f9;
 }

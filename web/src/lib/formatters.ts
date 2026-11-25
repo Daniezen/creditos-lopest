@@ -1,3 +1,5 @@
+import { format, parse } from "date-fns";
+import { es } from "date-fns/locale";
 
 /**
  * Utilidades de formato para la interfaz.
@@ -149,4 +151,23 @@ export function parseTasaMensualInput(value: string): number {
   }
 
   return parsed;
+}
+
+/**
+ * Formats a `YYYY-MM` month key as a short Spanish label ("ene 2026").
+ *
+ * The key is parsed at local midday on the 1st: a midnight parse can slip
+ * to the previous month when the process runs in a timezone behind the one
+ * that produced the key (America/Bogota vs UTC servers; see fix 2f14d3b).
+ */
+export function formatMonthLabelCO(mesStr: string): string {
+  const date = parse(`${mesStr}-01T12:00:00`, "yyyy-MM-dd'T'HH:mm:ss", new Date());
+  return format(date, "MMM yyyy", { locale: es });
+}
+
+/** Compact COP axis label: `$1.5M`, `$250k`, `$900`. Used where space is scarce (chart axes). */
+export function formatCurrencyCompactCOP(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}k`;
+  return `$${value}`;
 }
