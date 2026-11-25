@@ -2,15 +2,15 @@
  * Constantes edge-safe de autenticación.
  *
  * Intención:
- * - Compartir nombres de cookies entre middleware Edge y código server.
+ * - Compartir nombres de cookies entre el proxy (src/proxy.ts) y código server.
  *
  * Restricción crítica:
  * - Este archivo NO debe importar Prisma, node:crypto, cookies(), headers()
  *   ni ningún módulo dependiente de Node Runtime.
  *
  * Motivo:
- * - middleware.ts corre en Edge Runtime.
- * - Si middleware importa indirectamente módulos Node, Next puede compilar
+ * - src/proxy.ts se carga fuera del grafo server habitual (y en Vitest sin alias).
+ * - Si el proxy importa indirectamente módulos Node, Next puede compilar
  *   con advertencias o fallos por runtime incompatible.
  */
 export const AUTH_COOKIE_NAMES = [

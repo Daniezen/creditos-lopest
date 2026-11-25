@@ -1,5 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -7,6 +5,7 @@ import {
   reconcileClientDocuments,
   type ReconcileClientDocumentsResult,
 } from "@/server/drive/client-documents-reconciliation.service";
+import { secretsMatch } from "@/server/security/cron-secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -98,16 +97,11 @@ export async function POST(request: Request) {
   }
 }
 
+/** Constant-time check of `x-cron-secret: <DOCUMENTOS_CRON_SECRET>` (both trimmed). */
 function hasValidSecret(request: Request): boolean {
-  const expected = process.env.DOCUMENTOS_CRON_SECRET?.trim();
-  const provided = request.headers.get("x-cron-secret")?.trim();
-  if (!expected || !provided) return false;
-
-  const expectedBuffer = Buffer.from(expected);
-  const providedBuffer = Buffer.from(provided);
-  return (
-    expectedBuffer.length === providedBuffer.length &&
-    timingSafeEqual(expectedBuffer, providedBuffer)
+  return secretsMatch(
+    request.headers.get("x-cron-secret")?.trim(),
+    process.env.DOCUMENTOS_CRON_SECRET?.trim(),
   );
 }
 
