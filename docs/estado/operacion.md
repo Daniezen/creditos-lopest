@@ -56,6 +56,8 @@ Para minimizar el consumo de tokens y asegurar modificaciones libres de regresio
   docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate
   ```
   o mediante `pnpm exec prisma migrate deploy` dentro de `web/` apuntando a la base de datos de producción con variables controladas.
+- El servicio `migrate` conecta con el mismo `DATABASE_URL` que la app: hoy migrator, runtime y dueño de las tablas son el mismo rol, `lopest_app_user`.
+- La migración `20261125120000_audit_append_only_v1` tiene su propio procedimiento de despliegue y rollback: `docs/estado/auditoria-append-only.md`.
 
 ## 5. Despliegue en VPS y Verificación en Vivo
 

@@ -46,6 +46,8 @@ Toda mutación de estado financiero o de cartera debe registrar un evento inmuta
 | `reason` | Motivo explícito proporcionado por el usuario (obligatorio en eliminaciones y reversiones). |
 | `ipAddress` / `userAgent` | Metadatos de red de la petición. |
 
+**Inmutabilidad garantizada por PostgreSQL** (migración `20261125120000_audit_append_only_v1`): unos triggers `BEFORE` rechazan `UPDATE`, `DELETE` y `TRUNCATE` sobre `audit_logs` para cualquier rol, también en cascada, y `lopest_app_user` pierde esos privilegios. Consecuencia: un usuario con auditoría no puede borrarse, solo desactivarse. Los snapshots de abono y de extensión siguen reglas propias. Despliegue, rollback y riesgos residuales: `docs/estado/auditoria-append-only.md`.
+
 ## 6. Verificación contra código
 
 | Afirmación | Archivo de referencia | Estado |
@@ -54,7 +56,8 @@ Toda mutación de estado financiero o de cartera debe registrar un evento inmuta
 | Alcance y filtros de propiedad (`Scope`) | `web/src/server/auth/scope.ts` | Verificado |
 | Servicio de registro de auditoría | `web/src/server/audit/audit-log.ts` | Verificado |
 | Extensiones de tipos de sesión NextAuth | `web/src/types/next-auth.d.ts` | Verificado con typecheck |
+| Ningún código reescribe ni borra auditoría | `web/src/server/audit/__tests__/audit-append-only.contract.test.ts` | Verificado con Vitest |
 
 ---
 
-**Changelog:** 30-ago-2026 — Especificación canónica de autenticación, roles, cartera y auditoría.
+**Changelog:** 30-ago-2026 — Especificación canónica de autenticación, roles, cartera y auditoría. 25-nov-2026 — `AuditLog` append-only en PostgreSQL (pendiente de aplicar).
