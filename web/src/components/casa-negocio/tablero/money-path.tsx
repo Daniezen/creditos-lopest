@@ -9,7 +9,7 @@ import { moneyPathSteps } from "./money-path-geometry";
  * where it went, and how the house used its part — three aligned bars whose
  * widths are shares of step 1 (`money-path-geometry.ts`). Small parts keep
  * their colour but drop the caption; every part is still listed for
- * assistive technology.
+ * assistive technology, and on phones that list is the visible legend.
  */
 export function MoneyPath({ data }: { data: MoneyPathData }) {
   const steps = moneyPathSteps(data);
@@ -34,13 +34,6 @@ export function MoneyPath({ data }: { data: MoneyPathData }) {
               </div>
             </div>
             <div style={{ marginLeft: `${step.offsetPct.toFixed(2)}%`, width: `${step.widthPct.toFixed(2)}%` }}>
-              <ul className="sr-only">
-                {step.parts.map((part) => (
-                  <li key={part.key}>
-                    {part.label}: {formatMillions(part.amount)}
-                  </li>
-                ))}
-              </ul>
               <div aria-hidden="true" className={r.pathBar}>
                 {step.parts.map((part) => (
                   <span key={part.key} className={[r.pathSegment, r.swatch[part.swatch]].join(" ")} style={{ flexGrow: part.weight }} />
@@ -59,6 +52,18 @@ export function MoneyPath({ data }: { data: MoneyPathData }) {
                 ))}
               </div>
             </div>
+            {/* Desktop: read by assistive technology only (the captions show it).
+                Phones: the visible legend, because captions that never wrap
+                would run past a 375 px card. */}
+            <ul className={r.pathLegend}>
+              {step.parts.map((part) => (
+                <li key={part.key} className={r.pathLegendItem}>
+                  <span aria-hidden="true" className={[r.pathLegendSwatch, r.swatch[part.swatch]].join(" ")} />
+                  <span className={r.tone[part.tone]}>{part.label}</span>
+                  <span className={r.pathCaptionValue}>{formatMillions(part.amount)}</span>
+                </li>
+              ))}
+            </ul>
           </div>
           {step.arrow ? (
             <div aria-hidden="true" className={r.pathArrowRow}>

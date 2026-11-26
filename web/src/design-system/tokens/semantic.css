@@ -177,3 +177,20 @@
 :root {
   --cn-color-casa-tint: var(--lopest-cn-casa-tint);
 }
+
+/* pulido tablero */
+/*
+  Casa y Negocio · AA text roles. The canvas' muted (#857899) and faint
+  (#a89cc0) inks read at 3.9:1 and 2.4:1 on paper, under WCAG AA for the small
+  text they carry (past days, inactive tabs, envelope captions, weekday
+  letters, the year in the title, equation operators). These roles keep the
+  same hue and pull it toward the module ink just enough to pass, measured on
+  white, paper and the selected-day track:
+    muted-aa  → 5.4:1 white · 5.1:1 paper · 4.6:1 track  (small text, 4.5:1)
+    faint-aa  → 3.4:1 white · 3.2:1 paper                (large text ≥ 24 px, 3:1)
+  The original roles stay for non-text marks (dots, arrows, swatches).
+*/
+:root {
+  --cn-color-text-muted-aa: color-mix(in srgb, var(--lopest-cn-ink-muted) 80%, var(--lopest-cn-ink));
+  --cn-color-text-faint-aa: color-mix(in srgb, var(--lopest-cn-ink-faint) 84%, var(--lopest-cn-ink));
+}

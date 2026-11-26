@@ -12,7 +12,8 @@ export const metadata: Metadata = { title: "Casa y Negocio" };
  * Tablero tab: the active month (`?mes=AAAA-MM`) read from the database,
  * run through the engine and the alert evaluator with the saved
  * configuration (`construirTablero`). Without accounts there is nothing to
- * show yet, so it points to Configuración.
+ * show yet, so it points to Configuración; a month before the module's start
+ * shows only where it starts.
  */
 export default async function TableroPage({ searchParams }: PaginaModuloProps) {
   const vista = await cargarVistaMes(searchParams);
@@ -31,6 +32,14 @@ export default async function TableroPage({ searchParams }: PaginaModuloProps) {
           }
           action={tablero.puedeConfigurar ? { label: "Ir a Configuración", href: tablero.hrefConfiguracion } : undefined}
         />
+      </ModulePage>
+    );
+  }
+
+  if (tablero.estado === "antes-del-inicio") {
+    return (
+      <ModulePage header={header}>
+        <ModuleState title={tablero.titulo} action={tablero.accion} />
       </ModulePage>
     );
   }

@@ -45,7 +45,9 @@ function QuietMonth({ text }: { text: string }) {
 /**
  * The Tablero tab (`Main.dc.html`), composed from its presentational pieces in
  * the canvas order: money path beside the calendar, the month's equations,
- * where the money is beside what is on the street, and the envelopes.
+ * where the money is beside what is on the street, and the envelopes (left
+ * out entirely while Configuración has none). A read-only viewer gets no
+ * next action and no actions in notices or detail windows.
  */
 export function Tablero({ data, readOnly, calendarOpenDay }: { data: TableroData; readOnly: boolean; calendarOpenDay?: number | null }) {
   return (
@@ -55,12 +57,12 @@ export function Tablero({ data, readOnly, calendarOpenDay }: { data: TableroData
         {data.quietMonth ? <QuietMonth text={data.quietMonth} /> : <MoneyPath data={data.moneyPath} />}
         <MonthCalendar data={data.calendar} readOnly={readOnly} defaultOpenDay={calendarOpenDay} />
       </div>
-      <MonthEquations rows={data.equations} />
+      <MonthEquations rows={data.equations} readOnly={readOnly} />
       <div className={r.row}>
         <WhereMoney total={data.money.total} accounts={data.money.accounts} />
         <OnTheStreet data={data.street} />
       </div>
-      <Envelopes envelopes={data.envelopes} nearShare={data.envelopeNearShare} />
+      {data.envelopes.length > 0 ? <Envelopes envelopes={data.envelopes} nearShare={data.envelopeNearShare} /> : null}
     </>
   );
 }

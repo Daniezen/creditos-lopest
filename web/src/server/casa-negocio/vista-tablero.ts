@@ -291,6 +291,12 @@ function siguienteAccion(evaluado: MesEvaluado, c: Contexto): NextActionData | u
 export type VistaTablero =
   /** No accounts yet: nothing to show until Configuración creates them. */
   | { estado: "sin-cuentas"; puedeConfigurar: boolean; hrefConfiguracion: string }
+  /**
+   * A month before the first account opening (e.g. November 2026 for a module
+   * that starts on 1 December): its balances do not exist, so the Tablero
+   * shows no figures, only where the module starts.
+   */
+  | { estado: "antes-del-inicio"; titulo: string; accion: CnAction }
   | { estado: "listo"; data: TableroData };
 
 export function construirTablero(datos: CasaNegocioMes, evaluado: MesEvaluado): VistaTablero {
@@ -300,6 +306,16 @@ export function construirTablero(datos: CasaNegocioMes, evaluado: MesEvaluado): 
       estado: "sin-cuentas",
       puedeConfigurar: datos.usuario.capacidades.includes("CONFIGURAR"),
       hrefConfiguracion: hrefPestana("configuracion", c.mes, c.mesHoy),
+    };
+  }
+
+  const mesInicio = datos.inicioModulo ? datos.inicioModulo.slice(0, 7) : null;
+  if (mesInicio && datos.mes < mesInicio) {
+    const dia = Number(datos.inicioModulo!.slice(8, 10));
+    return {
+      estado: "antes-del-inicio",
+      titulo: `Casa y Negocio empieza el ${dia} de ${nombreMes(mesInicio)}`,
+      accion: { label: `Ver ${nombreMes(mesInicio)}`, href: hrefPestana(TAB, mesInicio, c.mesHoy) },
     };
   }
 

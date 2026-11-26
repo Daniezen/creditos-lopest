@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { cnLineRecipes } from "@/design-system/recipes/casa-negocio";
 
+import { useFocusTrap } from "../shared/focus-trap";
 import type { MonthLineData } from "../types";
 import { DEFAULT_TRACK_PX, layoutMonthLine, markDateLabel, percentCss } from "./month-line-layout";
 
@@ -22,8 +23,10 @@ interface MonthLineProps {
  * mark is touched. Nothing counts down.
  *
  * Each mark is a disclosure button (`aria-expanded` + `aria-controls`) for its
- * detail window; Escape, the window's ×, the same mark or a click outside
- * close it, and focus returns to the mark.
+ * detail window. Opening moves focus into the window and keeps Tab inside it;
+ * Escape, the window's ×, the same mark or a click outside close it, and
+ * focus returns to the mark. On phones each mark keeps a 44 px touch area
+ * around its small dot.
  */
 export function MonthLine({ line, readOnly }: MonthLineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -48,27 +51,26 @@ export function MonthLine({ line, readOnly }: MonthLineProps) {
   const layout = useMemo(() => layoutMonthLine(line, { trackWidthPx: trackWidth }), [line, trackWidth]);
   const open = layout.marks.find((mark) => mark.id === openId) ?? null;
 
+  // Focus moves into the open window, Tab stays in it, Escape closes it and
+  // focus returns to its mark (`shared/focus-trap.ts`).
+  const lastOpenRef = useRef<string | null>(null);
+  useFocusTrap(popRef, {
+    active: open !== null,
+    onEscape: () => setOpenId(null),
+    returnFocus: () => (lastOpenRef.current ? markRefs.current.get(lastOpenRef.current) : null),
+  });
+
+  // A press outside the window and its mark closes it, without moving focus.
   useEffect(() => {
     if (!openId) return;
     const markId = openId;
-    function close() {
-      setOpenId(null);
-      markRefs.current.get(markId)?.focus();
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") close();
-    }
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (popRef.current?.contains(target) || markRefs.current.get(markId)?.contains(target)) return;
       setOpenId(null);
     }
-    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("pointerdown", onPointerDown);
-    };
+    return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [openId]);
 
   const trackStyle = { "--cn-line-extra-rows": layout.extraRows } as CSSProperties;
@@ -110,7 +112,10 @@ export function MonthLine({ line, readOnly }: MonthLineProps) {
               aria-label={`${mark.title}, ${markDateLabel(mark.day, line.today, line.monthName)}`}
               aria-expanded={expanded}
               aria-controls={expanded ? popId : undefined}
-              onClick={() => setOpenId(expanded ? null : mark.id)}
+              onClick={() => {
+                lastOpenRef.current = mark.id;
+                setOpenId(expanded ? null : mark.id);
+              }}
               className={cnLineRecipes.mark}
               style={style}
             >
@@ -137,10 +142,7 @@ export function MonthLine({ line, readOnly }: MonthLineProps) {
                 type="button"
                 aria-label="Cerrar"
                 className={cnLineRecipes.popClose}
-                onClick={() => {
-                  setOpenId(null);
-                  markRefs.current.get(open.id)?.focus();
-                }}
+                onClick={() => setOpenId(null)}
               >
                 <span aria-hidden="true">×</span>
               </button>

@@ -134,3 +134,18 @@
   --ds-cn-config-switch-on: 1.3125rem;
   --ds-cn-config-switch-off: 0.1875rem;
 }
+
+/* pulido tablero */
+/* Casa y Negocio · touch geometry of the phone layout (WCAG 2.5.5, 44 px). */
+:root {
+  --ds-cn-touch: 2.75rem;
+  /* The «Anotar» sheet never covers the whole phone: the month stays visible above it. */
+  --ds-cn-sheet-max: 85dvh;
+}
+
+/* pulido tablero */
+/* Casa y Negocio · skeleton heights: what the Tablero's first two rows measure with real data. */
+:root {
+  --ds-cn-skeleton-path: 22rem;
+  --ds-cn-skeleton-equations: 13rem;
+}
