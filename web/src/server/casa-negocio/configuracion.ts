@@ -5,7 +5,7 @@
  * Same discipline as `movimientos.ts`: capability first, zod parse, one
  * transaction, audit row inside it, optimistic lock on every edit.
  */
-import type { CnCapacidad } from "@prisma/client";
+import type { CnCapacidad, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
@@ -20,6 +20,7 @@ import {
   editarConfiguracionSchema,
   editarCuentaSchema,
   editarReglaAvisoSchema,
+  eliminarCuentaSchema,
 } from "@/features/casa-negocio/schemas";
 
 import { CODIGO_CAPACIDAD, requireCapacidad } from "./capacidades";
@@ -329,5 +330,66 @@ export async function definirCapacidades(raw: unknown): Promise<{ capacidades: C
       after: { capacidades: capacidades.map((c) => CODIGO_CAPACIDAD[c]) },
     });
     return { capacidades };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Account deletion
+// ---------------------------------------------------------------------------
+
+/**
+ * Number of rows that reference an account: manual movements on either side,
+ * automatic movements assigned to it and arqueo lines that counted it. Any of
+ * them makes the account part of the history, so it can only be archived.
+ */
+export async function usosDeCuenta(
+  db: Pick<Prisma.TransactionClient, "cnMovimiento" | "cnAsignacionCuenta" | "cnArqueoDetalle">,
+  cuentaId: string,
+): Promise<number> {
+  const [movimientos, asignaciones, conteos] = await Promise.all([
+    // Soft-deleted movements count too: they still point at the account.
+    db.cnMovimiento.count({ where: { OR: [{ cuentaOrigenId: cuentaId }, { cuentaDestinoId: cuentaId }] } }),
+    db.cnAsignacionCuenta.count({ where: { cuentaId } }),
+    db.cnArqueoDetalle.count({ where: { cuentaId } }),
+  ]);
+  return movimientos + asignaciones + conteos;
+}
+
+/**
+ * Deletes an account created by mistake. Spec §3: an account with movements
+ * is never deleted, it is archived; so this refuses as soon as anything
+ * references it (including the savings choice), and the row lock taken by
+ * the version claim keeps a concurrent movement from slipping in between the
+ * check and the delete (the movement's FK check waits on that lock).
+ */
+export async function eliminarCuenta(raw: unknown): Promise<{ cuentaId: string }> {
+  const actor = await requireCapacidad("CONFIGURAR");
+  const { cuentaId, version } = parseInput(eliminarCuentaSchema, raw);
+  return prisma.$transaction(async (tx) => {
+    const antes = await tx.cnCuenta.findUnique({ where: { id: cuentaId } });
+    if (!antes) throw new CasaNegocioReglaError("La cuenta no existe.");
+    const claimed = await tx.cnCuenta.updateMany({
+      where: { id: cuentaId, actualizadoEn: updatedAtMatches(version) },
+      data: { accionPor: actor.id },
+    });
+    assertVersionClaimed(claimed.count);
+
+    if ((await usosDeCuenta(tx, cuentaId)) > 0) {
+      throw new CasaNegocioReglaError("La cuenta ya tiene movimientos; no se borra, se archiva.");
+    }
+    const config = await tx.cnConfiguracion.findUnique({ where: { id: "default" }, select: { cuentaAhorroId: true } });
+    if (config?.cuentaAhorroId === cuentaId) {
+      throw new CasaNegocioReglaError("Es la cuenta de ahorro elegida; elige otra antes de borrarla.");
+    }
+
+    await tx.cnCuenta.delete({ where: { id: cuentaId } });
+    await recordAuditLogTx(tx, {
+      actorId: actor.id,
+      action: accion("cuenta.eliminar"),
+      entityType: ENTIDAD.cuenta,
+      entityId: cuentaId,
+      before: imagen(antes),
+    });
+    return { cuentaId };
   });
 }
