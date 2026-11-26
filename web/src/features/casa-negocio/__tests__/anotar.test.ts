@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({ revalidatePath: h.revalidatePath }));
 vi.mock("@/server/casa-negocio/capacidades", () => ({ requireCapacidad: h.requireCapacidad }));
 vi.mock("@/server/casa-negocio/movimientos", () => ({ registrarMovimiento: h.registrarMovimiento }));
+vi.mock("@/server/observability/log", () => ({ logEvent: vi.fn() }));
 
 import { CasaNegocioPermisoError, CasaNegocioReglaError } from "@/server/casa-negocio/errors";
 
@@ -139,11 +140,9 @@ describe("anotarMovimientoAction", () => {
   });
 
   it("un fallo inesperado no filtra detalles", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     h.registrarMovimiento.mockRejectedValue(new Error("connection refused 10.0.0.3"));
     const r = await anotarMovimientoAction(ANOTAR_ESTADO_INICIAL, form(gastoCasa));
     expect(r.message).toBe("No se pudo guardar. Inténtalo de nuevo.");
-    spy.mockRestore();
   });
 
   it("deja pasar el redirect a /login de una sesión vencida", async () => {

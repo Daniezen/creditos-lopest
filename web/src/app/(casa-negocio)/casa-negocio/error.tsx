@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect } from "react";
+import { startTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { ModuleState } from "@/components/casa-negocio/states/module-state";
@@ -8,15 +8,12 @@ import { cnHeaderRecipes, cnPaperRecipes, cnStateRecipes } from "@/design-system
 
 /**
  * Failed load of a tab (the database did not answer, a migration is
- * missing, ...). The message stays generic on purpose: details go to the
- * server log, never to the screen. «Reintentar» asks the server for the
+ * missing, ...). The message stays generic on purpose: Next.js already logs
+ * the server error with its digest; nothing technical reaches the screen. «Reintentar» asks the server for the
  * segment again (`router.refresh`) and then clears the boundary.
  */
-export default function CasaNegocioError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function CasaNegocioError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const router = useRouter();
-  useEffect(() => {
-    console.error("[casa-negocio] carga del mes", error.digest ?? error.message);
-  }, [error]);
 
   return (
     <>

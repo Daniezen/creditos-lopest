@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireCapacidad } from "@/server/casa-negocio/capacidades";
 import { CasaNegocioPermisoError, CasaNegocioReglaError } from "@/server/casa-negocio/errors";
 import { registrarMovimiento } from "@/server/casa-negocio/movimientos";
+import { logEvent } from "@/server/observability/log";
 import { InputValidationError, formFields, toFieldErrors } from "@/server/validation/input";
 
 import {
@@ -78,7 +79,7 @@ export async function anotarMovimientoAction(previo: AnotarEstado, formData: For
     }
     // Redirects (session expired → /login) must keep propagating.
     if (isNextControlFlow(error)) throw error;
-    console.error("[casa-negocio] anotarMovimientoAction", error);
+    logEvent("error", "casa_negocio.anotar_fallido", { tipo: raw.tipo }, error);
     return fallo("No se pudo guardar. Inténtalo de nuevo.");
   }
 }
