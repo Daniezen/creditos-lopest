@@ -96,6 +96,10 @@ const { values } = parseArgs({
 for (const { flag } of PERSONAS) {
   if (!values[flag]) fail(`Falta --${flag} <correo>.`);
 }
+// The grants are additive: the same address under two flags would silently
+// give the mother all four capabilities. Refuse it before touching anything.
+const correos = PERSONAS.map(({ flag }) => values[flag].trim().toLowerCase());
+if (new Set(correos).size !== correos.length) fail("Los correos de --padre, --daniel y --madre deben ser distintos.");
 
 const fechaMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(values.fecha);
 if (!fechaMatch) fail("--fecha debe tener el formato AAAA-MM-DD.");
@@ -183,6 +187,16 @@ try {
         skipDuplicates: true,
       });
       if (result.count > 0) plan.permisos.push({ persona: flag, userId: user.id, capacidades, nuevas: result.count });
+      // Grants are never removed here (someone may have widened them on
+      // purpose in Configuración), but a person holding more than the seed
+      // gives is reported so the operator can check it is intended.
+      const extra = await tx.cnPermiso.findMany({
+        where: { userId: user.id, capacidad: { notIn: capacidades } },
+        select: { capacidad: true },
+      });
+      if (extra.length > 0) {
+        plan.avisos.push(`--${flag} ya tiene además: ${extra.map((p) => p.capacidad).join(", ")} (no se quita; revísalo en Configuración).`);
+      }
     }
 
     const config = await tx.cnConfiguracion.findUnique({ where: { id: "default" } });
@@ -231,6 +245,9 @@ function report(modo) {
   const lines = [
     `[semilla] ${modo}`,
     `  cuentas nuevas:    ${plan.cuentas.map((c) => `${c.nombre} (${c.saldoInicial})`).join(", ") || "ninguna"}`,
+    ...(plan.cuentas.some((c) => Number(c.saldoInicial) === 0)
+      ? ["  saldo 0.00 = aún sin saldo real: se pone en Configuración → Cuentas (docs/estado/lanzamiento-casa-negocio.md)."]
+      : []),
     `  gastos nuevos:     ${plan.categorias.map((c) => c.nombre).join(", ") || "ninguno"}`,
     `  permisos nuevos:   ${plan.permisos.map((p) => `${p.persona} +${p.nuevas}`).join(", ") || "ninguno"}`,
     `  cuenta de ahorro:  ${plan.cuentaAhorro ? CUENTA_AHORRO : "sin cambio"}`,
