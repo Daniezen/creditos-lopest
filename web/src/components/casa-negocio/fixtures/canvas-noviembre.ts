@@ -85,6 +85,10 @@ const quickEntryOptions: QuickEntryOptions = {
   origenesAporte: ["Ahorros propios", "Otro"].map(opt),
   cuentasNegocio,
   cuentasCasa,
+  cuentasTodas: [...cuentasNegocio, ...cuentasCasa],
+  saldos: { bancolombia: 11_900_000, efectivo: 1_320_000, nequi: 1_600_000, "cuenta-casa": 833_000, "nu-ahorro": 7_006_000 },
+  nombresCuenta: Object.fromEntries([...cuentasNegocio, ...cuentasCasa].map((o) => [o.value, o.label])),
+  avisoSinSaldo: true,
 };
 
 /** Header of any tab, as on the canvas. No save action: «Guardar» stays disabled in the demo. */
@@ -99,7 +103,7 @@ export function demoHeader(active: CasaNegocioTab): ModuleHeaderProps {
     },
     line,
     readOnly: false,
-    quickEntry: { options: quickEntryOptions, defaultDate: "2026-11-25" },
+    quickEntry: { options: quickEntryOptions, defaultDate: "2026-11-25", prefill: null, cleanHref: CASA_NEGOCIO_HREF },
     summary: active === "tablero" ? { total: "$ 22.659.000", detail: "en cuentas · $ 186,4 M en la calle" } : undefined,
   };
 }
@@ -173,7 +177,7 @@ export const demoTablero: TableroData = {
         { op: "−", label: "Fijos sin pagar", amount: 202_000 },
         { op: "=", label: "Al cierre", amount: 631_000, result: true },
       ],
-      notice: { level: "atencion", text: "Si se gasta lo que queda en los sobres, noviembre cierra en −$ 1.499.000." },
+      notices: [{ level: "atencion", text: "Si se gasta lo que queda en los sobres, noviembre cierra en −$ 1.499.000." }],
     },
   ],
   money: {

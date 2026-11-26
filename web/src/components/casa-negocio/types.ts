@@ -82,6 +82,13 @@ export interface QuickEntryOptions {
   origenesAporte: QuickOption[];
   cuentasNegocio: QuickOption[];
   cuentasCasa: QuickOption[];
+  /** Both groups, for «Traslado» (same-group transfers in Negocio or in Casa). */
+  cuentasTodas: QuickOption[];
+  /** Current balance by account id, for notice 7 before saving. */
+  saldos: Record<string, number>;
+  nombresCuenta: Record<string, string>;
+  /** Notice 7 («dejaría una cuenta sin saldo») is switched on in Configuración. */
+  avisoSinSaldo: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -90,8 +97,12 @@ export interface QuickEntryOptions {
 
 /** «Por dónde pasó la plata»: the month's money in three steps. */
 export interface MoneyPathData {
-  /** Step 1, what entered the business. */
-  entered: { interest: number; capitalReturned: number };
+  /**
+   * Step 1, what entered the business. `contributions` (aportes) and
+   * `fromBefore` (taken from earlier balances when the month paid out more
+   * than it took in) are optional so steps 1 and 2 always add up.
+   */
+  entered: { interest: number; capitalReturned: number; contributions?: number; fromBefore?: number };
   /** Step 2, where it went: the four parts add up to step 1. */
   left: { newLoans: number; expenses: number; toHouse: number; remained: number };
   /** Step 3, how the house used what it received (`toHouse`). Surplus may be negative. */
@@ -133,7 +144,8 @@ export interface EquationRow {
   name: string;
   identity: CnIdentity;
   terms: EquationTerm[];
-  notice?: { level: NoticeLevel; text: string };
+  /** Notices of the rules about this equation, most serious first. */
+  notices?: { level: NoticeLevel; text: string; action?: CnAction }[];
 }
 
 /** Swatch of an account in «Dónde está la plata»; ink shades are business accounts. */

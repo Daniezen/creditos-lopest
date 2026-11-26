@@ -100,6 +100,10 @@ describe("quick entry", () => {
     origenesAporte: o("apo"),
     cuentasNegocio: o("neg"),
     cuentasCasa: o("casa"),
+    cuentasTodas: o("todas"),
+    saldos: {},
+    nombresCuenta: {},
+    avisoSinSaldo: true,
   };
 
   it("offers the six movement types of the spec", () => {
@@ -123,7 +127,7 @@ describe("quick entry", () => {
       gastoNegocio: ["concepto:con-1", "cuentaOrigen:neg-1"],
       aporte: ["origen:apo-1", "cuentaDestino:neg-1"],
       retiro: ["cuentaOrigen:neg-1", "cuentaDestino:casa-1"],
-      traslado: ["cuentaOrigen:neg-1", "cuentaDestino:neg-1"],
+      traslado: ["cuentaOrigen:todas-1", "cuentaDestino:todas-1"],
     });
   });
 });
