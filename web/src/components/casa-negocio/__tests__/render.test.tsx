@@ -47,7 +47,7 @@ describe("Tablero demo markup", () => {
   });
 
   it("opens the canvas' calendar day with its actions", () => {
-    expect(html).toContain('aria-label="20 de noviembre, 3 eventos"');
+    expect(html).toContain('aria-label="20 de noviembre: 1 cobro, 1 movimiento de la casa, 1 pendiente"');
     expect(html).toContain('role="dialog" aria-label="20 de noviembre"');
     expect(html).toContain(">Pagar</a>");
     expect(html).toContain('aria-current="date"');
