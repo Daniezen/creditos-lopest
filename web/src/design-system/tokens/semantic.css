@@ -99,6 +99,8 @@
   --cn-color-negocio-label: var(--lopest-cn-ink-label);
   --cn-color-casa: var(--lopest-cn-casa);
   --cn-color-casa-soft: var(--lopest-cn-casa-soft);
+  --cn-color-casa-tint: var(--lopest-cn-casa-tint);
+  --cn-color-negocio-tint: var(--lopest-cn-track);
   --cn-color-ahorro: var(--lopest-cn-ahorro);
   --cn-color-ahorro-text: var(--lopest-cn-ahorro-text);
 

@@ -95,4 +95,13 @@
   --ds-cn-path-min: 38.75rem;
   --ds-cn-money-min: 32.5rem;
   --ds-cn-street-min: 16.25rem;
+  /* Casa and Negocio tabs (Casa.dc.html, Negocio.dc.html). */
+  --ds-cn-form-field-min: 11.25rem;
+  --ds-cn-filter-min: 12.5rem;
+  --ds-cn-day-col: 3.5rem;
+  --ds-cn-book-min: 35rem;
+  --ds-cn-aside-min: 20rem;
+  --ds-cn-check: 1.375rem;
+  --ds-cn-badge: 1.375rem;
+  --ds-cn-dialog-width: 32rem;
 }
