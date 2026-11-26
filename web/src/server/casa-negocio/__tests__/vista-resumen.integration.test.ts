@@ -45,11 +45,15 @@ const cents = (n: number) => Math.round(n * 100);
 
 const lector = (u: typeof ADMIN) => ({ ...u, roles: u.roles as never, capacidades: new Set(["VER" as const]) });
 
+/**
+ * The module's Resumen covers every loan whoever looks (`alcance.ts`), so for
+ * any viewer it must equal what Reportes shows an ADMIN.
+ */
 async function comparar(user: typeof ADMIN) {
   const [vista, historico, proyeccion] = await Promise.all([
     cargarVistaResumen(prisma, lector(user), 12, AHORA),
-    getHistoricoRecaudacion({ id: user.id, roles: user.roles as never }),
-    getProyeccionCartera({ id: user.id, roles: user.roles as never }),
+    getHistoricoRecaudacion({ id: ADMIN.id, roles: ADMIN.roles as never }),
+    getProyeccionCartera({ id: ADMIN.id, roles: ADMIN.roles as never }),
   ]);
   const h = new Map(historico.map((m) => [m.mesStr, m]));
   const p = new Map(proyeccion.map((m) => [m.mesStr, m]));
@@ -149,11 +153,11 @@ describe.skipIf(!URL_PRUEBA)("Resumen contra Reportes en PostgreSQL", () => {
     });
   }
 
-  it("el operador no ve los créditos del padre ni los borrados", async () => {
+  it("el operador ve los créditos de todos los dueños, nunca los borrados", async () => {
     const { vista } = await comparar(OPERADOR);
-    // One live loan: 1.333.333,43 per month, plus the legacy payment in April.
+    // Two live loans (admin's and operador's): 1.333.333,43 each per month;
+    // the deleted one is left out.
     const oct = vista.cobros.meses.find((m) => m.mes === "2026-10")!;
-    expect(oct.total).toBeCloseTo(1_333_333.43, 2);
-    expect(vista.cobros.meses.find((m) => m.mes === "2026-04")!.total).toBeCloseTo(1_333_333.43 + 650_000, 2);
+    expect(oct.total).toBeCloseTo(2 * 1_333_333.43, 2);
   });
 });

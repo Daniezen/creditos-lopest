@@ -5,17 +5,17 @@
  * Negocio and the choice is stored in "cn_asignaciones_cuenta", never on the
  * loan rows.
  *
- * The loan must be visible to the actor under the existing scope rules
- * (`buildEventoFinancieroVisibilityWhere` / `buildCreditoVisibilityWhere`),
- * so nobody assigns accounts to movements of loans they cannot see.
+ * Any loan of the business qualifies (module-wide scope, `alcance.ts`): the
+ * person who manages the money assigns where every cobro entered, whoever
+ * owns the loan. The loan rows themselves are never modified.
  */
 import { prisma } from "@/lib/prisma";
 import { recordAuditLogTx } from "@/server/audit/audit-log";
-import { buildCreditoVisibilityWhere, buildEventoFinancieroVisibilityWhere } from "@/server/auth/scope";
 import { ConcurrentModificationError, assertVersionClaimed, updatedAtMatches } from "@/server/optimistic-lock";
 import { parseInput } from "@/server/validation/input";
 import { asignarCuentaSchema } from "@/features/casa-negocio/schemas";
 
+import { CREDITO_DEL_MODULO, EVENTO_DEL_MODULO } from "./alcance";
 import { requireCapacidad } from "./capacidades";
 import { CasaNegocioReglaError } from "./errors";
 import { ENTIDAD, accion, esViolacionUnica, imagen } from "./shared";
@@ -43,8 +43,7 @@ export async function asignarCuenta(raw: unknown): Promise<{ asignacionId: strin
         const evento = await tx.eventoFinanciero.findFirst({
           where: {
             id: input.eventoFinancieroId,
-            // Owner scope of the event plus "loan not soft-deleted".
-            AND: [buildEventoFinancieroVisibilityWhere(actor), { credito: buildCreditoVisibilityWhere(actor) }],
+            ...EVENTO_DEL_MODULO,
           },
           select: { estado: true, fechaPago: true },
         });
@@ -55,7 +54,7 @@ export async function asignarCuenta(raw: unknown): Promise<{ asignacionId: strin
         fecha = evento.fechaPago;
       } else {
         const credito = await tx.credito.findFirst({
-          where: { id: input.creditoId!, ...buildCreditoVisibilityWhere(actor) },
+          where: { id: input.creditoId!, ...CREDITO_DEL_MODULO },
           select: { fechaPrestamo: true },
         });
         if (!credito) throw new CasaNegocioReglaError("No encontramos ese desembolso o no tienes acceso a él.");

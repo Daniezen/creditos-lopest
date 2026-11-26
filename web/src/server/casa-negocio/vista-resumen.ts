@@ -21,8 +21,9 @@
  *     interest. One deliberate difference: loans written off in this module
  *     (`cn_castigos`, not reverted) are left out, because a lost loan is not
  *     money that "viene". With no write-offs both totals are equal.
- *   * Scope = Reportes' `c."ownerUserId" = user` unless ADMIN, and never
- *     deleted loans: exactly `buildCreditoVisibilityWhere`.
+ *   * Scope = every non-deleted loan of the business, whoever looks
+ *     (`alcance.ts`): what Reportes shows an ADMIN. An OPERADOR sees only
+ *     their own loans in Reportes, so for them the totals differ on purpose.
  *   * Months are Bogota months (`mesClave`); Reportes truncates the stored
  *     UTC instant. Days are stored as Bogota midnight (05:00Z), which falls on
  *     the same calendar month in both, so the buckets agree.
@@ -52,6 +53,7 @@ import type {
 } from "@/features/casa-negocio/types";
 
 import { categoriaDelMes, construirHistorial, type HechoMovimiento } from "./agregados";
+import { CREDITO_DEL_MODULO, EVENTO_DEL_MODULO } from "./alcance";
 import { requireCapacidad } from "./capacidades";
 import { aCentavos, aPesos, type Monetario } from "./dinero";
 import { cargarAsientos, desgloseCobro, resumirSaldo, type EventoCobro } from "./saldos";
@@ -572,14 +574,10 @@ export async function cargarVistaResumen(
 
   // Lazy: both modules import the Prisma client at load time, and the pure
   // half of this file must stay importable from tests without a database.
-  const [{ buildCreditoVisibilityWhere, buildEventoFinancieroVisibilityWhere }, { cargarCasaNegocioMes }] = await Promise.all([
-    import("@/server/auth/scope"),
-    import("./queries"),
-  ]);
-  const creditoVisible = buildCreditoVisibilityWhere(lector);
-  const eventoVisible: Prisma.EventoFinancieroWhereInput = {
-    AND: [buildEventoFinancieroVisibilityWhere(lector), { credito: creditoVisible }],
-  };
+  const { cargarCasaNegocioMes } = await import("./queries");
+  // Module-wide loan scope, like the rest of the module (see alcance.ts).
+  const creditoVisible = CREDITO_DEL_MODULO;
+  const eventoVisible = EVENTO_DEL_MODULO;
 
   const [mesModulo, cobros, programadas, pendientes, movimientos, cuentas, castigos, asientos] = await Promise.all([
     cargarCasaNegocioMes(db, lector, mesActual, ahora),

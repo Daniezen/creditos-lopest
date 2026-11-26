@@ -4,9 +4,8 @@
  *
  * SCOPE. Two different rules apply, on purpose:
  *   * Loan-derived lists (cobros, desembolsos, cuotas, cartera, castigos and
- *     the history built from them) follow the viewer's loan scope through the
- *     existing helpers of `@/server/auth/scope` (ADMIN sees every owner, the
- *     rest only their own loans), and every row says who owns it.
+ *     the history built from them) cover every loan of the business, whoever
+ *     looks (`alcance.ts`), and every row says who owns it.
  *   * Account balances are module-wide (see `saldos.ts`): an account is a
  *     physical place and its balance cannot depend on who is looking.
  *
@@ -38,12 +37,9 @@ import type {
   ProyeccionMes,
   TramoCartera,
 } from "@/features/casa-negocio/types";
-import {
-  buildCreditoVisibilityWhere,
-  buildEventoFinancieroVisibilityWhere,
-  type CurrentUserScope,
-} from "@/server/auth/scope";
+import type { CurrentUserScope } from "@/server/auth/scope";
 
+import { CREDITO_DEL_MODULO, EVENTO_DEL_MODULO } from "./alcance";
 import { TRAMOS, categoriaDelMes, construirHistorial, tramoDe } from "./agregados";
 import { requireCapacidad } from "./capacidades";
 import { aCentavos, aPesos, sumar } from "./dinero";
@@ -124,10 +120,9 @@ export async function cargarCasaNegocioMes(
     inicioNegocio && inicioNegocio.getTime() < inicioHistorial.getTime() ? inicioNegocio : inicioHistorial;
   const esAsignable = (fecha: Date) => inicioNegocio !== null && fecha.getTime() >= inicioNegocio.getTime();
 
-  const creditoVisible = buildCreditoVisibilityWhere(lector);
-  const eventoVisible: Prisma.EventoFinancieroWhereInput = {
-    AND: [buildEventoFinancieroVisibilityWhere(lector), { credito: creditoVisible }],
-  };
+  // Module-wide loan scope, not the owner scope of Créditos (see alcance.ts).
+  const creditoVisible = CREDITO_DEL_MODULO;
+  const eventoVisible = EVENTO_DEL_MODULO;
   const puedeConfigurar = lector.capacidades.has("CONFIGURAR");
 
   const [
