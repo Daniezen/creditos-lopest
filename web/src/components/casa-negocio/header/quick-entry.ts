@@ -4,9 +4,41 @@ import type { CnIdentity, QuickEntryKind, QuickEntryOptions, QuickOption } from 
  * The six movement types of «Anotar» and the two selects each one needs
  * (`ModuloTabs.dc.html`). DOM-free, so the field mapping is tested on its own.
  *
- * Field names are the contract with the save action (a server action that
- * receives the form's FormData): `tipo`, the two names below, `monto`, `fecha`.
+ * Field names are the contract with the save action
+ * (`features/casa-negocio/anotar-actions.ts`, schema in `anotar.ts`):
+ * `tipo`, `operationKey`, the two names below, `monto`, `fecha`.
  */
+
+/** Panel opened prefilled from a detail window («Pagar» a fixed expense). */
+export interface QuickEntryPrefill {
+  kind: QuickEntryKind;
+  /** Initial value by select name (`categoria`, `cuentaOrigen`, ...). */
+  values: Record<string, string>;
+  /** Whole pesos as digits. */
+  monto?: string;
+}
+
+/** Query parameter that opens «Anotar» prefilled: `?anotar=gastoCasa&categoria=<id>&monto=<n>`. */
+export const PREFILL_PARAM = "anotar";
+
+const PREFILL_FIELDS = ["categoria", "cuentaOrigen", "cuentaDestino", "origen", "concepto"] as const;
+
+/**
+ * Reads a prefill from query parameters (server: the page's searchParams;
+ * client: a clicked «Pagar» link). Unknown kinds give null; values that are
+ * not plain ids or whole amounts are dropped, never echoed into the form.
+ */
+export function prefillFromParams(get: (name: string) => string | null | undefined): QuickEntryPrefill | null {
+  const kind = get(PREFILL_PARAM);
+  if (!kind || !QUICK_ENTRY_KINDS.some((def) => def.kind === kind)) return null;
+  const values: Record<string, string> = {};
+  for (const name of PREFILL_FIELDS) {
+    const value = get(name);
+    if (value && /^[\w:.-]{1,80}$/.test(value)) values[name] = value;
+  }
+  const monto = get("monto");
+  return { kind: kind as QuickEntryKind, values, monto: monto && /^\d{1,12}$/.test(monto) ? monto : undefined };
+}
 
 export interface QuickEntryKindDef {
   kind: QuickEntryKind;
@@ -59,8 +91,8 @@ export function quickEntryFields(kind: QuickEntryKind, o: QuickEntryOptions): [Q
       ];
     case "traslado":
       return [
-        { name: "cuentaOrigen", label: "Sale de", options: o.cuentasNegocio },
-        { name: "cuentaDestino", label: "Llega a", options: o.cuentasNegocio },
+        { name: "cuentaOrigen", label: "Sale de", options: o.cuentasTodas },
+        { name: "cuentaDestino", label: "Llega a", options: o.cuentasTodas },
       ];
   }
 }

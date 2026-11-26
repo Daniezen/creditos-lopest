@@ -17,7 +17,7 @@ const SPOKEN_OP: Record<string, string> = { "+": "más", "−": "menos", "=": "i
 
 /**
  * «Las cuentas del mes» (`Main.dc.html`): each identity's month as an
- * equation of boxed terms, results on ink, with its notice right under it
+ * equation of boxed terms, results on ink, with its notices right under it
  * when a rule applies. On phones each row becomes a card of lines
  * (`TableroMovil.dc.html`).
  */
@@ -48,11 +48,11 @@ export function MonthEquations({ rows }: { rows: EquationRow[] }) {
               </Fragment>
             ))}
           </div>
-          {row.notice ? (
-            <Notice level={row.notice.level} className={`${r.equationNotice} max-md:hidden`}>
-              {row.notice.text}
+          {row.notices?.map((notice) => (
+            <Notice key={notice.text} level={notice.level} action={notice.action} className={`${r.equationNotice} max-md:hidden`}>
+              {notice.text}
             </Notice>
-          ) : null}
+          ))}
 
           <div className={r.equationCard}>
             <h3 className={[r.equationCardName, NAME_TONE[row.identity]].join(" ")}>{row.name}</h3>
@@ -67,11 +67,11 @@ export function MonthEquations({ rows }: { rows: EquationRow[] }) {
                 </div>
               ))}
             </dl>
-            {row.notice ? (
-              <Notice level={row.notice.level} className={r.equationCardNotice}>
-                {row.notice.text}
+            {row.notices?.map((notice) => (
+              <Notice key={notice.text} level={notice.level} action={notice.action} className={r.equationCardNotice}>
+                {notice.text}
               </Notice>
-            ) : null}
+            ))}
           </div>
         </Fragment>
       ))}

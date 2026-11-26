@@ -109,8 +109,10 @@ export const cnQuickEntryRecipes = {
   kindDot: "size-2 flex-none rounded-[var(--ds-radius-chip)]",
   fields: "grid grid-cols-[repeat(auto-fit,minmax(var(--ds-cn-field-min),1fr))] gap-3",
   field: "flex flex-col gap-1 text-xs text-[var(--cn-color-text-secondary)]",
-  control: `min-h-11.5 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-input)] font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] ${focus}`,
-  amount: `min-h-11.5 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-figure-sm)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] ${focus}`,
+  control: `min-h-11.5 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-input)] font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
+  amount: `min-h-11.5 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-figure-sm)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
+  /** Message under a refused field (text in the problem tone, never colour alone: it is words). */
+  fieldError: "text-xs font-[var(--font-weight-medium)] text-[var(--cn-color-problem)]",
   footer: "flex justify-end gap-2",
   close: `min-h-11 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-4.5 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] cursor-pointer ${focus}`,
   save: `min-h-11 rounded-[var(--ds-radius-md)] border-0 bg-[var(--cn-color-action)] px-6 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] cursor-pointer hover:bg-[var(--cn-color-action-hover)] disabled:cursor-not-allowed disabled:opacity-50 ${focus}`,
@@ -192,6 +194,26 @@ export const cnPaperRecipes = {
   sheet:
     "flex flex-col gap-5.5 rounded-b-[var(--ds-radius-xl)] border border-t-0 border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] p-7 max-md:rounded-none max-md:border-0 max-md:px-4 max-md:py-4.5 max-md:gap-3.5",
   empty: "min-h-[var(--ds-chart-height-empty)]",
+} as const;
+
+/**
+ * Whole-view states of a tab: nothing configured yet, no access, a failed
+ * load, and the loading skeleton (same footprint as the header and sheet so
+ * nothing jumps when the data arrives).
+ */
+export const cnStateRecipes = {
+  card: "flex flex-col items-start gap-3 rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] px-6 py-5.5 max-md:px-4 max-md:py-4",
+  title: cnTypeRecipes.section,
+  text: "m-0 max-w-[var(--ds-cn-content-max)] text-sm leading-[var(--leading-normal)] text-[var(--cn-color-text-secondary)]",
+  action: `inline-flex min-h-11 items-center gap-2 rounded-[var(--ds-radius-md)] border-0 bg-[var(--cn-color-action)] px-5 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] no-underline cursor-pointer hover:bg-[var(--cn-color-action-hover)] ${focus}`,
+  quiet: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-secondary)]",
+  /** Bottom room of a header that has no month line or tabs (no access, error). */
+  headerSpacer: "pb-6",
+  /** Placeholder block of the skeleton; motion respects reduced-motion. */
+  bone: "rounded-[var(--ds-radius-md)] bg-[var(--cn-color-track)] motion-safe:animate-pulse",
+  boneTitle: "mt-2 h-10 w-[var(--ds-cn-popover-narrow)] max-w-full",
+  boneLine: "mt-6 mb-6 h-1 w-full",
+  boneCard: "min-h-[var(--ds-chart-height-empty)] flex-[1_1_var(--ds-cn-money-min)] rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] motion-safe:animate-pulse",
 } as const;
 
 /** Notices of spec §5: attention (amber) and problem (red), beside what they affect. */

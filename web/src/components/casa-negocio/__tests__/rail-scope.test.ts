@@ -46,8 +46,10 @@ describe("the module rail is scoped to Casa y Negocio", () => {
     expect(pages.filter((path) => path.startsWith("(casa-negocio)/")).every((path) => path.includes("/casa-negocio/"))).toBe(true);
   });
 
-  it("guards the module with the same requireUser as the rest of the app", () => {
-    expect(source(join(APP, "(casa-negocio)", "layout.tsx"))).toMatch(/await Promise\.all\(\[requireUser\(\)/);
+  it("guards the module with the same requireUser as the rest of the app, then casa_negocio.ver", () => {
+    const layout = source(join(APP, "(casa-negocio)", "layout.tsx"));
+    expect(layout).toMatch(/await requireUser\(\)/);
+    expect(layout).toMatch(/capacidades\.has\("VER"\) \? children : <NoAccess \/>/);
   });
 });
 

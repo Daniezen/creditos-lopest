@@ -49,7 +49,9 @@ export interface PathStep {
 export const LABEL_SHARE = 0.05;
 
 export function moneyPathSteps({ entered, left, house }: MoneyPathData): PathStep[] {
-  const base = entered.interest + entered.capitalReturned;
+  const contributions = entered.contributions ?? 0;
+  const fromBefore = entered.fromBefore ?? 0;
+  const base = entered.interest + entered.capitalReturned + contributions + fromBefore;
   const share = (amount: number) => (base > 0 ? Math.max(amount, 0) / base : 0);
   const part = (key: string, label: string, amount: number, swatch: PathSwatch, tone: PathTone = "ink"): PathPart => ({
     key,
@@ -78,6 +80,8 @@ export function moneyPathSteps({ entered, left, house }: MoneyPathData): PathSte
       parts: nonZero([
         part("intereses", "Intereses", entered.interest, "ink"),
         part("capital", "Capital que devolvieron", entered.capitalReturned, "ink-soft"),
+        part("aportes", "Aportes", contributions, "ink-faint"),
+        part("habia", "De lo que había", fromBefore, "track"),
       ]),
       arrow: { atPct: 50, tone: "faint" },
     },
