@@ -42,6 +42,10 @@ export function SelectorCuenta({
   const { pendiente, estado, enviar } = useEnvio<unknown>();
   const raiz = useRef<HTMLDivElement>(null);
 
+  // Any refusal (a field error, a lock conflict, no connection) marks the
+  // select and is tied to it, so a screen reader reads it on focus.
+  const error = !estado.ok && estado.mensaje ? estado.mensaje : "";
+
   if (posibles.length === 0) return <span className={cnNegocioRecipes.assignLabel}>Sin cuenta</span>;
 
   function siguienteSelector(): HTMLSelectElement | null {
@@ -78,7 +82,8 @@ export function SelectorCuenta({
         className={cnNegocioRecipes.assignSelect}
         value={cuentaId}
         disabled={pendiente}
-        aria-invalid={estado.campos.cuentaId ? true : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
         onChange={(e) => setCuentaId(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -96,9 +101,9 @@ export function SelectorCuenta({
       <button type="button" className={cnNegocioRecipes.assignSave} disabled={pendiente} aria-busy={pendiente} onClick={guardar}>
         {pendiente ? "Guardando…" : "Guardar"}
       </button>
-      {!estado.ok && estado.mensaje ? (
-        <span role="alert" className={cnNegocioRecipes.assignError}>
-          {estado.mensaje}
+      {error ? (
+        <span id={`${id}-error`} role="alert" className={cnNegocioRecipes.assignError}>
+          {error}
         </span>
       ) : null}
     </div>

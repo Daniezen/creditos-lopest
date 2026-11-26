@@ -41,7 +41,7 @@ export function AnotarCasa({ formulario, hoy, fijoInicial }: AnotarCasaProps) {
   const [cuentaId, setCuentaId] = useState(formulario.cuentas[0]?.id ?? "");
   const [fecha, setFecha] = useState(formulario.fechaPorDefecto);
   const [nota, setNota] = useState("");
-  const { pendiente, estado, enviar, limpiarCampo, reiniciar } = useEnvio<{ saldoOrigenDespues: number | null }>();
+  const { pendiente, estado, enviar, limpiarCampo, reiniciar, formRef } = useEnvio<{ saldoOrigenDespues: number | null }>();
 
   const forma = FORMAS[tipo];
   const opciones = (tipo === "GASTO_FIJO" ? formulario.fijos : formulario.sobres).map((o) => ({ value: o.id, label: o.etiqueta }));
@@ -86,7 +86,7 @@ export function AnotarCasa({ formulario, hoy, fijoInicial }: AnotarCasaProps) {
 
   return (
     <section aria-labelledby="anotar-casa" className={cnCardRecipes.card}>
-      <form onSubmit={anotar} noValidate className="contents">
+      <form ref={formRef} onSubmit={anotar} noValidate className="contents">
         <div className={cnCardRecipes.head}>
           <h2 id="anotar-casa" className={cnCardRecipes.title}>
             Anotar en la casa

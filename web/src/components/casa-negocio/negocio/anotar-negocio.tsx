@@ -38,7 +38,7 @@ export function AnotarNegocio({ formulario, hoy }: { formulario: VistaNegocio["f
     categoriaId: "",
     nota: "",
   });
-  const { pendiente, estado, enviar, limpiarCampo, reiniciar } = useEnvio<unknown>();
+  const { pendiente, estado, enviar, limpiarCampo, reiniciar, formRef } = useEnvio<unknown>();
   const forma = FORMAS[v.tipo];
   const e = estado.campos;
   const lista = (grupo: "CASA" | "NEGOCIO") => (grupo === "CASA" ? casa : negocio);
@@ -90,7 +90,7 @@ export function AnotarNegocio({ formulario, hoy }: { formulario: VistaNegocio["f
 
   return (
     <section aria-labelledby="anotar-negocio" className={cnCardRecipes.card}>
-      <form onSubmit={anotar} noValidate className="contents">
+      <form ref={formRef} onSubmit={anotar} noValidate className="contents">
         <div className={cnCardRecipes.head}>
           <h2 id="anotar-negocio" className={cnCardRecipes.title}>
             Anotar en el negocio

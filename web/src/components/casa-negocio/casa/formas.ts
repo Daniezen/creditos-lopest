@@ -10,6 +10,15 @@
  */
 import type { TipoMovimiento } from "@/features/casa-negocio/types";
 
+/**
+ * Attribute of a book container (Casa's day cards, Negocio's cash book) that
+ * takes the focus when the row whose dialog closed is no longer on the page.
+ * Lives in this plain module, not in the client dialog: a constant imported
+ * from a "use client" file into a Server Component is a client reference,
+ * not the string.
+ */
+export const MARCA_LIBRO = "data-libro";
+
 export type GrupoCampo = "NEGOCIO" | "CASA";
 
 export interface FormaMovimiento {
@@ -112,6 +121,43 @@ export function formatearMonto(raw: string): string {
   const agrupado = digitos.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   if (resto.length === 0) return agrupado;
   return `${agrupado || "0"},${resto.join("").slice(0, 2)}`;
+}
+
+/**
+ * A PASTED amount (from a bank SMS, a spreadsheet, a calculator) rewritten
+ * as the field types it. Pasted text can use either convention, so the
+ * separators are read by shape instead of by the es-CO rule:
+ *
+ * - both «.» and «,» present: the last one is the decimal mark
+ *   («1,787,000.50» and «1.787.000,50» are the same amount);
+ * - one kind repeated («1,787,000», «1.787.000»): thousands;
+ * - a single mark followed by exactly three digits («1,500», «1.500»):
+ *   thousands — pesos with a fractional part of three digits do not exist;
+ * - a single mark followed by one or two digits («1787000.5»): decimals.
+ *
+ * Only paste goes through here. While typing, `formatearMonto` keeps the
+ * plain es-CO rule: a half-typed «1.78» (after a backspace) must stay a
+ * thousands grouping, never become one peso seventy-eight.
+ */
+export function normalizarPegado(raw: string): string {
+  const limpio = raw.replace(/[^\d.,]/g, "");
+  const ultimoPunto = limpio.lastIndexOf(".");
+  const ultimaComa = limpio.lastIndexOf(",");
+  let decimal: "." | "," | null = null;
+  if (ultimoPunto >= 0 && ultimaComa >= 0) {
+    decimal = ultimoPunto > ultimaComa ? "." : ",";
+  } else {
+    const marca = ultimoPunto >= 0 ? "." : ultimaComa >= 0 ? "," : null;
+    if (marca && limpio.split(marca).length === 2) {
+      const despues = limpio.slice(limpio.lastIndexOf(marca) + 1);
+      if (despues.length === 1 || despues.length === 2) decimal = marca;
+    }
+  }
+  if (!decimal) return formatearMonto(limpio.replace(/[.,]/g, ""));
+  const corte = limpio.lastIndexOf(decimal);
+  const entero = limpio.slice(0, corte).replace(/[.,]/g, "");
+  const fraccion = limpio.slice(corte + 1).replace(/[.,]/g, "");
+  return formatearMonto(`${entero},${fraccion}`);
 }
 
 /** A stored amount as the money field shows it. */

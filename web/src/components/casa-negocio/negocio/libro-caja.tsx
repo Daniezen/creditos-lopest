@@ -7,6 +7,7 @@ import type { CuentaOpcion } from "@/server/casa-negocio/vista-casa";
 import { TODAS, type FiltroCuenta, type FilaNegocio, type VistaNegocio } from "@/server/casa-negocio/vista-negocio";
 
 import { EditarMovimiento, type OpcionesEdicion } from "../casa/editar-movimiento";
+import { MARCA_LIBRO } from "../casa/formas";
 import { formatMoney } from "../shared/format";
 import { Glyph } from "../shared/glyph";
 import { SelectorCuenta } from "./selector-cuenta";
@@ -73,9 +74,13 @@ function Movimiento({ fila }: { fila: FilaNegocio }) {
 }
 
 /**
- * Accounts as filters (one pressed at a time) and the cash book under them:
- * a table on wide screens, cards on the phone. The filter is client state;
- * every balance it can show was precomputed by the view model.
+ * Accounts as filters (one pressed at a time) and the cash book under them.
+ * The book is a table when ITS OWN width fits the seven columns and stacked
+ * cards otherwise: a container query, not a viewport one, because the room
+ * left depends on the rail and the paper's padding (a 1024 px tablet gets
+ * cards, the father's PC the table), and so the page never scrolls sideways.
+ * The filter is client state; every balance it can show was precomputed by
+ * the view model.
  */
 export function LibroCaja({ filtros, libro, nombreMes, cuentasNegocio, sugerida, edicion, children }: LibroCajaProps) {
   const [filtro, setFiltro] = useState(TODAS);
@@ -113,9 +118,13 @@ export function LibroCaja({ filtros, libro, nombreMes, cuentasNegocio, sugerida,
       {filas.length === 0 ? (
         <p className={cnCardRecipes.empty}>Sin movimientos del negocio en {nombreMes}.</p>
       ) : (
-        <>
+        <div className={cnNegocioRecipes.bookFrame} tabIndex={-1} {...{ [MARCA_LIBRO]: "" }}>
           <section aria-label="Libro de caja" className={cnNegocioRecipes.book}>
             <table className={cnNegocioRecipes.table}>
+              <caption className="sr-only">
+                Libro de caja de {nombreMes}
+                {filtro === TODAS ? "" : `, ${filtros.find((f) => f.id === filtro)?.nombre ?? ""}`}
+              </caption>
               <thead>
                 <tr>
                   <th scope="col" className={cnNegocioRecipes.th}>Día</th>
@@ -169,14 +178,14 @@ export function LibroCaja({ filtros, libro, nombreMes, cuentasNegocio, sugerida,
                     {editar(f)}
                   </div>
                   <div className={cnNegocioRecipes.cardFoot}>
-                    <span>{cuenta(f)}</span>
-                    {s ? <span>Saldo {s}</span> : null}
+                    <div className="min-w-0">{cuenta(f)}</div>
+                    {s ? <span className="whitespace-nowrap">Saldo {s}</span> : null}
                   </div>
                 </li>
               );
             })}
           </ul>
-        </>
+        </div>
       )}
     </>
   );
