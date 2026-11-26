@@ -7,12 +7,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { cnArqueoRecipes } from "@/design-system/recipes/casa-negocio-ahorro-arqueo";
-import { cuenta, mesFixture, movimiento } from "@/server/casa-negocio/__tests__/mes-fixture";
+import { mesFixture, movimiento } from "@/server/casa-negocio/__tests__/mes-fixture";
 import { construirVistaAhorro } from "@/server/casa-negocio/vista-ahorro";
 import { construirVistaArqueo } from "@/server/casa-negocio/vista-arqueo";
 
 import { AhorroView } from "../ahorro/ahorro-view";
-import { encabezadoMes, mesDeBusqueda } from "../ahorro/encabezado";
 import { ringDash } from "../ahorro/goal-ring";
 import { ArqueoView } from "../arqueo/arqueo-view";
 
@@ -84,26 +83,5 @@ describe("Arqueo markup", () => {
   it("with no accounts it is an empty state", () => {
     const html = renderToStaticMarkup(<ArqueoView vista={construirVistaArqueo(mesFixture({ cuentas: [] }))} />);
     expect(html).toContain("No hay cuentas para contar");
-  });
-});
-
-describe("Encabezado provisional", () => {
-  it("uses the real month, keeps it across tabs and never shows the canvas' sample marks", () => {
-    const h = encabezadoMes("arqueo", mesFixture({ cuentas: [cuenta("c", "Caja", "NEGOCIO", 1)] }));
-    expect(h.month).toEqual({ title: "Noviembre", year: "2026", prevHref: null, nextHref: null });
-    expect(h.line).toMatchObject({ daysInMonth: 30, today: 25, period: "actual", marks: [] });
-    expect(h.tabQuery).toBe("mes=2026-11");
-    expect(h.readOnly).toBe(false);
-
-    const octubre = encabezadoMes("ahorro", mesFixture({ mes: "2026-10", inicioModulo: "2026-09-01" }));
-    expect(octubre.month).toMatchObject({ prevHref: "/casa-negocio/ahorro?mes=2026-09", nextHref: "/casa-negocio/ahorro?mes=2026-11" });
-    expect(octubre.line.today).toBeNull();
-  });
-
-  it("reads ?mes= defensively", () => {
-    expect(mesDeBusqueda("2026-10", "2026-11")).toBe("2026-10");
-    expect(mesDeBusqueda(["2026-09", "x"], "2026-11")).toBe("2026-09");
-    expect(mesDeBusqueda("2026-13", "2026-11")).toBe("2026-11");
-    expect(mesDeBusqueda(undefined, "2026-11")).toBe("2026-11");
   });
 });

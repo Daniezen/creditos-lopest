@@ -7,23 +7,18 @@
  * whole tab is unit-tested from plain objects. Everything returned is plain
  * data, safe to pass to client components.
  *
- * It also exports `motorDelMes`, the single mapping from the read contract to
- * the engine's inputs (integer pesos, day keys) that Casa and Negocio share,
- * so both tabs and their avisos agree on every total.
+ * It also exports `motorDelMes`, a thin wrapper over `evaluarMes` that Casa
+ * and Negocio share.
  */
 import {
-  calcularMes,
-  evaluarAvisos,
   type Aviso,
   type ConfigAvisos,
-  type GastoFijoInput,
   type MesCalculado,
-  type ReglaAvisoId,
 } from "@/features/casa-negocio/domain";
 import { diasDelMes, parseMes, sumarMeses } from "@/features/casa-negocio/mes";
+import { evaluarMes } from "./vista-mes";
 import type {
   CasaNegocioMes,
-  CodigoAviso,
   CuentaMes,
   MovimientoManual,
   TipoMovimiento,
@@ -33,36 +28,7 @@ import type {
 // Shared: read contract -> engine
 // ---------------------------------------------------------------------------
 
-/** Stored alert codes (Configuración) -> engine rule ids. */
-export const REGLA_DE_CODIGO: Record<CodigoAviso, ReglaAvisoId> = {
-  FIJO_VENCIDO_SIN_PAGAR: "FIJO_VENCIDO",
-  SOBRE_CERCA_DEL_TOPE: "SOBRE_CERCA_TOPE",
-  SOBRES_CIERRE_NEGATIVO: "SOBRES_CIERRE_NEGATIVO",
-  CUENTA_SIN_CONTAR: "CUENTA_SIN_CONTAR",
-  ARQUEO_NO_CUADRA: "ARQUEO_NO_CUADRA",
-  RETIRO_SUPERA_GANANCIA: "RETIRO_MAYOR_GANANCIA",
-  MOVIMIENTO_DEJA_SIN_SALDO: "CUENTA_SIN_SALDO",
-  CREDITO_SIN_PAGOS: "CREDITO_SIN_PAGOS",
-  GASTO_ANUAL_PROXIMO: "ANUAL_POR_VENCER",
-  CIERRE_SOBRANTE_SIN_AHORRO: "CIERRE_SIN_AHORRO",
-};
-
-/** Alert configuration as the engine reads it. Rules absent from the table keep their defaults. */
-export function configAvisosDe(datos: Pick<CasaNegocioMes, "configuracion">): ConfigAvisos {
-  const config: ConfigAvisos = {};
-  for (const regla of datos.configuracion.reglas) {
-    config[REGLA_DE_CODIGO[regla.codigo]] = { activa: regla.activa, umbral: regla.umbral ?? undefined };
-  }
-  return config;
-}
-
-/** The engine works in whole pesos; the read may carry cents. */
-const p = (n: number) => Math.round(n);
-const suma = (values: number[]) => values.reduce((a, b) => a + p(b), 0);
-
-function deTipo(movs: readonly MovimientoManual[], tipo: TipoMovimiento) {
-  return movs.filter((m) => m.tipo === tipo);
-}
+export { REGLA_DE_CODIGO, configAvisosDe } from "./vista-mes";
 
 export interface MotorDelMes {
   calculado: MesCalculado;
@@ -71,105 +37,14 @@ export interface MotorDelMes {
 }
 
 /**
- * Feeds the engine with the month: every total of the equations, the fijos
- * and sobres, and the avisos of spec §5 that can be judged from one month.
- * Rules that need other months or the portfolio (8, 10) get empty inputs and
- * therefore stay silent here; the Tablero owns them.
+ * The month through the engine and the alert evaluator. It delegates to
+ * `evaluarMes` (`vista-mes.ts`), the one bridge every tab uses, so Casa,
+ * Negocio, the Tablero and the header agree on every total and every aviso.
+ * Each tab then keeps only the avisos addressed to it (`Aviso.vistas`).
  */
 export function motorDelMes(datos: CasaNegocioMes): MotorDelMes {
-  const movs = datos.movimientos;
-  const config = configAvisosDe(datos);
-  const umbralSobre = config.SOBRE_CERCA_TOPE?.umbral ?? 90;
-
-  // A fixed expense without a pay day is due on the month's last day: it
-  // never shows as overdue before the month is over.
-  const gastosFijos: GastoFijoInput[] = datos.categorias
-    .filter((c) => c.clase === "FIJO" && c.activa && (c.periodicidad === "MENSUAL" || c.mesAnual !== null))
-    .map((c) => ({
-      id: c.id,
-      nombre: c.nombre,
-      monto: p(c.monto ?? 0),
-      periodicidad: c.periodicidad,
-      mesAnual: c.mesAnual ?? undefined,
-      diaPago: c.diaPago ?? 31,
-    }));
-  const pagosFijos = deTipo(movs, "GASTO_FIJO")
-    .filter((m) => m.categoriaId)
-    .map((m) => ({ gastoId: m.categoriaId!, fecha: m.fecha, monto: p(m.monto) }));
-  const sobres = datos.categorias
-    .filter((c) => c.clase === "VARIABLE" && c.activa && c.monto !== null)
-    .map((c) => ({ id: c.id, nombre: c.nombre, tope: p(c.monto!) }));
-  const gastosVariables = deTipo(movs, "GASTO_VARIABLE").map((m) => ({
-    sobreId: m.categoriaId,
-    fecha: m.fecha,
-    monto: p(m.monto),
-  }));
-  const retirosCasa = suma(deTipo(movs, "RETIRO_CASA").map((m) => m.monto));
-  const nombreCuenta = new Map(datos.cuentas.map((c) => [c.id, c.nombre]));
-
-  const calculado = calcularMes({
-    mes: datos.mes,
-    hoy: datos.hoy,
-    negocio: {
-      interesesCobrados: suma(datos.cobros.map((c) => c.interes)),
-      capitalCobrado: suma(datos.cobros.map((c) => c.capital)),
-      gastos: suma(deTipo(movs, "GASTO_NEGOCIO").map((m) => m.monto)),
-      perdidos: suma(datos.castigos.filter((c) => c.fecha.startsWith(datos.mes)).map((c) => c.monto)),
-      retirosCasa,
-      desembolsos: suma(datos.desembolsos.map((d) => d.monto)),
-      aportes: suma(deTipo(movs, "APORTE").map((m) => m.monto)),
-    },
-    casaIngresos: { retirosRecibidos: retirosCasa, ingresosExtra: suma(deTipo(movs, "INGRESO_CASA").map((m) => m.monto)) },
-    gastosFijos,
-    pagosFijos,
-    sobres,
-    gastosVariables,
-    cobrosHechos: datos.cobros.map((c) => ({ creditoId: c.creditoId, fecha: c.fechaPago, monto: p(c.total) })),
-    cuotas: datos.cuotasPorCobrar.map((c) => ({ creditoId: c.creditoId, fechaProgramada: c.fechaProgramada, pendiente: p(c.pendiente) })),
-    retiros: deTipo(movs, "RETIRO_CASA").map((m) => ({
-      id: m.id,
-      fecha: m.fecha,
-      monto: p(m.monto),
-      cuentaOrigen: nombreCuenta.get(m.cuentaOrigenId ?? "") ?? "",
-      cuentaDestino: nombreCuenta.get(m.cuentaDestinoId ?? "") ?? "",
-    })),
-    umbralSobre,
-  });
-
-  const avisos = evaluarAvisos(
-    {
-      mes: datos.mes,
-      hoy: datos.hoy,
-      fijos: calculado.fijos,
-      sobres: calculado.sobres.sobres,
-      casa: calculado.casa,
-      cuentas: datos.cuentas.filter((c) => !c.archivada).map((c) => cuentaConteo(datos, c)),
-      negocio: calculado.negocio,
-      creditos: [],
-      gastosFijos,
-      pagosFijos,
-      cierreAnterior: null,
-    },
-    config,
-  );
-  return { calculado, avisos, config };
-}
-
-/** Counting history of an account for rules 4 and 5, from the recent arqueos. */
-function cuentaConteo(datos: CasaNegocioMes, cuenta: CuentaMes) {
-  // `arqueos` comes most recent first.
-  for (const arqueo of datos.arqueos) {
-    const detalle = arqueo.detalles.find((d) => d.cuentaId === cuenta.id);
-    if (detalle) {
-      return {
-        cuentaId: cuenta.id,
-        nombre: cuenta.nombre,
-        desde: cuenta.fechaSaldoInicial,
-        ultimoArqueo: { fecha: diaBogotaDeInstante(arqueo.fecha), diferencia: p(detalle.diferencia) },
-      };
-    }
-  }
-  return { cuentaId: cuenta.id, nombre: cuenta.nombre, desde: cuenta.fechaSaldoInicial, ultimoArqueo: null };
+  const { calculo, avisos, config } = evaluarMes(datos);
+  return { calculado: calculo, avisos, config };
 }
 
 /** `YYYY-MM-DD` in Bogota (fixed UTC-5) of an ISO instant. */
