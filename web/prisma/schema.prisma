@@ -685,6 +685,29 @@ model CnReglaAviso {
   @@map("cn_reglas_aviso")
 }
 
+/// Memory of the avisos sent by Telegram, so the daily cron reports only new
+/// ones (see src/server/casa-negocio/avisos-envio.ts). `clave` is the aviso
+/// identity: rule + month + element. `resueltoEn` null = active at the last run.
+model CnAvisoEnviado {
+  clave    String        @id
+  codigo   CnCodigoAviso
+  mes      String
+  elemento String
+  /// Ids behind an aggregated aviso (rule 8 lists credits).
+  refs     String[]      @default([])
+  texto    String
+
+  primeraVez DateTime  @default(now())
+  /// Last time it was reported as new.
+  enviadoEn  DateTime
+  /// Last run that still saw it active.
+  vistoEn    DateTime
+  resueltoEn DateTime?
+
+  @@index([resueltoEn])
+  @@map("cn_avisos_enviados")
+}
+
 /// Capability grant: presence of the row means the user has it.
 model CnPermiso {
   userId String
