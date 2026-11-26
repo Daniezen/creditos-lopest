@@ -49,6 +49,13 @@ export const CHART_TOKENS = {
     legendGap: "--ds-chart-legend-gap",
     legendReserve: "--ds-chart-legend-reserve",
     animationDuration: "--ds-duration-slow",
+    lineStroke: "--ds-chart-line-stroke",
+    symbol: "--ds-chart-symbol",
+    markStroke: "--ds-chart-mark-stroke",
+    barMax: "--ds-chart-bar-max",
+    tickWidth: "--ds-chart-tick-width",
+    labelWeight: "--font-weight-semibold",
+    axisWeight: "--font-weight-medium",
   },
   dash: { grid: "--ds-chart-grid-dash" },
   /**
@@ -69,6 +76,12 @@ export const CHART_TOKENS = {
     text: "--dataviz-cn-text",
     tooltipSurface: "--dataviz-cn-tooltip-surface",
     tooltipText: "--dataviz-cn-tooltip-text",
+    projectedCapital: "--dataviz-cn-projected-capital",
+    projectedInteres: "--dataviz-cn-projected-interes",
+    today: "--dataviz-cn-today",
+    alert: "--dataviz-cn-alert",
+    futureGround: "--dataviz-cn-future-ground",
+    surface: "--dataviz-cn-surface",
   },
 } as const;
 

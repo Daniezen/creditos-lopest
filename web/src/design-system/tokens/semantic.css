@@ -148,4 +148,12 @@
   --dataviz-cn-text: var(--lopest-cn-ink);
   --dataviz-cn-tooltip-surface: var(--lopest-cn-ink);
   --dataviz-cn-tooltip-text: var(--lopest-cn-on-ink);
+  /* Resumen: what is still expected (two faint fills), today's mark, the
+     month the capital shrank, and the warm ground behind the future. */
+  --dataviz-cn-projected-capital: var(--lopest-cn-border-soft);
+  --dataviz-cn-projected-interes: var(--lopest-cn-ink-line);
+  --dataviz-cn-today: var(--lopest-cn-action);
+  --dataviz-cn-alert: var(--lopest-cn-problem-tint);
+  --dataviz-cn-future-ground: var(--lopest-cn-paper);
+  --dataviz-cn-surface: var(--lopest-cn-surface);
 }

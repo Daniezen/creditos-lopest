@@ -1,10 +1,22 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import { BarChart } from "echarts/charts";
-import type { BarSeriesOption } from "echarts/charts";
-import { GridComponent, LegendComponent, TooltipComponent } from "echarts/components";
-import type { GridComponentOption, LegendComponentOption, TooltipComponentOption } from "echarts/components";
+import { BarChart, LineChart, ScatterChart } from "echarts/charts";
+import type { BarSeriesOption, LineSeriesOption, ScatterSeriesOption } from "echarts/charts";
+import {
+  GridComponent,
+  LegendComponent,
+  MarkAreaComponent,
+  MarkLineComponent,
+  TooltipComponent,
+} from "echarts/components";
+import type {
+  GridComponentOption,
+  LegendComponentOption,
+  MarkAreaComponentOption,
+  MarkLineComponentOption,
+  TooltipComponentOption,
+} from "echarts/components";
 import * as echarts from "echarts/core";
 import type { ComposeOption } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
@@ -23,7 +35,8 @@ import {
  * same pin as the sibling platforms), behind this component.
  *
  * BUNDLE. ECharts is imported by module from `echarts/core`; only the types
- * registered below reach the client (bars, grid, tooltip, legend). A chart
+ * registered below reach the client (bars, lines, scatter marks, grid,
+ * tooltip, legend, mark lines and areas). A chart
  * that needs another type adds it here, deliberately, and to `ChartOption`,
  * instead of importing the full `echarts` package elsewhere. The SVG renderer
  * keeps charts sharp at any zoom, printable, and their text as text.
@@ -44,11 +57,28 @@ import {
  * option is applied, so no media-query subscription is kept per chart.
  */
 
-echarts.use([BarChart, GridComponent, TooltipComponent, LegendComponent, SVGRenderer]);
+echarts.use([
+  BarChart,
+  LineChart,
+  ScatterChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+  MarkAreaComponent,
+  SVGRenderer,
+]);
 
 /** The option a chart may declare: only registered types compile. */
 export type ChartOption = ComposeOption<
-  BarSeriesOption | GridComponentOption | TooltipComponentOption | LegendComponentOption
+  | BarSeriesOption
+  | LineSeriesOption
+  | ScatterSeriesOption
+  | GridComponentOption
+  | TooltipComponentOption
+  | LegendComponentOption
+  | MarkLineComponentOption
+  | MarkAreaComponentOption
 >;
 
 export type { ChartPalette, ChartTheme };
