@@ -12,6 +12,7 @@
  * by category, which ECharts would pin to the band's centre.
  */
 import type { ChartOption, ChartTheme } from "@/design-system";
+import { cnResumenRecipes } from "@/design-system/recipes/casa-negocio";
 
 import type { CobrosVista, GananciaVista } from "@/server/casa-negocio/vista-resumen";
 
@@ -54,8 +55,10 @@ function escapar(texto: string): string {
 
 /** Tooltip body: a title and label/value rows. Text only, escaped. */
 function tooltipHtml(titulo: string, filas: readonly [string, string][], nota?: string): string {
-  const cuerpo = filas.map(([k, v]) => `<div style="display:flex;justify-content:space-between;gap:16px"><span>${escapar(k)}</span><b>${escapar(v)}</b></div>`).join("");
-  return `<div><div style="margin-bottom:4px;opacity:.75">${escapar(titulo)}</div>${cuerpo}${nota ? `<div style="margin-top:4px;opacity:.75">${escapar(nota)}</div>` : ""}</div>`;
+  const t = cnResumenRecipes;
+  const cuerpo = filas.map(([k, v]) => `<div class="${t.tooltipRow}"><span>${escapar(k)}</span><b>${escapar(v)}</b></div>`).join("");
+  const pie = nota ? `<div class="${t.tooltipNote}">${escapar(nota)}</div>` : "";
+  return `<div><div class="${t.tooltipTitle}">${escapar(titulo)}</div>${cuerpo}${pie}</div>`;
 }
 
 const NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];

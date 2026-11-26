@@ -40,13 +40,12 @@ import { calcularCumplimientoCobros, calcularGananciaRetiros, proyectarCobros } 
 import { NOMBRES_MES } from "@/features/casa-negocio/domain/dates";
 import { fechaClave, mesClave, rangoMes, sumarMeses } from "@/features/casa-negocio/mes";
 import type { FechaDia, HistorialMes, Mes, TipoCuenta, TramoAtraso, TramoCartera } from "@/features/casa-negocio/types";
-import { buildCreditoVisibilityWhere, buildEventoFinancieroVisibilityWhere } from "@/server/auth/scope";
 
 import { construirHistorial, type HechoMovimiento } from "./agregados";
 import { requireCapacidad } from "./capacidades";
 import { aCentavos, aPesos, type Monetario } from "./dinero";
 import { cargarAsientos, desgloseCobro, resumirSaldo, type EventoCobro } from "./saldos";
-import { cargarCasaNegocioMes, type LectorCasaNegocio } from "./queries";
+import type { LectorCasaNegocio } from "./queries";
 
 // ---------------------------------------------------------------------------
 // Contract (plain data, safe to pass to Client Components)
@@ -499,6 +498,12 @@ export async function cargarVistaResumen(
   const finActual = rangoMes(mesActual).fin;
   const finProyeccion = rangoMes(sumarMeses(mesActual, MESES_PROYECCION)).fin;
 
+  // Lazy: both modules import the Prisma client at load time, and the pure
+  // half of this file must stay importable from tests without a database.
+  const [{ buildCreditoVisibilityWhere, buildEventoFinancieroVisibilityWhere }, { cargarCasaNegocioMes }] = await Promise.all([
+    import("@/server/auth/scope"),
+    import("./queries"),
+  ]);
   const creditoVisible = buildCreditoVisibilityWhere(lector);
   const eventoVisible: Prisma.EventoFinancieroWhereInput = {
     AND: [buildEventoFinancieroVisibilityWhere(lector), { credito: creditoVisible }],

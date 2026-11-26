@@ -242,7 +242,7 @@ function Valor({ valor, actual, tono }: { valor: number | null; actual: boolean;
 
 function Tarjeta({ t }: { t: TarjetaMes }) {
   return (
-    <li className={`${r.month} ${t.actual ? r.monthActual : ""}`} aria-current={t.actual ? "date" : undefined}>
+    <li className={`${r.month} ${t.actual ? r.monthActual : r.monthPast}`} aria-current={t.actual ? "date" : undefined}>
       <div className={r.monthName}>{mesLargo(t.mes)}</div>
       <div>
         <div className={r.monthLabel}>Ganancia</div>

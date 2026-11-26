@@ -410,7 +410,7 @@ export const cnResumenRecipes = {
   kpiSub: "text-xs text-[var(--cn-color-text-secondary)]",
 
   row: "flex flex-wrap items-stretch gap-5.5 max-md:gap-3.5",
-  tramos: "flex flex-[2_1_var(--ds-cn-money-min)]",
+  tramos: "flex-[2_1_var(--ds-cn-money-min)]",
   tramoBar: "flex h-4 gap-0.75 overflow-hidden rounded-full bg-[var(--cn-color-track)]",
   tramoSegment: "h-4 min-w-1 flex-shrink basis-0",
   tramoList: "m-0 flex list-none flex-col p-0",
@@ -422,12 +422,18 @@ export const cnResumenRecipes = {
   tramoTotal: "flex items-baseline justify-between border-t border-[var(--cn-color-border-soft)] pt-2 text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-secondary)]",
 
   months: "flex flex-col gap-3",
+  /* ECharts tooltip body (HTML string built in components/casa-negocio/resumen/opciones.ts). */
+  tooltipTitle: "mb-1 opacity-75",
+  tooltipRow: "flex justify-between gap-4",
+  tooltipNote: "mt-1 opacity-75",
   monthsHead: "flex flex-wrap items-center justify-between gap-3",
   range: "inline-flex rounded-full bg-[var(--cn-color-track)] p-0.75",
   rangeOption: `rounded-full px-3 py-1 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] no-underline aria-[current=true]:bg-[var(--cn-color-surface)] aria-[current=true]:text-[var(--cn-color-text)] ${focus}`,
   monthsTrack: `overflow-x-auto pb-1.5 motion-safe:scroll-smooth max-md:-mx-4 max-md:px-4 ${focus}`,
   monthsList: "m-0 flex w-max list-none gap-3 p-0",
-  month: "flex w-[var(--ds-cn-month-card)] flex-col gap-2.5 rounded-[var(--ds-radius-lg)] bg-[var(--cn-color-surface)] p-4 text-[var(--cn-color-text)]",
+  /* Base box + one of the two grounds, never both (Tailwind picks by CSS order, not class order). */
+  month: "flex w-[var(--ds-cn-month-card)] flex-none flex-col gap-2.5 rounded-[var(--ds-radius-lg)] p-4",
+  monthPast: "bg-[var(--cn-color-surface)] text-[var(--cn-color-text)]",
   monthActual: "bg-[var(--cn-color-ink)] text-[var(--cn-color-on-ink)]",
   monthName: `${cnTypeRecipes.eyebrow} opacity-75`,
   monthLabel: "text-[length:var(--text-2xs)] opacity-70",
