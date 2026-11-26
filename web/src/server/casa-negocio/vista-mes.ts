@@ -17,8 +17,11 @@
  *      counting history as its own input types (see `domain/inputs.ts`).
  */
 import {
+  calcularCuentasCasa,
+  calcularFijosDelMes,
   calcularMes,
   evaluarAvisos,
+  fijosSinPagar,
   mesDe,
   sumarMeses,
   type Aviso,
@@ -72,7 +75,7 @@ export function reglaActiva(config: ConfigAvisos, regla: ReglaAvisoId): boolean 
   return config[regla]?.activa ?? true;
 }
 
-function movimientosDe(datos: CasaNegocioMes, tipo: TipoMovimiento) {
+function movimientosDe(datos: Pick<CasaNegocioMes, "movimientos">, tipo: TipoMovimiento) {
   return datos.movimientos.filter((m) => m.tipo === tipo);
 }
 
@@ -82,7 +85,7 @@ function movimientosDe(datos: CasaNegocioMes, tipo: TipoMovimiento) {
  * clamped by the engine), and an annual one without its month is skipped
  * because it has no occurrence to place.
  */
-export function gastosFijosDe(datos: CasaNegocioMes): GastoFijoInput[] {
+export function gastosFijosDe(datos: Pick<CasaNegocioMes, "categorias">): GastoFijoInput[] {
   return datos.categorias
     .filter((c) => c.clase === "FIJO" && c.activa)
     .filter((c) => c.periodicidad === "MENSUAL" || (c.mesAnual !== null && c.mesAnual >= 1 && c.mesAnual <= 12))
@@ -97,7 +100,7 @@ export function gastosFijosDe(datos: CasaNegocioMes): GastoFijoInput[] {
 }
 
 /** Payments against fixed expenses recorded in the month. */
-export function pagosFijosDe(datos: CasaNegocioMes): PagoFijoInput[] {
+export function pagosFijosDe(datos: Pick<CasaNegocioMes, "movimientos">): PagoFijoInput[] {
   return movimientosDe(datos, "GASTO_FIJO")
     .filter((m) => m.categoriaId !== null)
     .map((m) => ({ gastoId: m.categoriaId!, fecha: m.fecha, monto: entero(m.monto) }));
@@ -198,22 +201,60 @@ export function creditosAviso(datos: CasaNegocioMes): CreditoCarteraInput[] {
 }
 
 /**
+ * House «al cierre» of one month (spec §3: entró − fijos − variables − fijos
+ * sin pagar), from that month's movements and categories, with the same
+ * engine functions and mappings `calcularMes` uses. This is the leftover the
+ * Ahorro tab proposes to pass (`sobranteCasa`), so rule 10 on the Tablero and
+ * the cierre card in Ahorro always speak of the same amount. Envelopes do not
+ * enter: what is left in them is not money spent.
+ */
+export function alCierreCasa(
+  mes: string,
+  hoy: string,
+  datos: Pick<CasaNegocioMes, "movimientos" | "categorias">,
+): number {
+  const suma = (tipo: TipoMovimiento) => sumaEntera(movimientosDe(datos, tipo).map((m) => m.monto));
+  const pagos = pagosFijosDe(datos);
+  const fijos = calcularFijosDelMes(gastosFijosDe(datos), pagos, mes, hoy);
+  return calcularCuentasCasa({
+    ingresos: { retirosRecibidos: suma("RETIRO_CASA"), ingresosExtra: suma("INGRESO_CASA") },
+    // Cash view, like the casa equation: every GASTO_FIJO of the month.
+    fijos: suma("GASTO_FIJO"),
+    variables: suma("GASTO_VARIABLE"),
+    fijosSinPagar: fijosSinPagar(fijos),
+    quedaEnSobres: 0,
+  }).alCierre;
+}
+
+/**
  * Rule 10 looks at the month that ended most recently (the one before
- * today's). Only knowable when the month shown is today's: the history then
- * holds both months. The leftover is that month's house cash (what came in
- * minus fixed and variable spending); what reached savings is counted from
- * that month and the current one, since the move usually happens right
- * after the close.
+ * today's), so it is only evaluated when the month shown is today's.
+ *
+ * The figures come from `datos.cierreAnterior`, which the read
+ * (`queries.ts`) computes for exactly that month: the leftover is its house
+ * «al cierre» (`alCierreCasa`, the amount Ahorro proposes) and what reached
+ * savings is the sum of its live «Pasar al ahorro» movements (the cierre
+ * idempotency keys), the same thing Ahorro calls «hecho». A plain Traslado
+ * into the savings account is not a cierre in either tab.
+ *
+ * Fallback for reads built without that field (older fixtures): the month's
+ * cash from the history, which ignores unpaid fixed expenses and counts
+ * every deposit into savings. It never runs on the real read.
  */
 export function cierreAnteriorDe(datos: CasaNegocioMes): CierreMesInput | null {
   const mesHoy = datos.hoy.slice(0, 7);
   if (datos.mes !== mesHoy) return null;
   const anterior = sumarMeses(mesHoy, -1);
+  // Before the module started there is no house ledger: nothing to close.
+  if (datos.inicioModulo && datos.inicioModulo.slice(0, 7) > anterior) return null;
+  if (datos.cierreAnterior !== undefined) {
+    const c = datos.cierreAnterior;
+    if (!c || c.mes !== anterior) return null;
+    return { mes: c.mes, sobrante: entero(c.sobrante), pasadoAlAhorro: entero(c.pasadoAlAhorro) };
+  }
   const previo = datos.historial.find((h) => h.mes === anterior);
   const actual = datos.historial.find((h) => h.mes === mesHoy);
   if (!previo) return null;
-  // Before the module started there is no house ledger: nothing to close.
-  if (datos.inicioModulo && datos.inicioModulo.slice(0, 7) > anterior) return null;
   return {
     mes: anterior,
     sobrante: entero(previo.retirosCasa + previo.ingresosCasa - previo.gastosFijos - previo.gastosVariables),
