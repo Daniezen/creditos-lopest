@@ -325,6 +325,15 @@ export interface ConfiguracionModulo {
   reglas: ReglaAviso[];
 }
 
+/** A closed month's leftover and how much of it reached savings (alert 10). */
+export interface CierreAnterior {
+  mes: Mes;
+  /** House «al cierre» of that month, whole pesos (may be negative). */
+  sobrante: number;
+  /** Sum of the live «Pasar al ahorro» movements of that month's cierre. */
+  pasadoAlAhorro: number;
+}
+
 export interface PermisoPersona {
   userId: string;
   nombre: string;
@@ -367,6 +376,14 @@ export interface CasaNegocioMes {
   historial: HistorialMes[];
 
   configuracion: ConfiguracionModulo;
+  /**
+   * The cierre of the month before today's, for alert 10 on the Tablero:
+   * its house «al cierre» (spec §3, the same figure Ahorro proposes) and what
+   * «Pasar al ahorro» already moved for it (cierre movements only). Present
+   * only when the month read is today's and that month is inside the module;
+   * optional so older fixtures without it keep compiling.
+   */
+  cierreAnterior?: CierreAnterior | null;
   /** Only for viewers with CONFIGURAR; null otherwise. */
   permisos: PermisoPersona[] | null;
 }

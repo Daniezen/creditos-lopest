@@ -26,6 +26,7 @@ import type {
   ArqueoRegistro,
   CasaNegocioMes,
   CategoriaMes,
+  CierreAnterior,
   CobroMes,
   CreditoCartera,
   CuentaMes,
@@ -48,6 +49,8 @@ import { requireCapacidad } from "./capacidades";
 import { aCentavos, aPesos, sumar } from "./dinero";
 import { CasaNegocioReglaError } from "./errors";
 import { cargarAsientos, desgloseCobro, resumirSaldo } from "./saldos";
+import { mesDeClaveCierre } from "./vista-ahorro";
+import { alCierreCasa } from "./vista-mes";
 
 /** Viewer of the read: loan scope (id + roles) plus module capabilities. */
 export interface LectorCasaNegocio extends CurrentUserScope {
@@ -289,7 +292,7 @@ export async function cargarCasaNegocioMes(
   // --- Manual movements ------------------------------------------------------
   const enMes = (fecha: Date) => fecha.getTime() >= inicio.getTime() && fecha.getTime() < fin.getTime();
   const movimientosMesRows = movimientosRows.filter((m) => enMes(m.fecha));
-  const movimientos: MovimientoManual[] = movimientosMesRows.map((m) => ({
+  const aMovimiento = (m: (typeof movimientosRows)[number]): MovimientoManual => ({
     id: m.id,
     tipo: m.tipo,
     fecha: fechaClave(m.fecha),
@@ -301,7 +304,8 @@ export async function cargarCasaNegocioMes(
     accionPor: personas.get(m.accionPor) ?? null,
     creadoEn: m.creadoEn.toISOString(),
     version: m.actualizadoEn.toISOString(),
-  }));
+  });
+  const movimientos = movimientosMesRows.map(aMovimiento);
 
   // --- Automatic movements ---------------------------------------------------
   const cobrosTodos = pagadosRows.map((e) => {
@@ -428,14 +432,16 @@ export async function cargarCasaNegocioMes(
   });
 
   // --- Household categories --------------------------------------------------
-  const montosPorCategoria = new Map<string, Prisma.Decimal[]>();
-  for (const m of movimientosMesRows) {
-    if (!m.categoriaId) continue;
-    const lista = montosPorCategoria.get(m.categoriaId) ?? [];
-    lista.push(m.monto);
-    montosPorCategoria.set(m.categoriaId, lista);
-  }
-  const categorias: CategoriaMes[] = categoriasRows.map((c) => ({
+  /** Categories with the figures of `mesCat`, from that month's movement rows. */
+  const categoriasDe = (mesCat: string, rows: readonly (typeof movimientosRows)[number][]): CategoriaMes[] => {
+    const montosPorCategoria = new Map<string, Prisma.Decimal[]>();
+    for (const m of rows) {
+      if (!m.categoriaId) continue;
+      const lista = montosPorCategoria.get(m.categoriaId) ?? [];
+      lista.push(m.monto);
+      montosPorCategoria.set(m.categoriaId, lista);
+    }
+    return categoriasRows.map((c) => ({
     id: c.id,
     nombre: c.nombre,
     clase: c.clase,
@@ -445,9 +451,30 @@ export async function cargarCasaNegocioMes(
     diaPago: c.diaPago,
     activa: c.activa,
     orden: c.orden,
-    ...categoriaDelMes(c, mes, hoy, montosPorCategoria.get(c.id) ?? []),
+    ...categoriaDelMes(c, mesCat, hoy, montosPorCategoria.get(c.id) ?? []),
     version: c.actualizadoEn.toISOString(),
-  }));
+    }));
+  };
+  const categorias = categoriasDe(mes, movimientosMesRows);
+
+  // --- Cierre of the previous month (alert 10 on the Tablero) ----------------
+  // Only for today's month, the one the Tablero evaluates rule 10 on. The
+  // leftover is that month's house «al cierre», computed by the same bridge
+  // function Ahorro's figure agrees with; what reached savings counts only the
+  // live «Pasar al ahorro» movements of that cierre (their idempotency key
+  // names the month they close, wherever their date falls). The 12-month
+  // window of `movimientosRows` always contains both months.
+  let cierreAnterior: CierreAnterior | null = null;
+  if (mes === mesClave(ahora)) {
+    const anterior = sumarMeses(mes, -1);
+    const rango = rangoMes(anterior);
+    const filasAnterior = movimientosRows.filter((m) => m.fecha >= rango.inicio && m.fecha < rango.fin);
+    cierreAnterior = {
+      mes: anterior,
+      sobrante: alCierreCasa(anterior, hoy, { movimientos: filasAnterior.map(aMovimiento), categorias: categoriasDe(anterior, filasAnterior) }),
+      pasadoAlAhorro: sumar(movimientosRows.filter((m) => mesDeClaveCierre(m.idempotencyKey) === anterior).map((m) => m.monto)),
+    };
+  }
 
   // --- History ---------------------------------------------------------------
   const enHistorial = (fecha: Date) => fecha.getTime() >= inicioHistorial.getTime() && fecha.getTime() < fin.getTime();
@@ -526,6 +553,7 @@ export async function cargarCasaNegocioMes(
     })),
     arqueos,
     historial,
+    cierreAnterior,
     configuracion: {
       metaAsignacionCasa: dinero(configRow.metaAsignacionCasa),
       metaAhorro: dinero(configRow.metaAhorro),
