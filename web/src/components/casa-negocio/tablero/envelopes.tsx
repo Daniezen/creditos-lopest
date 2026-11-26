@@ -49,7 +49,10 @@ export function Envelopes({ envelopes, nearShare = DEFAULT_NEAR_SHARE }: Envelop
               <div aria-hidden="true" className={r.envelopeTrack}>
                 <div className={r.envelopeFill[state]} style={{ width: `${envelopeFillPct(envelope.spent, envelope.cap)}%` }} />
               </div>
-              <span className="sr-only">Gastado {formatMoney(envelope.spent)}</span>
+              <span className="sr-only">
+                Gastado {formatMoney(envelope.spent)}
+                {state === "cerca" ? ", cerca del tope" : ""}
+              </span>
             </li>
           );
         })}

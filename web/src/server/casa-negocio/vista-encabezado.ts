@@ -239,10 +239,12 @@ export function construirEncabezado({ datos, evaluado, tab, consulta }: Encabeza
   const readOnly = !datos.usuario.capacidades.includes("ANOTAR");
   const hayCuentas = datos.cuentas.some((c) => !c.archivada);
 
-  // Same figure as «Dónde está la plata»: active accounts, whole pesos.
+  // Same figure as «Dónde está la plata»: active accounts, whole pesos. A
+  // month before the module started has no balances, so it shows none.
+  const antesDelInicio = datos.inicioModulo !== null && mes < datos.inicioModulo.slice(0, 7);
   const total = datos.cuentas.filter((c) => !c.archivada).reduce((sum, c) => sum + Math.round(c.saldoFinMes), 0);
   const summary =
-    tab === "tablero" && hayCuentas
+    tab === "tablero" && hayCuentas && !antesDelInicio
       ? { total: formatMoney(total), detail: `en cuentas · ${formatMillions(datos.cartera.enLaCalle)} en la calle` }
       : undefined;
 

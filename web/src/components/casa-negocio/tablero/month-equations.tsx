@@ -5,12 +5,16 @@ import { cnIdentityRecipes, cnTableroRecipes as r } from "@/design-system/recipe
 import { formatMoney } from "../shared/format";
 import { Notice } from "../shared/notice";
 import type { CnIdentity, EquationRow } from "../types";
+import { compactTerms } from "./equation-compact";
 
 const NAME_TONE: Record<CnIdentity, string> = {
   negocio: cnIdentityRecipes.textNegocio,
   casa: cnIdentityRecipes.textCasa,
   ahorro: cnIdentityRecipes.textAhorro,
 };
+
+/** The phone card names Negocio in the soft ink of `TableroMovil.dc.html`. */
+const CARD_NAME_TONE: Record<CnIdentity, string> = { ...NAME_TONE, negocio: r.equationCardNameNegocio };
 
 /** Operators are read aloud as words, not symbols. */
 const SPOKEN_OP: Record<string, string> = { "+": "más", "−": "menos", "=": "igual a" };
@@ -19,9 +23,11 @@ const SPOKEN_OP: Record<string, string> = { "+": "más", "−": "menos", "=": "i
  * «Las cuentas del mes» (`Main.dc.html`): each identity's month as an
  * equation of boxed terms, results on ink, with its notices right under it
  * when a rule applies. On phones each row becomes a card of lines
- * (`TableroMovil.dc.html`).
+ * (`TableroMovil.dc.html`) with the shorter reading of `equation-compact.ts`.
+ * A read-only viewer sees the notices without their actions («Pagar», «Ir a
+ * Ahorro»), as in the detail windows.
  */
-export function MonthEquations({ rows }: { rows: EquationRow[] }) {
+export function MonthEquations({ rows, readOnly = false }: { rows: EquationRow[]; readOnly?: boolean }) {
   return (
     <section aria-labelledby="cn-cuentas-mes" className={[r.card, r.equations].join(" ")}>
       <h2 id="cn-cuentas-mes" className={r.equationsTitle}>
@@ -49,15 +55,20 @@ export function MonthEquations({ rows }: { rows: EquationRow[] }) {
             ))}
           </div>
           {row.notices?.map((notice) => (
-            <Notice key={notice.text} level={notice.level} action={notice.action} className={`${r.equationNotice} max-md:hidden`}>
+            <Notice
+              key={notice.text}
+              level={notice.level}
+              action={readOnly ? undefined : notice.action}
+              className={`${r.equationNotice} max-md:hidden`}
+            >
               {notice.text}
             </Notice>
           ))}
 
           <div className={r.equationCard}>
-            <h3 className={[r.equationCardName, NAME_TONE[row.identity]].join(" ")}>{row.name}</h3>
+            <h3 className={[r.equationCardName, CARD_NAME_TONE[row.identity]].join(" ")}>{row.name}</h3>
             <dl>
-              {row.terms.map((term) => (
+              {compactTerms(row).map((term) => (
                 <div key={term.label} className={r.equationLine}>
                   <dt className={r.equationLineLabel}>
                     {term.op ? <span aria-hidden="true">{term.op} </span> : null}
@@ -68,7 +79,7 @@ export function MonthEquations({ rows }: { rows: EquationRow[] }) {
               ))}
             </dl>
             {row.notices?.map((notice) => (
-              <Notice key={notice.text} level={notice.level} action={notice.action} className={r.equationCardNotice}>
+              <Notice key={notice.text} level={notice.level} action={readOnly ? undefined : notice.action} className={r.equationCardNotice}>
                 {notice.text}
               </Notice>
             ))}

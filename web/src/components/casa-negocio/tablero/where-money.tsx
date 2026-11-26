@@ -27,7 +27,8 @@ export function WhereMoney({ total, accounts }: WhereMoneyProps) {
         </h2>
         <span className={r.moneyTotal}>{formatMoney(total)}</span>
       </div>
-      <div role="img" aria-label={barLabel} className={r.moneyBar}>
+      {/* With nothing positive to split, an empty track keeps the bar's place. */}
+      <div role="img" aria-label={barLabel} className={[r.moneyBar, positive > 0 ? "" : r.moneyBarEmpty].join(" ")}>
         {accounts.map((account) => (
           <span
             key={account.id}
