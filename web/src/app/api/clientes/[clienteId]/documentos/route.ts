@@ -1,187 +1,67 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import type { Prisma } from "@prisma/client";
-
-import { prisma } from "@/lib/prisma";
-import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
-import { recordAuditLogTx } from "@/server/audit/audit-log";
-import { reconcileClientDocuments } from "@/server/drive/client-documents-reconciliation.service";
-import { entityId } from "@/server/validation/input";
-import {
-  trashDriveFile,
-  uploadClientDocumentToDrive,
-} from "@/server/drive/google-drive.service";
 import { logEvent } from "@/server/observability/log";
 
+import { assertCanMutate, requireClienteAccess } from "@/server/auth/scope";
+import {
+  DocumentUploadServiceError,
+  processClientDocumentUpload,
+} from "@/server/drive/client-document-upload.service";
+
 export const runtime = "nodejs";
-
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
-
-const clienteIdParamSchema = z.object({ clienteId: entityId("clienteId") });
 
 interface RouteContext {
   params: Promise<{ clienteId: string }>;
 }
 
-/** Uploads exactly one client document per request. */
+/**
+ * Uploads exactly one client document per request (Canonical REST route).
+ * Path: POST /api/clientes/[clienteId]/documentos
+ */
 export async function POST(request: Request, context: RouteContext) {
-  let uploadedDriveFileId: string | null = null;
-  // Resolved outside `try` so the failure logs below can correlate by client.
-  const { clienteId } = await context.params;
-
   try {
-    // Validate the id read above; it stays usable by the failure logs either way.
-    const params = clienteIdParamSchema.safeParse({ clienteId });
-    if (!params.success) return errorResponse("Cliente inválido.", 400);
+    const { clienteId } = await context.params;
     const { user } = await requireClienteAccess(clienteId);
     assertCanMutate(user);
 
     const formData = await request.formData();
-    const file = formData.get("file");
+    const file = formData.get("file") ?? formData.get("archivo");
 
     if (!(file instanceof File)) {
-      return errorResponse("Selecciona un archivo válido.", 400);
-    }
-
-    const maxBytes = getPositiveIntegerEnv(
-      "DOCUMENT_UPLOAD_MAX_BYTES",
-      10 * 1024 * 1024,
-    );
-
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      return errorResponse("Solo se permiten PDF, JPG, PNG y WEBP.", 415);
-    }
-
-    if (file.size <= 0 || file.size > maxBytes) {
-      return errorResponse(
-        `El archivo debe pesar entre 1 byte y ${formatMegabytes(maxBytes)} MB.`,
-        413,
+      return NextResponse.json(
+        { ok: false, error: "Selecciona un archivo válido." },
+        { status: 400 },
       );
     }
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: clienteId },
-      select: {
-        id: true,
-        cedula: true,
-        nombre: true,
-        carpetaAdjuntosUrl: true,
-      },
+    const result = await processClientDocumentUpload({
+      clienteId,
+      file,
+      actorUserId: user.id,
     });
-
-    if (!cliente) return errorResponse("El cliente no existe.", 404);
-
-    const upload = await uploadClientDocumentToDrive({
-      cliente,
-      file: {
-        name: file.name,
-        type: file.type,
-        buffer: Buffer.from(await file.arrayBuffer()),
-      },
-    });
-    uploadedDriveFileId = upload.fileId;
-
-    const documento = await prisma.$transaction(async (tx) => {
-      const created = await tx.documentoCliente.create({
-        data: {
-          clienteId,
-          nombreArchivo: file.name,
-          mimeType: file.type,
-          tamanoBytes: file.size,
-          url: upload.fileUrl,
-          driveFileId: upload.fileId,
-          driveFolderId: upload.folderId,
-          proveedor: "GOOGLE_DRIVE",
-          accionPor: user.id,
-        },
-        select: {
-          id: true,
-          nombreArchivo: true,
-          mimeType: true,
-          tamanoBytes: true,
-          url: true,
-          creadoEn: true,
-        },
-      });
-
-      await tx.cliente.update({
-        where: { id: clienteId },
-        data: {
-          carpetaAdjuntosUrl: upload.folderUrl,
-          accionPor: user.id,
-        },
-      });
-
-      await recordAuditLogTx(tx, {
-        actorId: user.id,
-        action: "CLIENT_DOCUMENT_UPLOAD",
-        entityType: "DocumentoCliente",
-        entityId: created.id,
-        after: {
-          clienteId,
-          nombreArchivo: created.nombreArchivo,
-          mimeType: created.mimeType,
-          tamanoBytes: created.tamanoBytes,
-          driveFileId: upload.fileId,
-          driveFolderId: upload.folderId,
-        } satisfies Prisma.InputJsonObject,
-      });
-
-      return created;
-    });
-
-    // PostgreSQL already committed the uploaded file. From this point on,
-    // Drive compensation must be disabled because reconciliation is secondary.
-    uploadedDriveFileId = null;
-
-    // Best-effort reconciliation makes legacy files visible immediately. A
-    // transient Drive listing failure must not invalidate the successful upload.
-    try {
-      await reconcileClientDocuments({
-        clienteId,
-        actorId: user.id,
-        reason: "UPLOAD",
-      });
-    } catch (reconciliationError) {
-      logEvent("warn", "drive.reconciliacion_post_carga_fallida", { clienteId, userId: user.id }, reconciliationError);
-    }
 
     return NextResponse.json({
       ok: true,
-      documento,
-      carpetaUrl: upload.folderUrl,
+      documento: result.documento,
+      carpetaUrl: result.carpetaUrl,
     });
   } catch (error) {
-    if (uploadedDriveFileId) {
-      try {
-        await trashDriveFile(uploadedDriveFileId);
-      } catch (compensationError) {
-        logEvent("error", "drive.compensacion_fallida", { clienteId, driveFileId: uploadedDriveFileId }, compensationError);
-      }
+    if (error instanceof DocumentUploadServiceError) {
+      return NextResponse.json(
+        { ok: false, error: error.message },
+        { status: error.status },
+      );
     }
 
-    logEvent("error", "drive.carga_documento_fallida", { clienteId }, error);
-    return errorResponse(
-      error instanceof Error ? error.message : "No se pudo adjuntar el archivo.",
-      500,
+    logEvent("error", "documentos.carga_ruta_canonica_fallida", {}, error);
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo adjuntar el archivo.",
+      },
+      { status: 500 },
     );
   }
-}
-
-function errorResponse(message: string, status: number) {
-  return NextResponse.json({ ok: false, error: message }, { status });
-}
-
-function getPositiveIntegerEnv(name: string, fallback: number): number {
-  const parsed = Number(process.env[name]);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function formatMegabytes(bytes: number): number {
-  return Math.round((bytes / 1024 / 1024) * 10) / 10;
 }

@@ -239,7 +239,7 @@ function MovementRow({
       <TableCell className={dataDisplayRecipes.numericCell}>
         {esAbono ? (
           <span className={styles.abonoLabel}>
-            <Star className="h-4 w-4 fill-amber-300 text-amber-500" />
+            <Star className="h-4 w-4 fill-[var(--color-warning)] text-[var(--color-warning)]" />
             ABONO
           </span>
         ) : (
@@ -346,7 +346,7 @@ function MovementCard({
           >
             {esAbono ? (
               <>
-                <Star className="h-4 w-4 fill-amber-300 text-amber-500" />
+                <Star className="h-4 w-4 fill-[var(--color-warning)] text-[var(--color-warning)]" />
                 Abono
               </>
             ) : (

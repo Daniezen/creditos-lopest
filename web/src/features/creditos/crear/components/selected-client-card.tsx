@@ -12,6 +12,9 @@ import {
   Users,
 } from "lucide-react";
 
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type { ClienteSelectorOption } from "@/features/clientes/types";
 
 interface SelectedClientCardProps {
@@ -27,16 +30,16 @@ interface SelectedClientCardProps {
 export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
   if (!cliente) {
     return (
-      <section className="rounded-3xl border border-dashed border-violet-200 bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-          <UserRound className="h-6 w-6" />
+      <section className="rounded-2xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/80 p-6 text-center shadow-[var(--ds-shadow-surface)]">
+        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]">
+          <UserRound className="h-5 w-5" />
         </div>
 
-        <h3 className="mt-4 text-lg font-semibold text-slate-950">
+        <h3 className="mt-3 text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
           Cliente pendiente
         </h3>
 
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+        <p className="mx-auto mt-1 max-w-md text-xs font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
           Selecciona un cliente para continuar.
         </p>
       </section>
@@ -46,43 +49,47 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
   const perfilIncompleto = isClienteProfileIncomplete(cliente);
 
   return (
-    <section className="rounded-3xl border border-violet-200 bg-violet-50/70 p-6 shadow-sm">
-      <div className="flex flex-col justify-between gap-3 border-b border-violet-200 pb-4 sm:flex-row sm:items-start">
+    <section className={surfaceRecipes.card}>
+      <div className="flex flex-col justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4 sm:flex-row sm:items-start">
         <div className="flex gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm">
-            <UserRound className="h-6 w-6" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-selection-strong)] shadow-[var(--ds-shadow-surface)]">
+            <UserRound className="h-5 w-5" />
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-violet-700">
+            <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)]">
               Cliente seleccionado
             </p>
 
-            <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+            <h3 className="mt-0.5 text-base font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
               {cliente.nombre}
             </h3>
 
-            <p className="mt-1 text-sm text-slate-600">C.C. {cliente.cedula}</p>
+            <p className="mt-0.5 text-xs font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
+              C.C. {cliente.cedula}
+            </p>
           </div>
         </div>
 
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+        <span className={statusRecipes.vigente}>
           <CheckCircle2 className="h-3.5 w-3.5" />
           Seleccionado
         </span>
       </div>
 
       {perfilIncompleto ? (
-        <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Perfil pendiente de completar. El crédito puede continuar, pero la
-            información del cliente deberá completarse después desde Clientes.
-          </p>
+        <div className={surfaceRecipes.alertWarning}>
+          <div className="flex gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Perfil pendiente de completar. El crédito puede continuar, pero la
+              información del cliente deberá completarse después desde Clientes.
+            </p>
+          </div>
         </div>
       ) : null}
 
-      <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
+      <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2 xl:grid-cols-3">
         <ClientField icon={Phone} label="Teléfono" value={cliente.telefono} />
         <ClientField icon={Home} label="Dirección" value={cliente.direccion} />
         <ClientField icon={Building2} label="Empresa" value={cliente.empresa} />
@@ -96,20 +103,20 @@ export function SelectedClientCard({ cliente }: SelectedClientCardProps) {
         />
 
         <div>
-          <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-violet-400">
-            <FolderOpen className="h-3.5 w-3.5" />
+          <dt className="flex items-center gap-1.5 font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
+            <FolderOpen className="h-3.5 w-3.5 text-[var(--color-action-primary)]" />
             Adjuntos
           </dt>
 
-          <dd className="mt-1 font-semibold text-slate-900">
+          <dd className="mt-1 font-[var(--font-weight-data-emphasis)] text-[var(--color-text-primary)]">
             {cliente.carpetaAdjuntosUrl ? (
               <a
                 href={cliente.carpetaAdjuntosUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-violet-700 underline-offset-4 hover:underline"
+                className={dataDisplayRecipes.entityLink}
               >
-                <FolderOpen className="h-4 w-4" />
+                <FolderOpen className="h-3.5 w-3.5" />
                 Ver carpeta
               </a>
             ) : (
@@ -131,11 +138,11 @@ interface ClientFieldProps {
 function ClientField({ icon: Icon, label, value }: ClientFieldProps) {
   return (
     <div>
-      <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-violet-400">
-        <Icon className="h-3.5 w-3.5" />
+      <dt className="flex items-center gap-1.5 font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
+        <Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)]" />
         {label}
       </dt>
-      <dd className="mt-1 font-semibold text-slate-900">{value || "-"}</dd>
+      <dd className="mt-1 font-[var(--font-weight-data-emphasis)] text-[var(--color-text-primary)]">{value || "-"}</dd>
     </div>
   );
 }
@@ -149,6 +156,10 @@ function formatEstadoDocumentos(value: string): string {
     return "Faltan documentos";
   }
 
+  if (value === "SIN_DOCUMENTOS") {
+    return "Sin documentos";
+  }
+
   return value;
 }
 
@@ -157,7 +168,8 @@ function isClienteProfileIncomplete(cliente: ClienteSelectorOption): boolean {
     !cliente.telefono ||
     !cliente.direccion ||
     !cliente.empresa ||
+    !cliente.recomienda ||
     !cliente.contacto ||
-    cliente.estadoDocumentos === "FALTAN_DOCUMENTOS"
+    !cliente.contacto2
   );
 }

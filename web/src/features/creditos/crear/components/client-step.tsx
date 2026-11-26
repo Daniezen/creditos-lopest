@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type { ClienteSelectorOption } from "@/features/clientes/types";
 
 import { ClientAutocomplete } from "./client-autocomplete";
@@ -39,16 +41,16 @@ export function ClientStep({
   return (
     <>
       <section className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center">
-            <h3 className="text-lg font-semibold text-slate-950">
+        <div className={surfaceRecipes.card}>
+          <div className="flex flex-col justify-between gap-4 border-b border-[var(--color-border-subtle)] pb-5 sm:flex-row sm:items-center">
+            <h3 className="text-base font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
               Seleccionar cliente
             </h3>
 
             <button
               type="button"
               onClick={() => setQuickCreateOpen(true)}
-              className="w-fit rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+              className={actionRecipes.primary}
             >
               Crear cliente rápido
             </button>

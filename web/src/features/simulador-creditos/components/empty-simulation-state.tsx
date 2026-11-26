@@ -7,16 +7,16 @@ import { Calculator } from "lucide-react";
  */
 export function EmptySimulationState() {
   return (
-    <section className="rounded-[2rem] border border-dashed border-violet-200 bg-white/90 p-8 text-center shadow-sm shadow-violet-100/40">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
-        <Calculator className="h-7 w-7" />
+    <section className="rounded-2xl border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/80 p-8 text-center shadow-[var(--ds-shadow-surface)]">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]">
+        <Calculator className="h-5 w-5" />
       </div>
 
-      <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-950">
+      <h3 className="mt-3 text-base font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
         Simulación pendiente
       </h3>
 
-      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+      <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
         Ingresa las condiciones del crédito para visualizar el resumen y el cronograma proyectado.
       </p>
     </section>

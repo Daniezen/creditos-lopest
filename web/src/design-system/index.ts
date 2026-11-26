@@ -10,3 +10,4 @@ export * from "./recipes/navigation";
 export * from "./recipes/surfaces";
 export * from "./recipes/status";
 export * from "./recipes/versions";
+export * from "./recipes/overlays";

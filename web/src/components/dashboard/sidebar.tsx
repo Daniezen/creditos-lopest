@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import { CreditCard, UserPlus, X } from "lucide-react";
 
 import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { navigationRecipes } from "@/design-system/recipes/navigation";
 import { dashboardNavigation } from "@/config/navigation";
 import lopestLogo from "@/assets/lopest-logo.png";
 
@@ -44,11 +46,11 @@ export function DashboardSidebar({
     <aside
       className={[
         styles.sidebar,
-        "h-screen shrink-0 border-r border-slate-200 bg-white",
+        "h-screen shrink-0 border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]",
         mode === "desktop" ? "sticky top-0 flex flex-col" : "flex h-[100dvh] flex-col",
       ].join(" ")}
     >
-      <div className={[styles.brand, "relative border-b border-slate-200"].join(" ")}>
+      <div className={[styles.brand, "relative border-b border-[var(--color-border-subtle)]"].join(" ")}>
         <Link
           href="/creditos"
           className="flex min-w-0 items-center gap-3 pr-10"
@@ -65,10 +67,10 @@ export function DashboardSidebar({
           />
 
           <div className="min-w-0">
-            <p className="truncate text-lg font-semibold tracking-tight text-slate-950">
+            <p className="truncate text-lg font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
               Lopest
             </p>
-            <p className="truncate text-xs font-medium uppercase tracking-[0.14em] text-violet-700">
+            <p className={`truncate ${dataDisplayRecipes.eyebrow}`}>
               Créditos
             </p>
           </div>
@@ -78,7 +80,7 @@ export function DashboardSidebar({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition hover:bg-violet-50 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30"
+            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-selection)] hover:text-[var(--color-selection-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-soft)]"
             aria-label="Cerrar menú de navegación"
           >
             <X className="h-4 w-4" />
@@ -86,7 +88,7 @@ export function DashboardSidebar({
         ) : null}
       </div>
 
-      <section className={[styles.createSection, "border-b border-slate-200"].join(" ")}>
+      <section className={[styles.createSection, "border-b border-[var(--color-border-subtle)]"].join(" ")}>
         <p className={styles.sectionLabel}>Crear</p>
         <div className={styles.quickActionGrid}>
           <QuickAction
@@ -128,18 +130,18 @@ export function DashboardSidebar({
                 onClick={onNavigate}
                 className={[
                   styles.navItem,
-                  "group flex items-center gap-3 rounded-xl px-3 text-sm font-medium transition",
+                  navigationRecipes.item,
                   isActive
-                    ? "bg-violet-100/75 text-violet-950"
-                    : "text-slate-700 hover:bg-violet-50/80 hover:text-violet-900",
+                    ? navigationRecipes.itemActive
+                    : navigationRecipes.itemIdle,
                 ].join(" ")}
               >
                 <span
                   className={[
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition",
+                    navigationRecipes.itemIcon,
                     isActive
-                      ? "bg-white/80 text-violet-700"
-                      : "text-slate-500 group-hover:text-violet-700",
+                      ? navigationRecipes.itemIconActive
+                      : navigationRecipes.itemIconIdle,
                   ].join(" ")}
                 >
                   <Icon className="h-[1.125rem] w-[1.125rem]" />
@@ -151,7 +153,7 @@ export function DashboardSidebar({
         </div>
       </nav>
 
-      <div className={[styles.logout, "border-t border-slate-200"].join(" ")}>
+      <div className={[styles.logout, "border-t border-[var(--color-border-subtle)]"].join(" ")}>
         <LogoutButton />
         <div className={styles.version}>
           <VersionFooterLink version={version} onNavigate={onNavigate} />

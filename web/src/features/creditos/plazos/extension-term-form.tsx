@@ -29,7 +29,7 @@ export function ExtensionTermForm({ creditoId, creditoVersion, reversibleSnapsho
           <button type="submit" disabled={reversing} className={actionRecipes.destructive}>{reversing ? "Revirtiendo..." : "Revertir última extensión"}</button>
         </form>
       ) : null}
-      {feedback ? <p role="status" className={success ? "text-sm text-emerald-700" : "text-sm text-red-700"}>{feedback}</p> : null}
+      {feedback ? <p role="status" className={success ? "text-sm text-[var(--color-success)]" : "text-sm text-[var(--color-danger)]"}>{feedback}</p> : null}
     </div>
   );
 }

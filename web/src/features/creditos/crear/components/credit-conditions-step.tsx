@@ -9,6 +9,7 @@ import type {
   SimulatorFormState,
 } from "@/features/simulador-creditos/types";
 
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { CreditSummaryCompact } from "./credit-summary-compact";
 
 interface CreditConditionsStepProps {
@@ -27,7 +28,7 @@ export function CreditConditionsStep({
 }: CreditConditionsStepProps) {
   return (
     <section className="grid min-w-0 gap-6 min-[1180px]:grid-cols-[340px_minmax(0,1fr)]">
-      <div className="mx-auto w-full max-w-[460px] min-w-0 min-[1180px]:mx-0 min-[1180px]:max-w-none min-[1180px]:sticky min-[1180px]:top-[118px] min-[1180px]:h-fit">
+      <div className="mx-auto w-full max-w-[460px] min-w-0 min-[1180px]:mx-0 min-[1180px]:max-w-none min-[1180px]:sticky min-[1180px]:top-[calc(var(--layout-topbar-height)+var(--ds-space-6))] min-[1180px]:h-fit">
         <SimulatorForm form={form} onChange={onChange} variant="panel" />
       </div>
 
@@ -35,10 +36,10 @@ export function CreditConditionsStep({
         {resultado.estado === "empty" ? <EmptySimulationState /> : null}
 
         {resultado.estado === "error" && resultado.error ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-900 shadow-sm">
-            <h3 className="font-semibold">No se pudo simular</h3>
+          <div className={surfaceRecipes.alertDanger}>
+            <h3 className="font-[var(--font-weight-heading)]">No se pudo simular</h3>
 
-            <p className="mt-2 text-sm leading-6 text-red-700">
+            <p className="mt-2 text-sm leading-6">
               {resultado.error}
             </p>
           </div>

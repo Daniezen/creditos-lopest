@@ -1,5 +1,6 @@
 "use client";
 
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { EmptySimulationState } from "./components/empty-simulation-state";
 import { SimulatorForm } from "./components/simulator-form";
 import { SimulatorSchedule } from "./components/simulator-schedule";
@@ -31,7 +32,7 @@ export function SimulatorPageContent() {
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
       <section className="grid min-w-0 gap-6 min-[900px]:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="mx-auto w-full max-w-[460px] min-w-0 min-[900px]:mx-0 min-[900px]:max-w-none min-[900px]:sticky min-[900px]:top-[118px] min-[900px]:h-fit">
+        <div className="mx-auto w-full max-w-[460px] min-w-0 min-[900px]:mx-0 min-[900px]:max-w-none min-[900px]:sticky min-[900px]:top-[calc(var(--layout-topbar-height)+var(--ds-space-6))] min-[900px]:h-fit">
           <SimulatorForm form={form} onChange={updateField} variant="panel" />
         </div>
 
@@ -39,10 +40,9 @@ export function SimulatorPageContent() {
           {resultado.estado === "empty" ? <EmptySimulationState /> : null}
 
           {resultado.estado === "error" && resultado.error ? (
-            <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-900 shadow-sm">
-              <h3 className="font-semibold">No se pudo simular</h3>
-
-              <p className="mt-2 text-sm leading-6 text-red-700">
+            <div className={surfaceRecipes.alertDanger}>
+              <h3 className="font-[var(--font-weight-heading)]">No se pudo simular</h3>
+              <p className="mt-2 text-sm leading-6">
                 {resultado.error}
               </p>
             </div>

@@ -1,5 +1,8 @@
 import { CalendarDays, Landmark, ReceiptText, WalletCards } from "lucide-react";
 
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 interface AbonoHistoryItem {
@@ -30,32 +33,32 @@ export function AbonosHistory({ abonos }: AbonosHistoryProps) {
   }
 
   return (
-    <section className="mb-5 overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-sm shadow-violet-100/40">
-      <div className="border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5">
+    <section className={`mb-5 ${surfaceRecipes.dataPanel}`}>
+      <div className={surfaceRecipes.dataPanelHeader}>
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]">
             <Landmark className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">
+            <h3 className="text-lg font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
               Abonos extraordinarios a capital
             </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
               Historial de movimientos que redujeron el capital por fuera del cronograma de cuotas.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="divide-y divide-violet-100 md:hidden">
+      <div className="divide-y divide-[var(--color-border-subtle)] md:hidden">
         {abonos.map((abono) => (
           <article key={abono.id} className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-xs font-black uppercase tracking-[0.16em] text-violet-700">
+                <p className={`truncate ${dataDisplayRecipes.eyebrow}`}>
                   {abono.codigo}
                 </p>
-                <p className="mt-1 text-lg font-black text-slate-950">
+                <p className="mt-1 text-lg font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                   {formatCurrencyCOP(Number(abono.capitalPagado))}
                 </p>
               </div>
@@ -85,8 +88,8 @@ export function AbonosHistory({ abonos }: AbonosHistoryProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-[820px] w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
+        <table className="min-w-[820px] w-full divide-y divide-[var(--color-border-subtle)] text-sm">
+          <thead className="bg-[var(--color-surface-subtle)] text-xs font-[var(--font-weight-heading)] text-[var(--color-text-secondary)]">
             <tr>
               <TableHead>Fecha efectiva</TableHead>
               <TableHead>Código movimiento</TableHead>
@@ -96,18 +99,18 @@ export function AbonosHistory({ abonos }: AbonosHistoryProps) {
               <TableHead>Estado</TableHead>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--color-border-subtle)]">
             {abonos.map((abono) => (
-              <tr key={abono.id} className="transition hover:bg-violet-50/40">
+              <tr key={abono.id} className={dataDisplayRecipes.operationalRow}>
                 <TableCell>{formatDateCO(abono.fechaPago ?? abono.fechaProgramada)}</TableCell>
-                <TableCell className="font-semibold text-violet-700">{abono.codigo}</TableCell>
-                <TableCell className="text-right font-semibold text-slate-950">
+                <TableCell className="font-[var(--font-weight-heading)] text-[var(--color-selection-strong)]">{abono.codigo}</TableCell>
+                <TableCell className="text-right font-[var(--font-weight-data)] text-[var(--color-text-primary)]">
                   {formatCurrencyCOP(Number(abono.valorProgramado))}
                 </TableCell>
-                <TableCell className="text-right font-black text-slate-950">
+                <TableCell className="text-right font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                   {formatCurrencyCOP(Number(abono.capitalPagado))}
                 </TableCell>
-                <TableCell className="text-right font-semibold text-slate-950">
+                <TableCell className="text-right font-[var(--font-weight-data)] text-[var(--color-text-primary)]">
                   {formatSaldoPosterior(abono.saldoCapitalPost)}
                 </TableCell>
                 <TableCell>
@@ -133,12 +136,7 @@ function EstadoAbonoBadge({ estado }: { estado: string }) {
 
   return (
     <span
-      className={[
-        "inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-        pagado
-          ? "bg-emerald-50 text-emerald-700"
-          : "bg-slate-100 text-slate-700",
-      ].join(" ")}
+      className={pagado ? statusRecipes.vigente : statusRecipes.neutral}
     >
       {pagado ? "Aplicado" : estado.toLowerCase().replaceAll("_", " ")}
     </span>
@@ -154,12 +152,12 @@ interface MobileDatumProps {
 
 function MobileDatum({ icon: Icon, label, value, className = "" }: MobileDatumProps) {
   return (
-    <div className={`rounded-2xl border border-violet-100 bg-white/80 px-3 py-2 ${className}`}>
-      <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+    <div className={`rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)] px-3 py-2 ${className}`}>
+      <p className="flex items-center gap-1 text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
         <Icon className="h-3 w-3" />
         {label}
       </p>
-      <p className="mt-1 font-black text-slate-950">{value}</p>
+      <p className="mt-1 font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">{value}</p>
     </div>
   );
 }
@@ -170,7 +168,7 @@ interface TableCellProps {
 }
 
 function TableCell({ className = "", children }: TableCellProps) {
-  return <td className={`whitespace-nowrap px-5 py-3.5 text-slate-700 ${className}`}>{children}</td>;
+  return <td className={`${dataDisplayRecipes.tableCell} ${className}`}>{children}</td>;
 }
 
 interface TableHeadProps {
@@ -179,5 +177,6 @@ interface TableHeadProps {
 }
 
 function TableHead({ className = "", children }: TableHeadProps) {
-  return <th className={`whitespace-nowrap px-5 py-3 text-left font-black ${className}`}>{children}</th>;
+  return <th className={`${dataDisplayRecipes.tableHead} ${className}`}>{children}</th>;
 }
+

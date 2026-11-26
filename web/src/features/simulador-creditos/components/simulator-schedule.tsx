@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { CalendarDays, RotateCcw } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { statusRecipes } from "@/design-system/recipes/status";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 interface SimulatorScheduleRow {
@@ -49,20 +53,20 @@ export function SimulatorSchedule({
   onReset,
 }: SimulatorScheduleProps) {
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-violet-100 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-col justify-between gap-3 border-b border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-5 sm:flex-row sm:items-center">
+    <section className={surfaceRecipes.dataPanel}>
+      <div className={`${surfaceRecipes.dataPanelHeader} flex flex-col justify-between gap-3 sm:flex-row sm:items-center`}>
         <div>
-          <h3 className="text-xl font-bold tracking-tight text-slate-950">
+          <h3 className="text-lg font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
             Cuotas
           </h3>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             Proyección de pagos según las condiciones ingresadas.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm">
+          <span className={statusRecipes.neutral}>
             <CalendarDays className="h-4 w-4" />
             {cronograma.length} cuota(s)
           </span>
@@ -71,7 +75,7 @@ export function SimulatorSchedule({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 py-1 text-sm font-bold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+              className={actionRecipes.tertiaryPill}
             >
               <RotateCcw className="h-4 w-4" />
               Reiniciar
@@ -90,8 +94,8 @@ export function SimulatorSchedule({
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-[720px] w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-violet-50/45 text-xs uppercase tracking-wide text-slate-500">
+        <table className="min-w-[720px] w-full divide-y divide-[var(--color-border-subtle)] text-sm">
+          <thead className="bg-[var(--color-surface-subtle)] text-xs font-[var(--font-weight-heading)] text-[var(--color-text-secondary)]">
             <tr>
               <TableHead>N°</TableHead>
               <TableHead>Fecha programada</TableHead>
@@ -102,31 +106,31 @@ export function SimulatorSchedule({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--color-border-subtle)]">
             {cronograma.map((cuota) => (
               <tr
                 key={`${cuota.numeroCuota}-${cuota.fechaProgramada.toISOString()}`}
-                className="transition hover:bg-violet-50/45"
+                className={dataDisplayRecipes.operationalRow}
               >
-                <TableCell className="font-semibold text-slate-950">
+                <TableCell className="font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                   {cuota.numeroCuota}
                 </TableCell>
 
                 <TableCell>{formatDateCO(cuota.fechaProgramada)}</TableCell>
 
-                <TableCell className="text-right">
+                <TableCell className="text-right font-[var(--font-weight-data)]">
                   {formatCurrencyCOP(cuota.capitalProgramado)}
                 </TableCell>
 
-                <TableCell className="text-right">
+                <TableCell className="text-right font-[var(--font-weight-data)]">
                   {formatCurrencyCOP(cuota.interesProgramado)}
                 </TableCell>
 
-                <TableCell className="text-right font-bold text-slate-950">
+                <TableCell className="text-right font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                   {formatCurrencyCOP(cuota.valorCuota)}
                 </TableCell>
 
-                <TableCell className="text-right">
+                <TableCell className="text-right font-[var(--font-weight-data)]">
                   {formatCurrencyCOP(cuota.saldoCapitalPost)}
                 </TableCell>
               </tr>
@@ -152,30 +156,30 @@ interface QuotaCardProps {
  */
 function QuotaCard({ cuota }: QuotaCardProps) {
   return (
-    <article className="rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm shadow-violet-100/30">
+    <article className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)] px-4 py-3 shadow-[var(--ds-shadow-surface)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+          <p className={dataDisplayRecipes.eyebrow}>
             Cuota {cuota.numeroCuota}
           </p>
 
-          <p className="mt-1 text-sm font-semibold text-slate-600">
+          <p className="mt-1 text-sm font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
             {formatDateCO(cuota.fechaProgramada)}
           </p>
         </div>
 
         <div className="text-right">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
             Valor
           </p>
 
-          <p className="mt-1 text-lg font-black tracking-tight text-slate-950">
+          <p className="mt-1 text-lg font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
             {formatCurrencyCOP(cuota.valorCuota)}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-violet-50 pt-3">
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--color-border-subtle)] pt-3">
         <MiniMetric
           label="Capital"
           value={formatCurrencyCOP(cuota.capitalProgramado)}
@@ -201,11 +205,11 @@ interface MiniMetricProps {
 function MiniMetric({ label, value }: MiniMetricProps) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+      <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
         {label}
       </p>
 
-      <p className="mt-1 truncate text-xs font-bold text-slate-700">
+      <p className="mt-1 truncate text-xs font-[var(--font-weight-data-emphasis)] text-[var(--color-text-primary)]">
         {value}
       </p>
     </div>
@@ -219,7 +223,7 @@ interface TableCellProps {
 
 function TableCell({ className = "", children }: TableCellProps) {
   return (
-    <td className={`whitespace-nowrap px-5 py-3.5 text-slate-700 ${className}`}>
+    <td className={`${dataDisplayRecipes.tableCell} ${className}`}>
       {children}
     </td>
   );
@@ -233,9 +237,10 @@ interface TableHeadProps {
 function TableHead({ className = "", children }: TableHeadProps) {
   return (
     <th
-      className={`whitespace-nowrap px-5 py-3 text-left font-black ${className}`}
+      className={`${dataDisplayRecipes.tableHead} ${className}`}
     >
       {children}
     </th>
   );
 }
+
