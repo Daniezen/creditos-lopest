@@ -29,6 +29,7 @@ import {
   type ReglaAvisoId,
 } from "@/features/casa-negocio/domain";
 import type { CasaNegocioMes, CodigoAviso, GrupoCuenta, ReglaAviso } from "@/features/casa-negocio/types";
+import { logEvent } from "@/server/observability/log";
 
 /** Notice of spec §5 as the tabs draw it (`Notice` component levels). */
 export interface AvisoVista {
@@ -253,6 +254,6 @@ export function fallaDeAccion(
     const campo = (error as { field?: string }).field;
     return campo ? { ok: false, mensaje: (error as Error).message, campo } : { ok: false, mensaje: (error as Error).message };
   }
-  console.error("[casa-negocio] acción falló", error);
+  logEvent("error", "casa_negocio.accion_fallida", {}, error);
   return { ok: false, mensaje: "No se pudo guardar. Intenta de nuevo en un momento." };
 }

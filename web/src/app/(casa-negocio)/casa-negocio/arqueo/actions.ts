@@ -7,7 +7,8 @@ import { CasaNegocioPermisoError, CasaNegocioReglaError } from "@/server/casa-ne
 import { fallaDeAccion, type ResultadoAccion } from "@/server/casa-negocio/vista-arqueo";
 import { InputValidationError } from "@/server/validation/input";
 
-import { CASA_NEGOCIO_HREF } from "@/components/casa-negocio/shell/rail-items";
+/** The whole module re-reads: balances and the month line change with this. */
+const MODULO = "/casa-negocio";
 
 const CONOCIDOS = [CasaNegocioPermisoError, CasaNegocioReglaError, InputValidationError];
 
@@ -22,7 +23,7 @@ export async function guardarArqueoAction(input: {
 }): Promise<ResultadoAccion<ResultadoArqueo>> {
   try {
     const datos = await guardarArqueo(input);
-    revalidatePath(CASA_NEGOCIO_HREF, "layout");
+    revalidatePath(MODULO, "layout");
     const cuadran = datos.detalles.filter((d) => d.diferencia === 0).length;
     return {
       ok: true,

@@ -8,7 +8,8 @@ import { fallaDeAccion, type ResultadoAccion } from "@/server/casa-negocio/vista
 import { ConcurrentModificationError } from "@/server/optimistic-lock";
 import { InputValidationError } from "@/server/validation/input";
 
-import { CASA_NEGOCIO_HREF } from "@/components/casa-negocio/shell/rail-items";
+/** The whole module re-reads: balances and the month line change with this. */
+const MODULO = "/casa-negocio";
 
 const CONOCIDOS = [CasaNegocioPermisoError, CasaNegocioReglaError, InputValidationError, ConcurrentModificationError];
 
@@ -24,7 +25,7 @@ export async function pasarCierreAlAhorroAction(input: {
 }): Promise<ResultadoAccion<ResultadoCierre>> {
   try {
     const datos = await pasarCierreAlAhorro(input);
-    revalidatePath(CASA_NEGOCIO_HREF, "layout");
+    revalidatePath(MODULO, "layout");
     return {
       ok: true,
       mensaje: datos.repetido ? "Este cierre ya estaba en el ahorro." : "Listo, pasó al ahorro.",
