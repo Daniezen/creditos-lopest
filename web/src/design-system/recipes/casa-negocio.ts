@@ -463,7 +463,7 @@ export const cnResumenRecipes = {
   tooltipNote: "mt-1 opacity-75",
   monthsHead: "flex flex-wrap items-center justify-between gap-3",
   range: "inline-flex rounded-full bg-[var(--cn-color-track)] p-0.75",
-  rangeOption: `rounded-full px-3 py-1 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] no-underline aria-[current=true]:bg-[var(--cn-color-surface)] aria-[current=true]:text-[var(--cn-color-text)] ${focus}`,
+  rangeOption: `inline-flex min-h-11 items-center rounded-full px-3.5 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] no-underline aria-[current=true]:bg-[var(--cn-color-surface)] aria-[current=true]:text-[var(--cn-color-text)] ${focus}`,
   monthsTrack: `overflow-x-auto pb-1.5 motion-safe:scroll-smooth max-md:-mx-4 max-md:px-4 ${focus}`,
   monthsList: "m-0 flex w-max list-none gap-3 p-0",
   /* Base box + one of the two grounds, never both (Tailwind picks by CSS order, not class order). */

@@ -2,17 +2,14 @@
 
 import { useOptimistic, useState } from "react";
 
-import {
-  crearGastoAction,
-  editarConfiguracionAction,
-  editarGastoAction,
-} from "@/app/(casa-negocio)/casa-negocio/configuracion/actions";
+import { crearGastoAction, editarGastoAction } from "@/app/(casa-negocio)/casa-negocio/configuracion/actions";
 import { formatMoney } from "@/components/casa-negocio/shared/format";
 import { cnConfigRecipes as r } from "@/design-system/recipes/casa-negocio-configuracion";
 import type { ClaseGasto } from "@/features/casa-negocio/types";
 import type { GastoConfig, VistaConfiguracion } from "@/server/casa-negocio/vista-configuracion";
 
 import { Campo, Editor, texto } from "./editor";
+import { MetaInline } from "./meta";
 import { MESES, montoEntrada, subtituloGasto } from "./texto";
 import { useAccion } from "./use-accion";
 
@@ -76,10 +73,10 @@ export function Gastos({
         <h2 id="cn-config-gastos" className={r.sectionTitle}>
           Gastos de la casa
         </h2>
-        <MetaCasa configuracion={configuracion} puedeConfigurar={puedeConfigurar} />
+        <MetaInline campo="metaAsignacionCasa" etiqueta="Meta mensual para la casa" configuracion={configuracion} puedeConfigurar={puedeConfigurar} />
       </div>
       {mover.error ? (
-        <p role="alert" className={r.formError}>
+        <p role="alert" tabIndex={-1} className={r.formError}>
           {mover.error}
         </p>
       ) : null}
@@ -157,57 +154,6 @@ function Fila({
   );
 }
 
-/** Monthly goal for the house, edited in place: saved on blur or Enter. */
-function MetaCasa({ configuracion, puedeConfigurar }: { configuracion: VistaConfiguracion["configuracion"]; puedeConfigurar: boolean }) {
-  const inicial = configuracion.metaAsignacionCasa === null ? "" : formatMoney(configuracion.metaAsignacionCasa);
-  const [valor, setValor] = useState(inicial);
-  const [base, setBase] = useState(inicial);
-  const accion = useAccion();
-  // Fresh server data (after any save or a newer version) replaces the draft.
-  if (base !== inicial) {
-    setBase(inicial);
-    setValor(inicial);
-  }
-
-  const guardar = () => {
-    if (valor.trim() === inicial.trim()) return;
-    accion.ejecutar(() =>
-      editarConfiguracionAction({
-        version: configuracion.version,
-        metaAsignacionCasa: valor,
-        metaAhorro: montoEntrada(configuracion.metaAhorro),
-        cuentaAhorroId: configuracion.cuentaAhorroId ?? "",
-      }),
-    );
-  };
-
-  return (
-    <label className={r.metaLabel}>
-      Meta mensual para la casa
-      <input
-        className={r.metaInput}
-        inputMode="decimal"
-        value={valor}
-        placeholder="$ 0"
-        readOnly={!puedeConfigurar}
-        aria-invalid={accion.error ? true : undefined}
-        aria-busy={accion.pendiente || undefined}
-        onChange={(e) => setValor(e.target.value)}
-        onBlur={guardar}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-          if (e.key === "Escape") setValor(inicial);
-        }}
-      />
-      {accion.error ? (
-        <span role="alert" className={r.inlineError}>
-          {accion.error}
-        </span>
-      ) : null}
-    </label>
-  );
-}
-
 function EditorGasto({ edicion, onCerrar }: { edicion: Edicion; onCerrar: () => void }) {
   const accion = useAccion();
   const gasto = edicion?.modo === "editar" ? edicion.gasto : null;
@@ -235,6 +181,7 @@ function EditorGasto({ edicion, onCerrar }: { edicion: Edicion; onCerrar: () => 
   return (
     <Editor
       abierto={edicion !== null}
+      error={accion.error}
       titulo={gasto ? gasto.nombre : clase === "FIJO" ? "Nuevo gasto fijo" : "Nuevo sobre"}
       onCerrar={onCerrar}
       onEnviar={enviar}
@@ -309,7 +256,7 @@ function EditorGasto({ edicion, onCerrar }: { edicion: Edicion; onCerrar: () => 
         ) : null}
       </div>
       {accion.error ? (
-        <p role="alert" className={r.formError}>
+        <p role="alert" tabIndex={-1} className={r.formError}>
           {accion.error}
         </p>
       ) : null}

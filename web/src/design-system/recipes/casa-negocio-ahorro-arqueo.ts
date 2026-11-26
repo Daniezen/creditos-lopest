@@ -37,7 +37,7 @@ export const cnAhorroRecipes = {
   closingFigure: "mt-2 text-[length:var(--text-cn-figure-cierre)] font-[var(--font-weight-figure)] leading-none tabular-nums max-md:text-[length:var(--text-cn-figure-ring)]",
   closingRoute: "mt-1.5 flex flex-wrap items-center gap-2.5 text-sm text-[var(--cn-color-on-ink-soft)]",
   closingArrow: "size-4.5 flex-none",
-  closingSelect: `min-h-9 rounded-[var(--ds-radius-sm)] border border-[var(--cn-color-ink-raised)] bg-[var(--cn-color-ink)] px-2 text-sm font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] ${focus}`,
+  closingSelect: `min-h-11 rounded-[var(--ds-radius-sm)] border border-[var(--cn-color-ink-raised)] bg-[var(--cn-color-ink)] px-2 text-sm font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] ${focus}`,
   closingDone: "text-sm text-[var(--cn-color-on-ink-soft)]",
   closingButton: `${bigButton} self-start bg-[var(--cn-color-ahorro-on-ink)] font-[var(--font-weight-bold)] text-[var(--cn-color-ink)] max-md:self-stretch`,
   /** Confirmation step inside the dark card. */
@@ -90,7 +90,7 @@ export const cnArqueoRecipes = {
   cardLabel: "text-xs text-[var(--cn-color-text-muted)]",
   cardSystem: cnTypeRecipes.figureMd,
   field: "flex flex-col gap-1 text-xs text-[var(--cn-color-text-muted)]",
-  input: `min-h-13 w-full rounded-[var(--ds-radius-tab)] border border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] px-3.5 text-[length:var(--text-cn-figure-input)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] read-only:cursor-default read-only:opacity-70 ${focus}`,
+  input: `min-h-13 w-full rounded-[var(--ds-radius-tab)] border border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] px-3.5 text-[length:var(--text-cn-figure-input)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
   result: "flex min-h-8 items-center gap-2.5",
   resultIcon: "inline-flex size-7 flex-none items-center justify-center rounded-full",
   resultIconTone: {

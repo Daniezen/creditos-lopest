@@ -15,7 +15,16 @@ import { GRUPOS_CUENTA, TIPOS_CUENTA } from "@/features/casa-negocio/schemas";
 import type { CuentaConfig, VistaConfiguracion } from "@/server/casa-negocio/vista-configuracion";
 
 import { Campo, Editor, texto } from "./editor";
-import { GRUPO_LABEL, TIPO_LABEL, montoEntrada, tipoCuentaTexto, tonoCuenta } from "./texto";
+import { MetaInline } from "./meta";
+import {
+  GRUPO_LABEL,
+  TIPO_LABEL,
+  ahorroMarcadoPorDefecto,
+  montoEntrada,
+  saldoInicialTexto,
+  tipoCuentaTexto,
+  tonoCuenta,
+} from "./texto";
 import { useAccion } from "./use-accion";
 
 type Edicion = { modo: "nueva" } | { modo: "editar"; cuenta: CuentaConfig } | null;
@@ -25,8 +34,11 @@ const ARRANQUE = "2026-12-01";
 
 /**
  * «Cuentas»: one card per account (canvas), the dashed «+ Cuenta» card, and
- * archived accounts behind a toggle. Clicking a card opens its editor when
- * the viewer can configure; otherwise cards are plain, read-only tiles.
+ * archived accounts behind a toggle. Each card shows its opening balance and
+ * the day it was counted, which is what gets typed on 1-dic. Clicking a card
+ * opens its editor when the viewer can configure; otherwise cards are plain,
+ * read-only tiles. The savings goal sits in the heading once a savings
+ * account is chosen («Poner una meta» in Ahorro leads here).
  */
 export function Cuentas({
   cuentas,
@@ -46,9 +58,15 @@ export function Cuentas({
 
   return (
     <section aria-labelledby="cn-config-cuentas" className={r.section}>
-      <h2 id="cn-config-cuentas" className={r.sectionTitle}>
-        Cuentas
-      </h2>
+      <div className={r.sectionHead}>
+        <h2 id="cn-config-cuentas" className={r.sectionTitle}>
+          Cuentas
+        </h2>
+        {/* The goal belongs to the savings account: offered once there is one. */}
+        {configuracion.cuentaAhorroId ? (
+          <MetaInline campo="metaAhorro" etiqueta="Meta de ahorro" configuracion={configuracion} puedeConfigurar={puedeConfigurar} />
+        ) : null}
+      </div>
       <div className={r.accounts}>
         {activas.map((c) => (
           <Tarjeta key={c.id} cuenta={c} puedeConfigurar={puedeConfigurar} onAbrir={() => setEdicion({ modo: "editar", cuenta: c })} />
@@ -94,6 +112,7 @@ function Tarjeta({ cuenta, puedeConfigurar, onAbrir }: { cuenta: CuentaConfig; p
         {tipoCuentaTexto(cuenta.grupo, cuenta.tipo)}
         {cuenta.archivada ? " · archivada" : ""}
       </span>
+      <span className={r.accountOpening}>{saldoInicialTexto(cuenta.saldoInicial, cuenta.fechaSaldoInicial)}</span>
       {cuenta.esCuentaAhorro ? <span className={r.accountTag}>Cuenta de ahorro</span> : null}
     </>
   );
@@ -126,6 +145,7 @@ function EditorCuenta({
   const ocupado = guardar.pendiente || archivar.pendiente || borrar.pendiente;
   const error = guardar.error ?? archivar.error ?? borrar.error;
   const puedeSerAhorro = grupo === "CASA" && tipo === "AHORRO";
+  const marcadoPorDefecto = ahorroMarcadoPorDefecto(cuenta, grupo, tipo, configuracion.cuentaAhorroId);
 
   const enviar = (datos: FormData) => {
     const comunes = {
@@ -135,12 +155,17 @@ function EditorCuenta({
       fechaSaldoInicial: texto(datos, "fechaSaldoInicial"),
       orden: String(cuenta?.orden ?? 0),
     };
-    const quiereAhorro = datos.get("esAhorro") === "on";
+    const quiereAhorro = puedeSerAhorro && datos.get("esAhorro") === "on";
+    // The settings row as last read, for the follow-up that marks the savings account.
+    const ajustes = {
+      configVersion: configuracion.version,
+      metaAsignacionCasa: montoEntrada(configuracion.metaAsignacionCasa),
+      metaAhorro: montoEntrada(configuracion.metaAhorro),
+    };
     guardar.ejecutar(async () => {
-      const resultado = cuenta
-        ? await editarCuentaAction({ ...comunes, cuentaId: cuenta.id, version: cuenta.version })
-        : await crearCuentaAction({ ...comunes, grupo });
-      if (!resultado.ok || !cuenta) return resultado;
+      if (!cuenta) return crearCuentaAction({ ...comunes, grupo, esAhorro: String(quiereAhorro), ...ajustes });
+      const resultado = await editarCuentaAction({ ...comunes, cuentaId: cuenta.id, version: cuenta.version });
+      if (!resultado.ok) return resultado;
       // Choosing (or un-choosing) the savings account edits the settings row.
       if (quiereAhorro === cuenta.esCuentaAhorro || cuenta.archivada) return resultado;
       return editarConfiguracionAction({
@@ -153,7 +178,7 @@ function EditorCuenta({
   };
 
   return (
-    <Editor abierto={edicion !== null} titulo={cuenta ? cuenta.nombre : "Nueva cuenta"} onCerrar={onCerrar} onEnviar={enviar}>
+    <Editor abierto={edicion !== null} titulo={cuenta ? cuenta.nombre : "Nueva cuenta"} error={error} onCerrar={onCerrar} onEnviar={enviar}>
       <div className={r.fields}>
         <Campo etiqueta="Nombre" error={guardar.campos.nombre} ancho>
           {(aria) => <input name="nombre" className={r.control} defaultValue={cuenta?.nombre ?? ""} maxLength={60} required {...aria} />}
@@ -214,9 +239,16 @@ function EditorCuenta({
             />
           )}
         </Campo>
-        {cuenta && puedeSerAhorro && !cuenta.archivada ? (
+        {puedeSerAhorro && !cuenta?.archivada ? (
           <label className={`${r.check} ${r.fieldWide}`}>
-            <input type="checkbox" name="esAhorro" className={r.checkBox} defaultChecked={cuenta.esCuentaAhorro} />
+            <input
+              // Remount when the default flips (Casa·Ahorro chosen while creating).
+              key={String(marcadoPorDefecto)}
+              type="checkbox"
+              name="esAhorro"
+              className={r.checkBox}
+              defaultChecked={marcadoPorDefecto}
+            />
             Es la cuenta de ahorro
           </label>
         ) : null}
@@ -226,7 +258,7 @@ function EditorCuenta({
       </div>
 
       {error ? (
-        <p role="alert" className={r.formError}>
+        <p role="alert" tabIndex={-1} className={r.formError}>
           {error}
         </p>
       ) : null}

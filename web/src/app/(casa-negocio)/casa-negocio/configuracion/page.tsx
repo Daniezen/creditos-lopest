@@ -14,11 +14,15 @@ export const metadata: Metadata = { title: "Configuración · Casa y Negocio" };
  * re-checks that capability on the server.
  */
 export default async function ConfiguracionPage({ searchParams }: PaginaModuloProps) {
-  const header = encabezadoModulo(await cargarVistaMes(searchParams), "configuracion");
-  const vista = await obtenerVistaConfiguracion().catch((error: unknown) => {
-    if (error instanceof CasaNegocioPermisoError) return error;
-    throw error;
-  });
+  // Both reads at once: the header's month and the settings are independent.
+  const [mes, vista] = await Promise.all([
+    cargarVistaMes(searchParams),
+    obtenerVistaConfiguracion().catch((error: unknown) => {
+      if (error instanceof CasaNegocioPermisoError) return error;
+      throw error;
+    }),
+  ]);
+  const header = encabezadoModulo(mes, "configuracion");
   if (vista instanceof CasaNegocioPermisoError) {
     return (
       <ModulePage header={{ ...header, readOnly: true }}>

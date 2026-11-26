@@ -33,12 +33,14 @@ export const cnConfigRecipes = {
   },
   accountName: "text-base font-[var(--font-weight-semibold)]",
   accountType: "text-xs text-[var(--cn-color-text-muted)]",
+  accountOpening: "text-xs tabular-nums text-[var(--cn-color-text-secondary)]",
   accountTag: "text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-ahorro-text)]",
   addCard: `min-h-24 rounded-[var(--ds-radius-panel)] border-2 border-dashed border-[var(--cn-color-border-dashed)] bg-transparent text-sm font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] cursor-pointer ${focus}`,
-  archivedToggle: `self-start rounded-[var(--ds-radius-sm)] border-0 bg-transparent px-1 text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] underline underline-offset-2 cursor-pointer ${focus}`,
+  archivedToggle: `inline-flex min-h-11 items-center self-start rounded-[var(--ds-radius-sm)] border-0 bg-transparent px-1 text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)] underline underline-offset-2 cursor-pointer ${focus}`,
 
   /* Gastos de la casa */
   metaLabel: "inline-flex flex-wrap items-center gap-2.5 text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-secondary)]",
+  metaValue: "text-[length:var(--text-cn-figure-xs)] font-[var(--font-weight-light)] tabular-nums text-[var(--cn-color-text)]",
   metaInput: `min-h-11 w-[var(--ds-cn-config-meta)] rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-figure-xs)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] read-only:bg-transparent aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
   columns: "flex flex-wrap items-start gap-4",
   column: "flex min-w-0 flex-[1_1_var(--ds-cn-config-column)] flex-col gap-2.5 rounded-[var(--ds-radius-card)] p-4 max-md:p-3",
@@ -55,12 +57,12 @@ export const cnConfigRecipes = {
   expenseName: "block text-[length:var(--text-cn-input)] font-[var(--font-weight-semibold)]",
   expenseSub: "block text-xs text-[var(--cn-color-text-muted)]",
   expenseAmount: "text-[length:var(--text-cn-input)] tabular-nums",
-  move: `inline-flex size-10 flex-none items-center justify-center rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] text-base text-[var(--cn-color-text-secondary)] cursor-pointer disabled:cursor-wait disabled:opacity-50 ${focus}`,
+  move: `inline-flex size-11 flex-none items-center justify-center rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-paper)] text-base text-[var(--cn-color-text-secondary)] cursor-pointer disabled:cursor-wait disabled:opacity-50 ${focus}`,
 
   /* Avisos */
   list: "rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] py-1.5",
   rule: "flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-[var(--cn-color-flap)] px-5 py-3 first:border-t-transparent max-md:px-4",
-  switch: `group relative h-6.5 w-11 flex-none rounded-full border-0 p-0 bg-[var(--cn-color-border-dashed)] aria-checked:bg-[var(--cn-color-ink)] enabled:cursor-pointer disabled:cursor-default ${focus}`,
+  switch: `group relative h-6.5 w-11 flex-none rounded-full border-0 p-0 before:absolute before:inset-x-0 before:-inset-y-2.25 before:content-[''] bg-[var(--cn-color-border-dashed)] aria-checked:bg-[var(--cn-color-ink)] enabled:cursor-pointer disabled:cursor-default ${focus}`,
   switchKnob:
     "absolute top-0.75 left-[var(--ds-cn-config-switch-off)] size-5 rounded-full bg-[var(--cn-color-surface)] transition-[left] duration-[var(--ds-duration-fast)] group-aria-checked:left-[var(--ds-cn-config-switch-on)]",
   severity: "size-2.5 flex-none rounded-[var(--ds-radius-chip)]",
@@ -68,7 +70,8 @@ export const cnConfigRecipes = {
   ruleText: "flex-[1_1_20rem] text-[length:var(--text-cn-input)]",
   ruleTextOn: "text-[var(--cn-color-text)]",
   ruleTextOff: "text-[var(--cn-color-text-faint)]",
-  umbral: `mx-1.5 min-h-8.5 w-[var(--ds-cn-config-umbral)] rounded-[var(--ds-radius-sm)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-2 text-center text-[length:var(--text-cn-input)] font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] read-only:bg-transparent aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
+  umbral: `mx-1.5 min-h-8.5 max-md:min-h-11 w-[var(--ds-cn-config-umbral)] rounded-[var(--ds-radius-sm)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-2 text-center text-[length:var(--text-cn-input)] font-[var(--font-weight-regular)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] read-only:bg-transparent aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
+  umbralValue: "mx-1.5 font-[var(--font-weight-semibold)] tabular-nums",
   ruleWhere: "text-xs text-[var(--cn-color-text-muted)]",
   inlineError: "basis-full text-xs text-[var(--cn-color-problem)]",
 

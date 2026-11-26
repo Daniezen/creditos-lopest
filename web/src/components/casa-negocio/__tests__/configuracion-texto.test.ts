@@ -4,8 +4,11 @@ import { CODIGOS_AVISO } from "@/features/casa-negocio/schemas";
 
 import {
   AVISOS,
+  ahorroMarcadoPorDefecto,
   alternarCapacidad,
+  diaConAnio,
   quitariaUltimoConfigurador,
+  saldoInicialTexto,
   subtituloGasto,
   textoAviso,
   tipoCuentaTexto,
@@ -68,5 +71,26 @@ describe("quién puede qué", () => {
     expect(quitariaUltimoConfigurador(personas, "yo", ["VER"])).toBe(true);
     expect(quitariaUltimoConfigurador(personas, "madre", [])).toBe(false);
     expect(quitariaUltimoConfigurador([...personas, { userId: "padre", activo: true, capacidades: ["CONFIGURAR"] as const }], "yo", [])).toBe(false);
+  });
+});
+
+describe("tarjeta de cuenta: saldo inicial y su fecha", () => {
+  it("«Inicial $ 1.320.000 · 1 dic 2026»", () => {
+    expect(diaConAnio("2026-12-01")).toBe("1 dic 2026");
+    expect(saldoInicialTexto(1_320_000, "2026-12-01")).toBe("Inicial $ 1.320.000 · 1 dic 2026");
+    expect(saldoInicialTexto(0, "2027-01-15")).toBe("Inicial $ 0 · 15 ene 2027");
+  });
+});
+
+describe("«Es la cuenta de ahorro» marcada por defecto", () => {
+  it("una cuenta nueva de ahorro de la casa, si todavía no hay cuenta de ahorro", () => {
+    expect(ahorroMarcadoPorDefecto(null, "CASA", "AHORRO", null)).toBe(true);
+    expect(ahorroMarcadoPorDefecto(null, "CASA", "AHORRO", "nu")).toBe(false);
+    expect(ahorroMarcadoPorDefecto(null, "CASA", "BANCO", null)).toBe(false);
+  });
+
+  it("al editar, lo que ya es", () => {
+    expect(ahorroMarcadoPorDefecto({ esCuentaAhorro: true }, "CASA", "AHORRO", "nu")).toBe(true);
+    expect(ahorroMarcadoPorDefecto({ esCuentaAhorro: false }, "CASA", "AHORRO", null)).toBe(false);
   });
 });

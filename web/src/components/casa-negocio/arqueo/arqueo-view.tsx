@@ -4,7 +4,7 @@ import { useId, useMemo, useState, useTransition } from "react";
 
 import { cnArqueoRecipes } from "@/design-system/recipes/casa-negocio-ahorro-arqueo";
 import { arquear, type ArqueoCuenta, type ResultadoArqueo } from "@/features/casa-negocio/domain";
-import { leerContado, type ResultadoAccion, type VistaArqueo } from "@/server/casa-negocio/vista-arqueo";
+import { diaCorto, leerContado, type ResultadoAccion, type VistaArqueo } from "@/server/casa-negocio/vista-arqueo";
 
 import { CASA_NEGOCIO_HREF } from "../shell/rail-items";
 import { EstadoTab } from "../ahorro/estado";
@@ -33,12 +33,13 @@ function nuevaClave(): string {
 /**
  * Arqueo tab (`Arqueo.dc.html`). «N de M cuadran» with one dot per account,
  * the cards grouped Negocio / Casa with «Lopest dice», «Contaste» and the
- * live result, the previous arqueos and «Guardar arqueo».
+ * live result, the previous arqueos and «Guardar arqueo». Without
+ * `casa_negocio.contar` there is no field at all: the card shows what Lopest
+ * says and when it was last counted, so nothing looks editable.
  *
  * The result is recomputed on every keystroke with the domain engine
  * (`arquear`); only the accounts with something typed are sent, and the
- * server recomputes «Lopest dice» itself when saving. Without
- * `casa_negocio.contar` the fields are read-only and there is no save.
+ * server recomputes «Lopest dice» itself when saving.
  *
  * The operation key is generated once per arqueo being typed and renewed
  * after a successful save, so a double click saves one arqueo.
@@ -97,19 +98,22 @@ export function ArqueoView({ vista, guardar }: { vista: VistaArqueo; guardar?: G
 
   return (
     <>
-      <div className={cnArqueoRecipes.summary}>
-        <div className={cnArqueoRecipes.summaryFigure} role="status" aria-live="polite" aria-atomic="true">
-          <span className={cnArqueoRecipes.summaryCount}>
-            {global.cuadran} de {global.total}
-          </span>
-          <span className={cnArqueoRecipes.summaryLabel}>{global.cuadran === 1 ? "cuadra" : "cuadran"}</span>
+      {/* Live tally only for whoever counts: a viewer would read a false «0 de 5 cuadran». */}
+      {vista.puedeContar ? (
+        <div className={cnArqueoRecipes.summary}>
+          <div className={cnArqueoRecipes.summaryFigure} role="status" aria-live="polite" aria-atomic="true">
+            <span className={cnArqueoRecipes.summaryCount}>
+              {global.cuadran} de {global.total}
+            </span>
+            <span className={cnArqueoRecipes.summaryLabel}>{global.cuadran === 1 ? "cuadra" : "cuadran"}</span>
+          </div>
+          <div className={cnArqueoRecipes.dots} aria-hidden="true">
+            {global.cuentas.map((c) => (
+              <span key={c.cuentaId} className={`${cnArqueoRecipes.dot} ${cnArqueoRecipes.dotTone[c.resultado]}`} />
+            ))}
+          </div>
         </div>
-        <div className={cnArqueoRecipes.dots} aria-hidden="true">
-          {global.cuentas.map((c) => (
-            <span key={c.cuentaId} className={`${cnArqueoRecipes.dot} ${cnArqueoRecipes.dotTone[c.resultado]}`} />
-          ))}
-        </div>
-      </div>
+      ) : null}
 
       {vista.avisos.length > 0 ? (
         <div className={cnArqueoRecipes.notices}>
@@ -137,6 +141,9 @@ export function ArqueoView({ vista, guardar }: { vista: VistaArqueo; guardar?: G
                 const estado = r?.resultado ?? "POR_CONTAR";
                 const inputId = `contado-${c.cuentaId}`;
                 const resultadoId = `resultado-${c.cuentaId}`;
+                const escrito = contado[c.cuentaId] ?? "";
+                // Something typed that is not an amount: say so instead of «Por contar».
+                const ilegible = escrito.trim() !== "" && leerContado(escrito) === null;
                 return (
                   <section key={c.cuentaId} aria-label={c.nombre} className={`${cnArqueoRecipes.card} ${cnArqueoRecipes.cardTone[estado]}`}>
                     <span className={cnArqueoRecipes.cardName}>{c.nombre}</span>
@@ -144,29 +151,37 @@ export function ArqueoView({ vista, guardar }: { vista: VistaArqueo; guardar?: G
                       <div className={cnArqueoRecipes.cardLabel}>Lopest dice</div>
                       <div className={cnArqueoRecipes.cardSystem}>{c.saldoTexto}</div>
                     </div>
-                    <label htmlFor={inputId} className={cnArqueoRecipes.field}>
-                      Contaste
-                      <input
-                        id={inputId}
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="off"
-                        placeholder="$ 0"
-                        value={contado[c.cuentaId] ?? ""}
-                        onChange={(e) => setContado((prev) => ({ ...prev, [c.cuentaId]: e.target.value }))}
-                        readOnly={!vista.puedeContar}
-                        disabled={pendiente}
-                        aria-describedby={resultadoId}
-                        className={cnArqueoRecipes.input}
-                      />
-                    </label>
-                    <div id={resultadoId} className={cnArqueoRecipes.result}>
-                      <span className={`${cnArqueoRecipes.resultIcon} ${cnArqueoRecipes.resultIconTone[estado]}`} aria-hidden="true">
-                        <Glyph path={GLYPH[estado]} className={cnArqueoRecipes.resultGlyph} strokeWidth={3} />
-                      </span>
-                      <span className={`${cnArqueoRecipes.resultText} ${cnArqueoRecipes.resultTextTone[estado]}`}>{r?.texto ?? "Por contar"}</span>
-                    </div>
-                    {c.ultimoConteo ? null : <span className={cnArqueoRecipes.lastCount}>Nunca contada</span>}
+                    {vista.puedeContar ? (
+                      <>
+                        <label htmlFor={inputId} className={cnArqueoRecipes.field}>
+                          Contaste
+                          <input
+                            id={inputId}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            placeholder="$ 0"
+                            value={escrito}
+                            onChange={(e) => setContado((prev) => ({ ...prev, [c.cuentaId]: e.target.value }))}
+                            disabled={pendiente}
+                            aria-invalid={ilegible || undefined}
+                            aria-describedby={resultadoId}
+                            className={cnArqueoRecipes.input}
+                          />
+                        </label>
+                        <div id={resultadoId} className={cnArqueoRecipes.result}>
+                          <span className={`${cnArqueoRecipes.resultIcon} ${cnArqueoRecipes.resultIconTone[estado]}`} aria-hidden="true">
+                            <Glyph path={GLYPH[estado]} className={cnArqueoRecipes.resultGlyph} strokeWidth={3} />
+                          </span>
+                          <span className={`${cnArqueoRecipes.resultText} ${cnArqueoRecipes.resultTextTone[estado]}`}>
+                            {ilegible ? "No se entiende el número" : (r?.texto ?? "Por contar")}
+                          </span>
+                        </div>
+                      </>
+                    ) : null}
+                    <span className={cnArqueoRecipes.lastCount}>
+                      {c.ultimoConteo ? `Contada el ${diaCorto(c.ultimoConteo)}` : "Nunca contada"}
+                    </span>
                   </section>
                 );
               })}
