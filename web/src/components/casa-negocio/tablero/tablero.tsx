@@ -1,4 +1,4 @@
-import { cnTableroRecipes as r } from "@/design-system/recipes/casa-negocio";
+import { cnStateRecipes, cnTableroRecipes as r } from "@/design-system/recipes/casa-negocio";
 
 import type {
   AccountBalance,
@@ -18,6 +18,8 @@ import { OnTheStreet } from "./on-the-street";
 import { WhereMoney } from "./where-money";
 
 export interface TableroData {
+  /** Set when nothing moved in the month: the money path shows this instead of empty bars. */
+  quietMonth?: string;
   next?: NextActionData;
   moneyPath: MoneyPathData;
   calendar: MonthCalendarData;
@@ -26,6 +28,18 @@ export interface TableroData {
   street: StreetData;
   envelopes: Envelope[];
   envelopeNearShare?: number;
+}
+
+/** «Por dónde pasó la plata» of a month without movements: the card keeps its place, quiet. */
+function QuietMonth({ text }: { text: string }) {
+  return (
+    <section aria-labelledby="cn-flujo" className={[r.card, r.path].join(" ")}>
+      <h2 id="cn-flujo" className={r.pathTitle}>
+        Por dónde pasó la plata
+      </h2>
+      <p className={cnStateRecipes.quiet}>{text}</p>
+    </section>
+  );
 }
 
 /**
@@ -38,7 +52,7 @@ export function Tablero({ data, readOnly, calendarOpenDay }: { data: TableroData
     <>
       {data.next && !readOnly ? <NextAction data={data.next} /> : null}
       <div className={r.row}>
-        <MoneyPath data={data.moneyPath} />
+        {data.quietMonth ? <QuietMonth text={data.quietMonth} /> : <MoneyPath data={data.moneyPath} />}
         <MonthCalendar data={data.calendar} readOnly={readOnly} defaultOpenDay={calendarOpenDay} />
       </div>
       <MonthEquations rows={data.equations} />
