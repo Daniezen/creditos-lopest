@@ -72,7 +72,6 @@ describe.skipIf(!URL_PRUEBA)("Saldos iniciales del arranque contra PostgreSQL", 
     process.env.TZ = "UTC";
 
     for (const sql of [
-      `DELETE FROM "cn_avisos_enviados"`,
       `DELETE FROM "cn_arqueo_detalles"`,
       `DELETE FROM "cn_arqueos"`,
       `DELETE FROM "cn_asignaciones_cuenta"`,

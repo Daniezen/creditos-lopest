@@ -14,14 +14,13 @@ copia desechable. Todo lo que sigue se ejecuta en el VPS, como `deploy`, desde `
 ### 0.1 Migraciones pendientes contra producción
 
 Producción tiene aplicadas las 17 migraciones hasta `20260902183700_update_overdue_dias_atraso`, todas con
-`finished_at`, ninguna revertida. Faltan tres, que `prisma migrate deploy` aplica en este orden (orden
+`finished_at`, ninguna revertida. Faltan dos, que `prisma migrate deploy` aplica en este orden (orden
 lexicográfico del nombre de carpeta, que coincide con el cronológico):
 
 | Migración | Qué hace | Riesgo sobre datos reales |
 |---|---|---|
 | `20261125120000_audit_append_only_v1` | Triggers que hacen inmutables `audit_logs`, `abono_snapshots` y `extension_plazo_snapshots`; `REVOKE` de UPDATE/DELETE/TRUNCATE a `lopest_app_user` (conserva DELETE en `abono_snapshots` y UPDATE en las 3 columnas de reversión) | Sin cambio de datos ni reescritura. Bloqueo SHARE ROW EXCLUSIVE instantáneo en 3 tablas (1.437 / 197 / 20 filas). Se autoverifica y aborta si algo no quedó. |
 | `20261126120000_casa_negocio_v1` | 7 enums y 10 tablas `cn_*`, CHECKs, fila de configuración y las 10 reglas de aviso | Puramente aditiva. Las FK hacia `creditos`, `eventos_financieros` y `users` viven en las tablas nuevas (bloqueo instantáneo en la referida, sin escaneo). |
-| `20261127120000_casa_negocio_avisos_enviados` | Tabla `cn_avisos_enviados` (memoria de avisos ya enviados por Telegram) | Aditiva, sin FK a tablas existentes. |
 
 Comprobado en producción (solo lectura): no existe ningún objeto `cn_*`, enum `Cn*`, función `lopest_*` ni
 trigger que choque; las tablas son de `lopest_app_user` y todos sus privilegios los otorgó el propio dueño,
@@ -30,7 +29,7 @@ así que el `REVOKE` surte efecto y la verificación final de la migración no a
 **Ensayo sobre copia real** (pg_dump de producción restaurado con dueños en un contenedor desechable,
 `migrate deploy` conectado como `lopest_app_user`, igual que el servicio `migrate`; la copia se borró después):
 
-- Las tres migraciones aplican en ~5 s; `prisma migrate diff` contra `schema.prisma` solo muestra la deriva
+- Las migraciones pendientes aplican en ~5 s; `prisma migrate diff` contra `schema.prisma` solo muestra la deriva
   previa y conocida de `abono_snapshots.eventosDespues DEFAULT`.
 - Escrituras normales de la app siguen funcionando: INSERT de auditoría, UPDATE de eventos, reversión de
   extensión de plazo (marca `revertidoEn`), reversión de abono (DELETE del evento → la foto cae en cascada).
@@ -46,7 +45,6 @@ así que el `REVOKE` surte efecto y la verificación final de la migración no a
    Bogotá es el **30-nov a las 19:00**. Un saldo inicial o un gasto del 1-dic habría caído en noviembre.
    Ahora los esquemas del módulo guardan la medianoche de Bogotá (`D 05:00Z`) en cualquier zona; prueba
    `fechas-bogota.test.ts`. No se cambió la `TZ` del contenedor para no mover el comportamiento de Créditos.
-2. **Avisos por Telegram**: endpoint, migración y flujo n8n nuevos (sección 4).
 
 ## 1. Antes de empezar
 
@@ -94,10 +92,10 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml build migrate
 docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm migrate
 ```
 
-Debe terminar en «All migrations have been successfully applied» con las tres de §0.1. Comprobar:
+Debe terminar en «All migrations have been successfully applied» con las dos de §0.1. Comprobar:
 
 ```bash
-docker exec lopest_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "SELECT migration_name, finished_at IS NOT NULL FROM _prisma_migrations ORDER BY 1 DESC LIMIT 3"'
+docker exec lopest_db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "SELECT migration_name, finished_at IS NOT NULL FROM _prisma_migrations ORDER BY 1 DESC LIMIT 2"'
 ```
 
 Si falla a medias: no reintentar a ciegas. `prisma migrate deploy` deja la migración marcada como fallida;
@@ -146,7 +144,6 @@ siguiente comprobar `cat /home/deploy/backups/lopest/ESTADO`.
 APP=https://lopest.13-140-148-38.sslip.io
 curl -fsS "$APP/api/salud"; echo                          # "estado":"ok" (o "degradado" si un cron va tarde)
 curl -sI "$APP/" | grep -iE 'strict-transport|content-security-policy|x-frame|x-content-type|referrer-policy|permissions-policy'
-curl -s -o /dev/null -w '%{http_code}\n' -X POST "$APP/api/cron/casa-negocio-avisos"   # 401: cerrado sin secreto
 for r in "" /resumen /casa /negocio /ahorro /arqueo /configuracion; do
   curl -s -o /dev/null -w "%{http_code} /casa-negocio$r\n" "$APP/casa-negocio$r"     # sin sesión: redirección (3xx) al login, nunca 500
 done
@@ -185,43 +182,14 @@ lo que hay en cada cuenta **al empezar el 1-dic** (lo mismo que quedó al cerrar
 Probado de punta a punta en una base desechable con el mismo flujo del formulario y el contenedor en UTC
 (`saldos-iniciales.integration.test.ts`): guardar, ver, corregir, formulario viejo rechazado, madre rechazada.
 
-## 4. Avisos por Telegram (cuando exista el bot)
+## 4. Avisos por Telegram (pendiente, fuera de este lanzamiento)
 
-Queda **apagado** hasta que el usuario dé el token del bot y el chat. Sin secreto el endpoint responde 401.
-
-**Cómo funciona.** n8n llama una vez al día (7:30 Bogotá) a `POST /api/cron/casa-negocio-avisos`. El endpoint
-evalúa los avisos de hoy con el mismo motor de las pestañas (`evaluarMes`, respeta encendido/apagado y
-umbrales de Configuración) y devuelve **solo los nuevos** desde la corrida anterior, con el texto listo.
-`cn_avisos_enviados` recuerda los activos: un aviso que sigue igual no se repite; si se resuelve y vuelve,
-sale otra vez; uno de «créditos sin pagos» sale de nuevo solo si entra un crédito a la lista. Un mismo
-hecho en otro mes es otro aviso (los lentos, como «cuenta sin contar», recuerdan una vez al mes). La regla 7
-(«un movimiento dejaría la cuenta sin saldo») solo vive en el panel Anotar y nunca se envía. Antes del
-1-dic responde `sin-modulo` y no registra nada.
-
-Ensayado sobre la copia real: el 30-nov no envía; el 1-dic enviaría «Si se gasta lo que queda en los sobres,
-diciembre cierra en −$ 6.999.000» (normal ese día: aún no ha entrado el retiro del mes; se puede apagar la
-regla 3 los primeros días) y «25 créditos sin pagos hace más de 90 días · $ 7,8 M»; el 2-dic, nada. Cada
-corrida tarda menos de 1 s.
-
-Entrega **a lo sumo una vez**: la llamada que reporta también registra. Si Telegram falla después, ese aviso
-no se reintenta (sigue visible en la app) y el error llega por el workflow de errores. No ejecute el flujo a
-mano para «probar» el mismo día esperando el mismo mensaje: saldrá vacío.
-
-Activación:
-
-1. Secreto nuevo en `.env.prod` (no reutilizar el de créditos) y recrear `web`:
-   ```bash
-   cd /home/deploy/apps/lopest
-   printf 'CASA_NEGOCIO_CRON_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env.prod
-   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --force-recreate web
-   ```
-2. En n8n: importar `n8n/LOPEST - Avisos Casa y Negocio a Telegram.json`.
-3. Credencial *Header Auth* llamada «Lopest Casa y Negocio Cron»: nombre `Authorization`, valor
-   `Bearer <el secreto>` (copiarlo de `.env.prod` en el servidor, no por chat).
-4. Credencial *Telegram Bot Lopest* (la misma de los otros flujos) y en `Set - Config`: `baseUrl` =
-   `https://lopest.13-140-148-38.sslip.io`, `telegramChatId` = chat de la familia.
-5. *Settings → Error workflow* = «LOPEST - Alertas de errores a Telegram».
-6. Ejecutar una vez con *Manual Trigger* (el primer día con módulo trae todos los avisos vigentes) y activar.
+Por decisión del usuario (26-nov) no entran en el arranque. Los avisos se ven en la app, junto a lo que
+afectan. Queda para después, cuando haya bot y `chat_id`: un cron que evalúe los avisos del día con
+`evaluarMes`, respete el encendido/apagado de Configuración, envíe solo los nuevos (memoria de enviados, una
+migración aditiva) y un flujo n8n schedule → endpoint → Telegram, apagado hasta tener las credenciales. Ya
+hubo una primera versión probada en la rama `claude/cn-lanzamiento-de71d2` (commit `561867b`, revertido en
+`7b3f3af`) que se puede recuperar con `git revert 7b3f3af 99a7645`.
 
 ## 5. Volver atrás
 
@@ -237,11 +205,11 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-build 
 Restaurar la base **solo** si hubo daño en datos de Créditos (no por un fallo de Casa y Negocio, cuyas
 anotaciones se perderían): procedimiento de `docs/estado/operacion.md` §9.6 con el `.dump` anotado en §2.2.
 Si solo se quieren quitar los objetos del módulo, usar los bloques «Manual rollback» de las migraciones en
-orden inverso (avisos_enviados → casa_negocio_v1 → audit_append_only_v1).
+orden inverso (casa_negocio_v1 → audit_append_only_v1).
 
 ## 6. Lo que solo pone el usuario
 
-- Token del bot de Telegram (BotFather) y `chat_id` del chat familiar (§4).
+- Más adelante: token del bot de Telegram y `chat_id` del chat familiar (§4).
 - Los saldos reales de cada cuenta el 1-dic (§3, lo hace el papá).
 - Revisión en el navegador con los tres usuarios (§2.7) y del Tablero el primer día.
 - Confirmar los montos y días de los 14 gastos sembrados desde el Excel (Configuración → Gastos).
@@ -252,8 +220,7 @@ orden inverso (avisos_enviados → casa_negocio_v1 → audit_append_only_v1).
   alcance de Créditos: ADMIN ve todo, el resto solo sus créditos. En producción el papá es `OPERADOR` (dueño
   de 533 créditos) y la mamá `OPERADOR` (dueña de 40); Daniel es ADMIN. Así, la ganancia del negocio que ve
   el papá **no incluye** los intereses de los créditos de la mamá, y la de Daniel sí. Los saldos de cuentas
-  sí son iguales para todos. Decidir antes del 1-dic si el papá debe ser ADMIN. Los avisos por Telegram
-  usan el alcance completo.
+  sí son iguales para todos. Decidir antes del 1-dic si el papá debe ser ADMIN.
 - `vista-resumen.integration.test.ts` falla hoy en la proyección de 2026-12 (esperado 210.000.020,
   recibido 200.000.020), también sin los cambios de esta rama: depende de la fecha y lo debe revisar la
   sesión de Resumen. Las demás integraciones del módulo pasan contra PostgreSQL.

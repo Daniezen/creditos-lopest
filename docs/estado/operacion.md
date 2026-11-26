@@ -95,7 +95,6 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=100 c
 
 - Sincronización de documentos Drive: `POST /api/cron/documentos/sincronizar` con header de autorización `Bearer ${DOCUMENTOS_CRON_SECRET}`.
 - Clasificación de cuotas vencidas y mora: `POST /api/cron/creditos/vencidas` con header `Bearer ${CREDITOS_CRON_SECRET}`.
-- Avisos nuevos de Casa y Negocio a Telegram: `POST /api/cron/casa-negocio-avisos` con header `Bearer ${CASA_NEGOCIO_CRON_SECRET}` (variable opcional: sin ella responde 401). Flujo `n8n/LOPEST - Avisos Casa y Negocio a Telegram.json`, activación en `docs/estado/lanzamiento-casa-negocio.md` §4.
 
 ## 8. Observabilidad
 
