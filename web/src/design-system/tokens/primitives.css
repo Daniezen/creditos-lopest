@@ -28,11 +28,15 @@
 
   /* Chart geometry. Resolved to numbers by the ECharts theme at mount. */
   --ds-chart-height-regular: 400px;
+  --ds-chart-height-compact: 10rem;
   --ds-chart-category-slot: 60px;
   --ds-chart-scroll-min-width: 600px;
   --ds-chart-bar-radius: 4px;
   --ds-chart-grid-dash: 3 3;
   --ds-chart-stroke-axis: 1px;
+  --ds-chart-stroke-outline: 2px;
+  --ds-chart-bar-max-width: 2.75rem;
+  --ds-chart-bar-min-height: 0.25rem;
   --ds-chart-inset-top: 20px;
   --ds-chart-inset-side: 30px;
   --ds-chart-inset-start: 40px;
@@ -95,4 +99,10 @@
   --ds-cn-path-min: 38.75rem;
   --ds-cn-money-min: 32.5rem;
   --ds-cn-street-min: 16.25rem;
+  /* Ahorro and Arqueo tabs. */
+  --ds-cn-ring: 11.875rem;
+  --ds-cn-ahorro-card-min: 22.5rem;
+  --ds-cn-arqueo-card-min: 13.75rem;
+  --ds-cn-arqueo-negocio-min: 43.75rem;
+  --ds-cn-arqueo-casa-min: 28.75rem;
 }

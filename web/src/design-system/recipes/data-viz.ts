@@ -10,6 +10,8 @@
 export const dataVizRecipes = {
   drawing: "w-full min-w-0",
   heightRegular: "h-[var(--ds-chart-height-regular)]",
+  /** Small inline series (Casa y Negocio «Lo que entró cada mes»). */
+  heightCompact: "h-[var(--ds-chart-height-compact)]",
   scrollTrack: "flex w-full overflow-x-auto pb-4",
   scrollTrackFromEnd: "flex-row-reverse",
   scrollCanvas:

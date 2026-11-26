@@ -116,4 +116,9 @@
   --lopest-cn-problem-text: #991b1b;
 
   --lopest-cn-shadow-ink: 0 18px 40px rgb(36 18 63 / 25%);
+
+  /* Ahorro and Arqueo tabs (Ahorro.dc.html, Arqueo.dc.html). */
+  --lopest-cn-ahorro-soft: #fdf6e3;
+  --lopest-cn-ahorro-on-ink: #fbbf24;
+  --lopest-cn-ok-ring: #bbf7d0;
 }
