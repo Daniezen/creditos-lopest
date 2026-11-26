@@ -42,7 +42,7 @@ export const cnTypeRecipes = {
 /** Module shell: lienzo ground, dark folded rail, content column. */
 export const cnShellRecipes = {
   root: "flex min-h-screen w-full items-stretch bg-[var(--cn-color-lienzo)] font-[family-name:var(--font-product-sans)] text-[var(--cn-color-text)] max-md:bg-[var(--cn-color-paper)]",
-  main: "min-w-0 flex-1 px-7 pb-10 pt-5 max-md:px-0 max-md:pb-[var(--ds-cn-bottom-nav-reserve)] max-md:pt-0",
+  main: "min-w-0 flex-1 outline-none px-7 pb-10 pt-5 max-md:px-0 max-md:pb-[var(--ds-cn-bottom-nav-reserve)] max-md:pt-0",
   column: "mx-auto w-full max-w-[var(--ds-cn-content-max)]",
 
   rail: "sticky top-0 hidden h-screen w-[var(--ds-cn-rail-width)] flex-none flex-col items-center gap-1.5 overflow-y-auto bg-[var(--cn-color-ink)] px-2.5 py-4.5 md:flex",
@@ -89,8 +89,8 @@ export const cnHeaderRecipes = {
   desktopOnly: "max-md:hidden",
   titleRow: "mt-1 flex items-center gap-2.5 max-md:mt-2.5",
   title: `${cnTypeRecipes.display} max-md:text-[length:var(--text-cn-display-sm)]`,
-  titleYear: "text-[var(--cn-color-text-faint)] max-md:text-[var(--cn-color-on-ink-soft)]",
-  monthNav: `inline-flex size-9 flex-none items-center justify-center rounded-full border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] text-base text-[var(--cn-color-text)] no-underline cursor-pointer max-md:border-[var(--cn-color-ink-raised)] max-md:bg-transparent max-md:text-[var(--cn-color-on-ink)] aria-disabled:cursor-default aria-disabled:opacity-40 ${focus}`,
+  titleYear: "text-[var(--cn-color-text-faint-aa)] max-md:text-[var(--cn-color-on-ink-soft)]",
+  monthNav: `inline-flex size-9 max-md:size-[var(--ds-cn-touch)] flex-none items-center justify-center rounded-full border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] text-base text-[var(--cn-color-text)] no-underline cursor-pointer max-md:border-[var(--cn-color-ink-raised)] max-md:bg-transparent max-md:text-[var(--cn-color-on-ink)] aria-disabled:cursor-default aria-disabled:opacity-40 ${focus}`,
   actions: "flex flex-wrap items-center gap-2",
   annotate: `inline-flex min-h-11 items-center gap-2 rounded-[var(--ds-radius-md)] border-0 bg-[var(--cn-color-action)] px-5 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] cursor-pointer transition-colors duration-[var(--ds-duration-fast)] hover:bg-[var(--cn-color-action-hover)] ${focus}`,
   readOnly:
@@ -98,14 +98,17 @@ export const cnHeaderRecipes = {
   summary: "mt-3.5 md:hidden",
   summaryTotal: cnTypeRecipes.figureHero,
   summaryDetail: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-on-ink-soft)]",
+  /** Phone only: the dim ground behind the «Anotar» sheet; a tap on it closes the sheet. */
+  sheetBackdrop: "fixed inset-0 z-[45] border-0 bg-[var(--color-overlay-backdrop)] md:hidden",
   fab: `fixed bottom-24 right-4.5 z-30 inline-flex size-[var(--ds-cn-fab)] items-center justify-center rounded-[var(--ds-radius-card)] border-0 bg-[var(--cn-color-action)] text-[length:var(--text-cn-figure-lg)] font-[var(--font-weight-light)] text-[var(--cn-color-on-ink)] shadow-[var(--cn-shadow-overlay)] cursor-pointer md:hidden ${focus}`,
 } as const;
 
 /** Quick entry panel opened by «Anotar». */
 export const cnQuickEntryRecipes = {
-  panel: "mt-4 flex flex-col gap-3.5 rounded-[var(--ds-radius-panel)] bg-[var(--cn-color-paper)] px-5 py-4.5 text-[var(--cn-color-text)] shadow-[var(--cn-shadow-panel-active)]",
+  panel:
+    "mt-4 flex flex-col gap-3.5 rounded-[var(--ds-radius-panel)] bg-[var(--cn-color-paper)] px-5 py-4.5 text-[var(--cn-color-text)] shadow-[var(--cn-shadow-panel-active)] max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-50 max-md:m-0 max-md:max-h-[var(--ds-cn-sheet-max)] max-md:overflow-y-auto max-md:overscroll-contain max-md:rounded-b-none max-md:rounded-t-[var(--ds-radius-xl)] max-md:px-4 max-md:pb-[max(calc(var(--spacing)*4.5),env(safe-area-inset-bottom))] max-md:pt-5 max-md:shadow-[var(--cn-shadow-overlay)]",
   kinds: "flex flex-wrap gap-2",
-  kind: `inline-flex min-h-10 items-center gap-2 rounded-full border-0 bg-[var(--cn-color-surface)] px-3.5 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] cursor-pointer aria-pressed:bg-[var(--cn-color-ink)] aria-pressed:text-[var(--cn-color-on-ink)] ${focus}`,
+  kind: `inline-flex min-h-10 max-md:min-h-[var(--ds-cn-touch)] items-center gap-2 rounded-full border-0 bg-[var(--cn-color-surface)] px-3.5 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] cursor-pointer aria-pressed:bg-[var(--cn-color-ink)] aria-pressed:text-[var(--cn-color-on-ink)] ${focus}`,
   kindDot: "size-2 flex-none rounded-[var(--ds-radius-chip)]",
   fields: "grid grid-cols-[repeat(auto-fit,minmax(var(--ds-cn-field-min),1fr))] gap-3",
   field: "flex flex-col gap-1 text-xs text-[var(--cn-color-text-secondary)]",
@@ -113,7 +116,7 @@ export const cnQuickEntryRecipes = {
   amount: `min-h-11.5 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-figure-sm)] font-[var(--font-weight-light)] leading-[var(--leading-tight)] tabular-nums text-[var(--cn-color-text)] aria-invalid:border-[var(--cn-color-problem)] ${focus}`,
   /** Message under a refused field (text in the problem tone, never colour alone: it is words). */
   fieldError: "text-xs font-[var(--font-weight-medium)] text-[var(--cn-color-problem)]",
-  footer: "flex justify-end gap-2",
+  footer: "flex justify-end gap-2 max-md:sticky max-md:bottom-0 max-md:bg-[var(--cn-color-paper)] max-md:pt-1 max-md:[&>button]:flex-1",
   close: `min-h-11 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-4.5 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] cursor-pointer ${focus}`,
   save: `min-h-11 rounded-[var(--ds-radius-md)] border-0 bg-[var(--cn-color-action)] px-6 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-on-ink)] cursor-pointer hover:bg-[var(--cn-color-action-hover)] disabled:cursor-not-allowed disabled:opacity-50 ${focus}`,
 } as const;
@@ -144,8 +147,8 @@ export const cnLineRecipes = {
     "text-[length:var(--text-2xs)] font-[var(--font-weight-bold)] leading-[var(--leading-tight)] text-[var(--cn-color-action)] max-md:sr-only",
   hoyBar:
     "h-[var(--ds-cn-line-hoy)] w-0.5 rounded-sm bg-[var(--cn-color-action)] max-md:h-6.5 max-md:bg-[var(--cn-color-action-on-ink)]",
-  tick: "pointer-events-none absolute top-0 -translate-x-1/2 text-[length:var(--text-2xs)] leading-[var(--leading-tight)] text-[var(--cn-color-text-faint)] max-md:hidden",
-  mark: `absolute top-5.5 flex translate-x-[calc(-50%+var(--cn-mark-nudge,0)*var(--ds-cn-line-nudge))] flex-col items-center gap-0.75 rounded-[var(--ds-radius-sm)] border-0 bg-transparent px-1 py-0.75 cursor-pointer aria-expanded:bg-[var(--cn-color-selected)] max-md:top-0.75 max-md:aria-expanded:bg-[var(--cn-color-ink-raised)] ${focus}`,
+  tick: "pointer-events-none absolute top-0 -translate-x-1/2 text-[length:var(--text-2xs)] leading-[var(--leading-tight)] text-[var(--cn-color-text-muted-aa)] max-md:hidden",
+  mark: `absolute top-5.5 flex translate-x-[calc(-50%+var(--cn-mark-nudge,0)*var(--ds-cn-line-nudge))] flex-col items-center gap-0.75 rounded-[var(--ds-radius-sm)] border-0 bg-transparent px-1 py-0.75 cursor-pointer aria-expanded:bg-[var(--cn-color-selected)] max-md:top-0.75 max-md:aria-expanded:bg-[var(--cn-color-ink-raised)] max-md:before:absolute max-md:before:left-1/2 max-md:before:top-1/2 max-md:before:size-[var(--ds-cn-touch)] max-md:before:-translate-1/2 max-md:before:content-[''] ${focus}`,
   markLabel:
     "mt-[calc(var(--cn-mark-row,0)*var(--ds-cn-line-row))] whitespace-nowrap text-[length:var(--text-2xs)] font-[var(--font-weight-medium)] leading-[var(--leading-tight)] max-md:hidden",
   /** Dot per kind: size, shape, fill and ring, light ground then ink ground. */
@@ -172,10 +175,10 @@ export const cnLineRecipes = {
     "absolute z-[3] top-[calc(var(--ds-cn-line-height)-var(--spacing)*4.5+var(--cn-line-extra-rows,0)*var(--ds-cn-line-row))] left-[clamp(calc(var(--ds-cn-popover-width)/2),var(--cn-pop-left),calc(100%-var(--ds-cn-popover-width)/2))] w-[var(--ds-cn-popover-width)] max-w-[calc(100vw-var(--spacing)*8)] -translate-x-1/2 rounded-[var(--ds-radius-tab)] bg-[var(--cn-color-ink)] px-3.5 py-3 text-[var(--cn-color-on-ink)] shadow-[var(--cn-shadow-overlay)] max-md:top-9 max-md:bg-[var(--cn-color-surface)] max-md:text-[var(--cn-color-text)]",
   popHead: "flex items-baseline justify-between gap-2",
   popDate: "text-xs text-[var(--cn-color-on-ink-soft)] max-md:text-[var(--cn-color-text-secondary)]",
-  popClose: `inline-flex size-7 items-center justify-center rounded-[var(--ds-radius-sm)] border-0 bg-transparent text-base text-[var(--cn-color-on-ink-soft)] cursor-pointer max-md:text-[var(--cn-color-text-secondary)] ${focus}`,
+  popClose: `inline-flex size-7 max-md:size-[var(--ds-cn-touch)] items-center justify-center rounded-[var(--ds-radius-sm)] border-0 bg-transparent text-base text-[var(--cn-color-on-ink-soft)] cursor-pointer max-md:text-[var(--cn-color-text-secondary)] ${focus}`,
   popTitle: "text-[length:var(--text-cn-input)] font-[var(--font-weight-semibold)]",
   popDetail: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-on-ink-soft)] max-md:text-[var(--cn-color-text-secondary)]",
-  popAction: `mt-2.5 inline-flex min-h-8.5 items-center rounded-[var(--ds-radius-icon)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text)] no-underline max-md:bg-[var(--cn-color-action)] max-md:text-[var(--cn-color-on-ink)] ${focus}`,
+  popAction: `mt-2.5 inline-flex min-h-8.5 max-md:min-h-[var(--ds-cn-touch)] items-center rounded-[var(--ds-radius-icon)] bg-[var(--cn-color-surface)] px-3 text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text)] no-underline max-md:bg-[var(--cn-color-action)] max-md:text-[var(--cn-color-on-ink)] ${focus}`,
 } as const;
 
 /** Folder tabs in three groups. */
@@ -183,7 +186,7 @@ export const cnTabRecipes = {
   nav: "mt-3.5 overflow-x-auto max-md:-mx-5 max-md:px-3",
   row: "flex w-max gap-0.5",
   separator: "mx-2 h-5.5 w-px self-center bg-[var(--cn-color-border)] max-md:bg-[var(--cn-color-ink-raised)]",
-  tab: `inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-t-[var(--ds-radius-tab)] px-5 text-sm font-[var(--font-weight-medium)] text-[var(--cn-color-text-muted)] no-underline transition-colors duration-[var(--ds-duration-fast)] hover:text-[var(--cn-color-text)] max-md:min-h-11 max-md:px-4 max-md:text-[var(--cn-color-on-ink-soft)] max-md:hover:text-[var(--cn-color-on-ink)] aria-[current=page]:bg-[var(--cn-color-paper)] aria-[current=page]:font-[var(--font-weight-semibold)] aria-[current=page]:text-[var(--cn-color-text)] ${focus} focus-visible:outline-offset-[-2px]`,
+  tab: `inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-t-[var(--ds-radius-tab)] px-5 text-sm font-[var(--font-weight-medium)] text-[var(--cn-color-text-muted-aa)] no-underline transition-colors duration-[var(--ds-duration-fast)] hover:text-[var(--cn-color-text)] max-md:min-h-11 max-md:px-4 max-md:text-[var(--cn-color-on-ink-soft)] max-md:hover:text-[var(--cn-color-on-ink)] aria-[current=page]:bg-[var(--cn-color-paper)] aria-[current=page]:font-[var(--font-weight-semibold)] aria-[current=page]:text-[var(--cn-color-text)] ${focus} focus-visible:outline-offset-[-2px]`,
   dot: "size-[var(--ds-cn-swatch)] flex-none rounded-[var(--ds-radius-chip)]",
   /** The Negocio dot is ink; on the phone's ink header it needs a light edge to show. */
   dotOnInk: "max-md:shadow-[var(--cn-mark-ring-on-ink-light)]",
@@ -244,7 +247,7 @@ export const cnTableroRecipes = {
   pathNoteProblem: "text-xs text-[var(--cn-color-problem)]",
   pathBar: "flex h-[var(--ds-cn-path-bar)] gap-0.75",
   pathSegment: "min-w-1 flex-shrink basis-0 rounded-md",
-  pathCaptions: "mt-1.5 flex gap-0.75",
+  pathCaptions: "mt-1.5 flex gap-0.75 max-md:hidden",
   pathCaption: "min-w-1 flex-shrink basis-0 overflow-visible whitespace-nowrap",
   pathCaptionLabel: "block text-xs font-[var(--font-weight-semibold)]",
   pathCaptionValue: "block text-xs text-[var(--cn-color-text-secondary)]",
@@ -278,11 +281,11 @@ export const cnTableroRecipes = {
   legendDot: "size-[var(--ds-cn-dot-md)] rounded-full",
   legendSquare: "size-[var(--ds-cn-dot-md)] rounded-xs",
   calendarGrid:
-    "relative grid grid-cols-[repeat(7,minmax(0,var(--ds-cn-cal-cell)))] gap-x-[var(--ds-cn-cal-gap-x)] gap-y-[var(--ds-cn-cal-gap-y)]",
+    "relative grid grid-cols-[repeat(7,minmax(0,var(--ds-cn-cal-cell)))] gap-x-[var(--ds-cn-cal-gap-x)] gap-y-[var(--ds-cn-cal-gap-y)] max-md:gap-x-0 max-md:justify-between",
   weekday:
-    "h-[var(--ds-cn-cal-head)] text-center text-[length:var(--text-2xs)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-faint)]",
+    "h-[var(--ds-cn-cal-head)] text-center text-[length:var(--text-2xs)] font-[var(--font-weight-semibold)] text-[var(--cn-color-text-muted-aa)]",
   cell: `flex aspect-square w-full max-w-[var(--ds-cn-cal-cell)] flex-col items-center justify-center gap-0.75 rounded-full border-0 bg-transparent p-0 text-[var(--cn-color-text)] enabled:cursor-pointer disabled:cursor-default aria-expanded:bg-[var(--cn-color-selected)] aria-expanded:shadow-[var(--cn-shadow-selected)] ${focus}`,
-  cellPast: "text-[var(--cn-color-text-muted)]",
+  cellPast: "text-[var(--cn-color-text-muted-aa)]",
   cellToday:
     "bg-[var(--cn-color-action)] text-[var(--cn-color-on-ink)] aria-expanded:bg-[var(--cn-color-action)] aria-expanded:shadow-none",
   cellNumber: "text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-medium)] leading-none",
@@ -307,19 +310,19 @@ export const cnTableroRecipes = {
     "absolute z-[2] flex w-[var(--ds-cn-popover-narrow)] max-w-full flex-col gap-2 rounded-[var(--ds-radius-tab)] bg-[var(--cn-color-ink)] px-3.5 py-3 text-[var(--cn-color-on-ink)] shadow-[var(--cn-shadow-overlay)]",
   dayPopHead: "flex items-center justify-between",
   dayPopDate: "text-[length:var(--text-cn-eyebrow)] font-[var(--font-weight-semibold)]",
-  dayPopClose: `inline-flex size-7 items-center justify-center rounded-[var(--ds-radius-sm)] border-0 bg-transparent text-base text-[var(--cn-color-on-ink-soft)] cursor-pointer ${focus}`,
+  dayPopClose: `inline-flex size-7 max-md:size-[var(--ds-cn-touch)] items-center justify-center rounded-[var(--ds-radius-sm)] border-0 bg-transparent text-base text-[var(--cn-color-on-ink-soft)] cursor-pointer ${focus}`,
   dayPopItem: "flex items-baseline gap-2",
   dayPopDot: "size-[var(--ds-cn-dot-md)] flex-none rounded-full",
   dayPopSquare: "size-[var(--ds-cn-dot-md)] flex-none rounded-xs",
   dayPopText: "flex-1 text-[length:var(--text-cn-eyebrow)] leading-snug",
-  dayPopAction: `flex-none text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-on-ink)] underline ${focus}`,
+  dayPopAction: `flex-none text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-on-ink)] underline max-md:inline-flex max-md:min-h-[var(--ds-cn-touch)] max-md:items-center ${focus}`,
 
   /* Las cuentas del mes */
   equations: "flex flex-col gap-4.5 max-md:order-1 max-md:gap-3.5 max-md:bg-transparent max-md:p-0",
   equationsTitle: `${cnTypeRecipes.section} max-md:sr-only`,
   equationRow: "flex flex-wrap items-center gap-x-3 gap-y-2.5 max-md:hidden",
   equationName: `${cnTypeRecipes.eyebrow} w-[var(--ds-cn-equation-name)]`,
-  operator: "text-[length:var(--text-cn-figure-lg)] font-[var(--font-weight-light)] text-[var(--cn-color-operator)]",
+  operator: "text-[length:var(--text-cn-figure-lg)] font-[var(--font-weight-light)] text-[var(--cn-color-text-faint-aa)]",
   term: "inline-flex flex-col rounded-[var(--ds-radius-tab)] bg-[var(--cn-color-well)] px-3.5 py-2",
   termResult: "bg-[var(--cn-color-ink)]",
   termLabel: "text-xs text-[var(--cn-color-text-secondary)]",
@@ -366,17 +369,17 @@ export const cnTableroRecipes = {
   /* Phones follow `TableroMovil.dc.html`: next action, equations, envelopes, then the rest. */
   envelopes: "flex flex-col gap-3.5 max-md:order-2",
   envelopesHead: "flex flex-wrap items-baseline justify-between gap-2",
-  envelopesSummary: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-muted)]",
+  envelopesSummary: "text-[length:var(--text-cn-eyebrow)] text-[var(--cn-color-text-muted-aa)] max-md:hidden",
   envelopesGrid:
     "grid grid-cols-[repeat(auto-fit,minmax(var(--ds-cn-envelope-min),1fr))] gap-3.5 max-md:-mx-4 max-md:flex max-md:gap-2.5 max-md:overflow-x-auto max-md:px-4",
   envelope:
-    "relative overflow-hidden rounded-[var(--ds-radius-lg)] bg-[var(--cn-color-surface)] px-4.5 pb-4 pt-7.5 max-md:w-[var(--ds-cn-envelope-mobile)] max-md:flex-none max-md:px-3.5 max-md:pb-3.5",
+    "relative overflow-hidden rounded-[var(--ds-radius-lg)] bg-[var(--cn-color-surface)] px-4.5 pb-4 pt-7.5 max-md:w-[var(--ds-cn-envelope-mobile)] max-md:flex-none max-md:p-3.5",
   envelopeRing: {
     ok: "shadow-[var(--cn-ring-soft)]",
     cerca: "shadow-[var(--cn-ring-attention)]",
     pasado: "shadow-[var(--cn-ring-problem)]",
   },
-  envelopeFlap: "absolute left-0 top-0 h-[var(--ds-cn-flap)] w-full",
+  envelopeFlap: "absolute left-0 top-0 h-[var(--ds-cn-flap)] w-full max-md:hidden",
   envelopeFlapFill: {
     ok: "fill-[var(--cn-color-flap)]",
     cerca: "fill-[var(--cn-color-attention-tint)]",
@@ -385,8 +388,8 @@ export const cnTableroRecipes = {
   envelopeName: "relative text-sm font-[var(--font-weight-semibold)]",
   envelopeLeft: `${cnTypeRecipes.figureLg} mt-1.5 max-md:text-[length:var(--text-cn-figure-sm)]`,
   envelopeLeftOver: "text-[var(--cn-color-problem)]",
-  envelopeSub: "text-xs text-[var(--cn-color-text-muted)]",
-  envelopeTrack: "mt-2.5 h-1.5 overflow-hidden rounded-full bg-[var(--cn-color-track)]",
+  envelopeSub: "text-xs text-[var(--cn-color-text-muted-aa)] max-md:sr-only",
+  envelopeTrack: "mt-2.5 h-1.5 max-md:mt-2 overflow-hidden rounded-full bg-[var(--cn-color-track)]",
   envelopeFill: {
     ok: "h-1.5 bg-[var(--cn-color-ink)]",
     cerca: "h-1.5 bg-[var(--cn-color-attention)]",
@@ -401,6 +404,16 @@ export const cnTableroRecipes = {
   nextTitle: "block text-[length:var(--text-cn-input)] font-[var(--font-weight-semibold)]",
   nextDetail: "block text-xs text-[var(--cn-color-link)]",
   nextMore: "text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-text-secondary)]",
+
+  /* pulido tablero */
+  /* Money path legend: assistive text on desktop, the visible captions on phones. */
+  pathLegend: "sr-only max-md:not-sr-only max-md:m-0 max-md:flex max-md:list-none max-md:flex-wrap max-md:gap-x-3.5 max-md:gap-y-1 max-md:p-0 max-md:text-xs",
+  pathLegendItem: "inline-flex items-center gap-1.5 font-[var(--font-weight-semibold)]",
+  pathLegendSwatch: "size-2.5 flex-none rounded-[var(--ds-radius-chip)]",
+  /* «Dónde está la plata» with no positive balance: the bar keeps its place as a track. */
+  moneyBarEmpty: "bg-[var(--cn-color-track)]",
+  /* Phone equation card: Negocio in the soft ink of TableroMovil. */
+  equationCardNameNegocio: "text-[var(--cn-color-text-secondary)]",
 } as const;
 
 /** Resumen pieces (`Resumen.dc.html`). */
@@ -467,4 +480,33 @@ export const cnResumenRecipes = {
   monthLoss: "text-[var(--cn-color-problem)]",
   monthLossOnInk: "text-[var(--cn-color-problem-ring)]",
   monthMuted: "opacity-60",
+} as const;
+
+/* pulido tablero */
+/**
+ * Loading skeleton of the module frame: the same boxes as the header (title
+ * row, month line, folder tabs) and the Tablero sheet, so nothing moves when
+ * the month arrives. Bones are quiet tracks; motion respects reduced motion.
+ */
+export const cnSkeletonRecipes = {
+  titleRow: "mt-1 flex items-center gap-2.5 max-md:mt-2.5",
+  title: "h-[calc(var(--text-cn-display)*var(--leading-display))] w-[var(--ds-cn-popover-width)] max-w-full rounded-[var(--ds-radius-md)] bg-[var(--cn-color-track)] motion-safe:animate-pulse max-md:h-[calc(var(--text-cn-display-sm)*var(--leading-display))] max-md:bg-[var(--cn-color-ink-raised)]",
+  arrow: "size-9 flex-none rounded-full bg-[var(--cn-color-track)] max-md:size-[var(--ds-cn-touch)] max-md:bg-[var(--cn-color-ink-raised)]",
+  line: "relative mx-[var(--ds-cn-line-inset)] mt-4.5 h-[var(--ds-cn-line-height)] max-md:mx-1.5 max-md:h-6.5",
+  rail: "absolute inset-x-0 top-7.5 h-1 rounded-full bg-[var(--cn-color-track)] max-md:top-2.75 max-md:bg-[var(--cn-color-ink-raised)]",
+  tabs: "mt-3.5 flex gap-0.5 overflow-hidden max-md:-mx-5 max-md:px-3",
+  tab: "inline-flex min-h-12 items-center whitespace-nowrap px-5 text-sm font-[var(--font-weight-medium)] text-[var(--cn-color-text-muted-aa)] max-md:min-h-11 max-md:px-4 max-md:text-[var(--cn-color-on-ink-soft)]",
+  separator: "mx-2 h-5.5 w-px self-center bg-[var(--cn-color-border)] max-md:bg-[var(--cn-color-ink-raised)]",
+  /* Cards of the sheet, sized like the Tablero's so the first paint does not jump. */
+  path: "min-h-[var(--ds-cn-skeleton-path)] flex-[999_1_var(--ds-cn-path-min)] rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] motion-safe:animate-pulse max-md:order-3",
+  calendar: "min-h-[var(--ds-cn-skeleton-path)] flex-[0_0_var(--ds-cn-cal-width)] rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] motion-safe:animate-pulse max-md:hidden",
+  equations: "min-h-[var(--ds-cn-skeleton-equations)] rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] motion-safe:animate-pulse",
+  money: "min-h-[var(--ds-chart-height-empty)] flex-[1_1_var(--ds-cn-money-min)] rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] motion-safe:animate-pulse",
+  street: "min-h-[var(--ds-chart-height-empty)] flex-[1_1_var(--ds-cn-street-min)] rounded-[var(--ds-radius-card)] border-2 border-dashed border-[var(--cn-color-border-dashed)] max-md:hidden",
+} as const;
+
+/* pulido tablero */
+/** «Saltar al contenido»: hidden until focused, the first stop of the keyboard on every tab. */
+export const cnSkipLinkRecipes = {
+  link: `sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-[var(--ds-radius-md)] focus:bg-[var(--cn-color-ink)] focus:px-4 focus:text-sm focus:font-[var(--font-weight-semibold)] focus:text-[var(--cn-color-on-ink)] focus:no-underline ${focus}`,
 } as const;
