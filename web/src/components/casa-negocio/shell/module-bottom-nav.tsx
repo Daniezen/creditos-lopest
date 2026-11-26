@@ -8,14 +8,16 @@ import { signOut } from "next-auth/react";
 import { NOVEDADES_HREF } from "@/components/versiones/version-footer-link";
 import { cnMobileNavRecipes } from "@/design-system/recipes/casa-negocio";
 
+import { useFocusTrap } from "../shared/focus-trap";
 import { Glyph } from "../shared/glyph";
 import { buildRailItems, isRailItemActive, MORE_GLYPH, SIGN_OUT_GLYPH, splitMobileItems } from "./rail-items";
 
 /**
  * Dark bottom navigation of Casa y Negocio on phones (`TableroMovil.dc.html`):
  * Clientes, Créditos, Casa, Reportes and «Más». «Más» opens a sheet with the
- * remaining destinations, sign-out and the version; it closes with Escape,
- * the backdrop or a destination, and returns focus to its trigger.
+ * remaining destinations, sign-out and the version. It is modal: focus moves
+ * in and Tab stays inside; it closes with Escape, the backdrop or a
+ * destination, and returns focus to its trigger.
  */
 export function ModuleBottomNav({ version }: { version: string | null }) {
   const pathname = usePathname();
@@ -26,23 +28,22 @@ export function ModuleBottomNav({ version }: { version: string | null }) {
   const { primary, more } = splitMobileItems(buildRailItems());
   const moreActive = more.some((item) => isRailItemActive(item.href, pathname));
 
+  // Page behind the sheet does not scroll while it is open.
   useEffect(() => {
     if (!moreOpen) return;
-    const trigger = triggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    sheetRef.current?.querySelector<HTMLElement>("a, button")?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMoreOpen(false);
-    }
-    window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-      trigger?.focus();
     };
   }, [moreOpen]);
+
+  // Focus into the sheet, Tab kept inside, Escape closes, focus back to «Más».
+  useFocusTrap(sheetRef, {
+    active: moreOpen,
+    onEscape: () => setMoreOpen(false),
+    returnFocus: () => triggerRef.current,
+  });
 
   return (
     <>

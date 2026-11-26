@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 
 import { cnTableroRecipes as r } from "@/design-system/recipes/casa-negocio";
 
+import { useFocusTrap } from "../shared/focus-trap";
 import type { CalendarEventKind, MonthCalendarData } from "../types";
-import { calendarCells, WEEKDAY_NAMES, WEEKDAYS } from "./calendar-grid";
+import { calendarCells, calendarDayLabel, neighbourDay, WEEKDAY_NAMES, WEEKDAYS } from "./calendar-grid";
 
 export interface MonthCalendarProps {
   data: MonthCalendarData;
@@ -24,8 +25,10 @@ const MAX_DOTS = 3;
  * dots per day (cobros ink, casa teal, missing red, ahorro gold square),
  * today in violet, past days muted. A day with events is a disclosure button;
  * its ink detail window lists each event with its action, sits under the
- * day's row and is kept inside the card. Escape, ×, the same day or a click
- * outside close it, and focus returns to the day.
+ * day's row and is kept inside the card. Opening moves focus into it and Tab
+ * stays inside; Escape, ×, the same day or a click outside close it, and
+ * focus returns to the day. Arrow keys move between the days that have
+ * something, and each day's name says what its dots mean in words.
  */
 export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCalendarProps) {
   const { year, month, today, days, monthName, monthTitle } = data;
@@ -51,26 +54,40 @@ export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCa
     setPosition({ left: Math.max(left, 0), top: cell.offsetTop + cell.offsetHeight + gap });
   }, [openDay]);
 
+  // Focus moves into the open window, Tab stays in it, Escape closes it and
+  // focus returns to its day (`shared/focus-trap.ts`).
+  // A window open on first render (the demo's 20th) does not steal focus on load.
+  const lastOpenRef = useRef<number | null>(null);
+  const [userOpened, setUserOpened] = useState(false);
+  useFocusTrap(popRef, {
+    active: userOpened && openDay !== null && events.length > 0,
+    onEscape: () => setOpenDay(null),
+    returnFocus: () => (lastOpenRef.current ? dayRefs.current.get(lastOpenRef.current) : null),
+  });
+
+  // A press outside the window and its day closes it, without moving focus.
   useEffect(() => {
     if (!openDay) return;
     const day = openDay;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setOpenDay(null);
-      dayRefs.current.get(day)?.focus();
-    }
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (popRef.current?.contains(target) || dayRefs.current.get(day)?.contains(target)) return;
       setOpenDay(null);
     }
-    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("pointerdown", onPointerDown);
-    };
+    return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [openDay]);
+
+  // Arrow keys walk the days that have something; Tab still reaches each of them.
+  const enabledDays = cells.filter((day): day is number => day !== null && (days[day]?.length ?? 0) > 0);
+  function onGridKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const current = Number((event.target as HTMLElement).dataset.day);
+    if (!current) return;
+    const next = neighbourDay(enabledDays, current, event.key);
+    if (next === null) return;
+    event.preventDefault();
+    dayRefs.current.get(next)?.focus();
+  }
 
   const dateLabel = (day: number) => (day === today ? `Hoy, ${day} de ${monthName}` : `${day} de ${monthName}`);
 
@@ -88,7 +105,7 @@ export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCa
         </div>
       </div>
 
-      <div ref={gridRef} className={r.calendarGrid}>
+      <div ref={gridRef} className={r.calendarGrid} onKeyDown={onGridKeyDown}>
         {WEEKDAYS.map((letter, index) => (
           <abbr key={WEEKDAY_NAMES[index]} title={WEEKDAY_NAMES[index]} className={`${r.weekday} no-underline`}>
             {letter}
@@ -101,9 +118,10 @@ export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCa
           const isToday = day === today;
           const isPast = today !== null && day < today;
           const expanded = day === openDay;
-          const label = dayEvents.length
-            ? `${dateLabel(day)}, ${dayEvents.length} ${dayEvents.length === 1 ? "evento" : "eventos"}`
-            : dateLabel(day);
+          const label = calendarDayLabel(
+            dateLabel(day),
+            dayEvents.map((event) => event.kind),
+          );
           return (
             <button
               key={day}
@@ -112,12 +130,17 @@ export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCa
                 else dayRefs.current.delete(day);
               }}
               type="button"
+              data-day={day}
               disabled={dayEvents.length === 0}
               aria-label={label}
               aria-current={isToday ? "date" : undefined}
               aria-expanded={dayEvents.length ? expanded : undefined}
               aria-controls={expanded ? popId : undefined}
-              onClick={() => setOpenDay(expanded ? null : day)}
+              onClick={() => {
+                lastOpenRef.current = day;
+                setUserOpened(true);
+                setOpenDay(expanded ? null : day);
+              }}
               className={[r.cell, isToday ? r.cellToday : isPast ? r.cellPast : ""].join(" ")}
             >
               <span className={[r.cellNumber, isToday ? r.cellNumberToday : ""].join(" ")}>{day}</span>
@@ -151,11 +174,7 @@ export function MonthCalendar({ data, readOnly, defaultOpenDay = null }: MonthCa
                 type="button"
                 aria-label="Cerrar"
                 className={r.dayPopClose}
-                onClick={() => {
-                  const day = openDay;
-                  setOpenDay(null);
-                  dayRefs.current.get(day)?.focus();
-                }}
+                onClick={() => setOpenDay(null)}
               >
                 <span aria-hidden="true">×</span>
               </button>

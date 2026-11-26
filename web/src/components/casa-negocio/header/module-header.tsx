@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { cnHeaderRecipes } from "@/design-system/recipes/casa-negocio";
 
+import { useFocusTrap } from "../shared/focus-trap";
 import { Glyph } from "../shared/glyph";
 import { useModuleUser } from "../shell/module-user-context";
 import { UserAvatar } from "../shell/user-avatar";
@@ -43,7 +44,8 @@ export interface ModuleHeaderProps {
 }
 
 const PLUS_GLYPH = "M12 5v14M5 12h14";
-const LOCK_GLYPH = "M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z";
+/** The canvas' padlock: a rounded body (rect 5,11 14×10 r2) and its shackle. */
+const LOCK_GLYPH = "M8 11V7a4 4 0 0 1 8 0v4M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z";
 
 function MonthArrow({ href, label, glyph }: { href: string | null; label: string; glyph: string }) {
   if (!href) {
@@ -68,7 +70,12 @@ function MonthArrow({ href, label, glyph }: { href: string | null; label: string
  *
  * On phones the same header becomes the ink block of `TableroMovil.dc.html`
  * (avatar, month, optional summary, compact line) and «Anotar» moves to the
- * floating violet button above the bottom bar.
+ * floating violet button above the bottom bar; the panel then opens as a
+ * bottom sheet over a backdrop.
+ *
+ * KEYBOARD. Opening moves focus to the panel's first choice and Tab stays in
+ * it; Escape or «Cerrar» close it and focus returns to what opened it. A
+ * successful save is announced in a polite live region.
  */
 export function ModuleHeader({ active, month, line, readOnly, quickEntry, summary, tabQuery }: ModuleHeaderProps) {
   const user = useModuleUser();
@@ -76,17 +83,27 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
   const [prefill, setPrefill] = useState<QuickEntryPrefill | null>(quickEntry?.prefill ?? null);
   const [panelKey, setPanelKey] = useState(0);
   const [open, setOpen] = useState(prefill !== null);
-  const focusPanelRef = useRef(false);
   const panelRef = useRef<HTMLElement>(null);
   const annotateRef = useRef<HTMLButtonElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+  // The control that opened the panel gets focus back when it closes.
+  const openerRef = useRef<HTMLElement | null>(null);
+  // Result of the last save, read once by assistive technology (aria-live).
+  const [announcement, setAnnouncement] = useState("");
 
-  // Opening from the floating button scrolls the panel into view and focuses its first choice.
+  // On phones the panel is a bottom sheet: the page behind it does not scroll.
   useEffect(() => {
-    if (!open || !focusPanelRef.current) return;
-    focusPanelRef.current = false;
-    const panel = panelRef.current;
-    panel?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    panel?.querySelector<HTMLElement>("button")?.focus();
+    if (!open || !window.matchMedia("(max-width: 47.999rem)").matches) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  // Opening scrolls the panel into view (it may be far above on a long tab).
+  useEffect(() => {
+    if (open) panelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [open]);
 
   const canAnnotate = !readOnly && quickEntry !== null;
@@ -105,9 +122,9 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
       const next = prefillFromParams((name) => url.searchParams.get(name));
       if (!next) return;
       event.preventDefault();
+      openerRef.current = link;
       setPrefill(next);
       setPanelKey((key) => key + 1);
-      focusPanelRef.current = true;
       setOpen(true);
     }
     // Capture phase: runs before the <Link> handler, which then sees
@@ -121,7 +138,6 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
   const close = useCallback(() => {
     setOpen(false);
     setPrefill(null);
-    annotateRef.current?.focus();
     // Drop `?anotar=…` from an arrival URL so a reload does not reopen it.
     // Next.js syncs native history calls with its router: no refetch happens.
     if (hadPrefillParam.current && cleanHref) {
@@ -129,8 +145,30 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
       window.history.replaceState(null, "", cleanHref);
     }
   }, [cleanHref]);
-  // The action already revalidated the module's data; closing is what is left.
-  const saved = close;
+  // The action already revalidated the module's data; closing and saying so is what is left.
+  const saved = useCallback(() => {
+    setAnnouncement("Movimiento guardado.");
+    close();
+  }, [close]);
+
+  // Focus into the panel, Tab kept inside, Escape closes (`shared/focus-trap.ts`).
+  // Focus goes back to whoever opened it: «Anotar», the floating button or a
+  // «Pagar» link; when that link is gone (its window closed), to «Anotar».
+  useFocusTrap(panelRef, {
+    active: open && canAnnotate,
+    onEscape: close,
+    returnFocus: () => {
+      const opener = openerRef.current;
+      if (opener?.isConnected && opener.offsetParent !== null) return opener;
+      return annotateRef.current?.offsetParent ? annotateRef.current : fabRef.current;
+    },
+  });
+
+  function openFrom(opener: HTMLElement) {
+    openerRef.current = opener;
+    setAnnouncement("");
+    setOpen(true);
+  }
 
   return (
     <header className={cnHeaderRecipes.root}>
@@ -171,7 +209,7 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
               type="button"
               aria-expanded={open}
               aria-controls={open ? "cn-anotar" : undefined}
-              onClick={() => (open ? close() : setOpen(true))}
+              onClick={(event) => (open ? close() : openFrom(event.currentTarget))}
               className={cnHeaderRecipes.annotate}
             >
               <Glyph path={PLUS_GLYPH} className="size-4.25" strokeWidth={2.4} />
@@ -182,8 +220,14 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
       </div>
 
       {open && canAnnotate ? (
-        <QuickEntryPanel key={panelKey} ref={panelRef} {...quickEntry!} prefill={prefill} onClose={close} onSaved={saved} />
+        <>
+          <button type="button" tabIndex={-1} aria-label="Cerrar Anotar" className={cnHeaderRecipes.sheetBackdrop} onClick={close} />
+          <QuickEntryPanel key={panelKey} ref={panelRef} {...quickEntry!} prefill={prefill} onClose={close} onSaved={saved} />
+        </>
       ) : null}
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
       <MonthLine line={line} readOnly={readOnly} />
       <FolderTabs active={active} query={tabQuery} />
@@ -194,15 +238,8 @@ export function ModuleHeader({ active, month, line, readOnly, quickEntry, summar
           aria-label="Anotar movimiento"
           aria-expanded={open}
           aria-controls={open ? "cn-anotar" : undefined}
-          onClick={() => {
-            if (open) {
-              panelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-              panelRef.current?.querySelector<HTMLElement>("button")?.focus();
-              return;
-            }
-            focusPanelRef.current = true;
-            setOpen(true);
-          }}
+          ref={fabRef}
+          onClick={(event) => (open ? panelRef.current?.querySelector<HTMLElement>("button")?.focus() : openFrom(event.currentTarget))}
           className={cnHeaderRecipes.fab}
         >
           <span aria-hidden="true">+</span>

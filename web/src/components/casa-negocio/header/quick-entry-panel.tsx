@@ -179,7 +179,9 @@ export const QuickEntryPanel = forwardRef<HTMLElement, QuickEntryPanelProps>(fun
   }
 
   return (
-    <section ref={ref} id="cn-anotar" aria-label="Anotar rápido" className={cnQuickEntryRecipes.panel}>
+    // A dialog in both layouts: inline under the header on desktop, a bottom
+    // sheet on phones. Not `aria-modal` because on desktop the page stays usable.
+    <section ref={ref} id="cn-anotar" role="dialog" aria-label="Anotar rápido" className={cnQuickEntryRecipes.panel}>
       <form onSubmit={onSubmit} aria-busy={pending} className="contents">
         <input type="hidden" name="tipo" value={kind} />
         <input ref={keyInputRef} type="hidden" name="operationKey" defaultValue="" />
