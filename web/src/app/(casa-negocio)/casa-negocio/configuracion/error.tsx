@@ -1,19 +1,12 @@
 "use client";
 
-import { cnConfigRecipes as r } from "@/design-system/recipes/casa-negocio-configuracion";
+import { ErrorTab } from "@/components/casa-negocio/ahorro/error-tab";
 
 /**
- * Error boundary of the tab: the header stays (it lives in the layout's
- * shell), only the sheet shows the failure and a retry. The real error is
- * logged on the server; the browser only gets its digest.
+ * Unexpected failure while reading the settings: the same sheet, message and
+ * retry as the other tabs. The real error is logged on the server; the
+ * browser only gets its digest.
  */
 export default function ConfiguracionError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return (
-    <div className={r.notice} role="alert">
-      <p>No se pudo cargar la configuración.</p>
-      <button type="button" className={r.secondary} onClick={reset}>
-        Reintentar
-      </button>
-    </div>
-  );
+  return <ErrorTab titulo="No se pudo cargar la configuración" reset={reset} />;
 }
