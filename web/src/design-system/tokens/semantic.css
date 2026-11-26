@@ -163,4 +163,12 @@
   --cn-ring-ahorro: inset 0 0 0 2px var(--cn-color-ahorro);
   --dataviz-cn-ahorro-soft: var(--lopest-cn-ahorro-soft);
   --dataviz-cn-empty: var(--lopest-cn-flap);
+  /* Resumen: what is still expected (two faint fills), today's mark, the
+     month the capital shrank, and the warm ground behind the future. */
+  --dataviz-cn-projected-capital: var(--lopest-cn-border-soft);
+  --dataviz-cn-projected-interes: var(--lopest-cn-ink-line);
+  --dataviz-cn-today: var(--lopest-cn-action);
+  --dataviz-cn-alert: var(--lopest-cn-problem-tint);
+  --dataviz-cn-future-ground: var(--lopest-cn-paper);
+  --dataviz-cn-surface: var(--lopest-cn-surface);
 }

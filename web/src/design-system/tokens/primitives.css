@@ -44,6 +44,12 @@
   --ds-chart-legend-gap: 20px;
   --ds-chart-legend-reserve: 24px;
   --ds-chart-height-empty: 300px;
+  /* Line + mark geometry (Casa y Negocio's Resumen charts). */
+  --ds-chart-line-stroke: 3px;
+  --ds-chart-symbol: 9px;
+  --ds-chart-mark-stroke: 2px;
+  --ds-chart-bar-max: 30px;
+  --ds-chart-tick-width: 38px;
 }
 
 /*
@@ -114,4 +120,5 @@
   --ds-cn-arqueo-card-min: 13.75rem;
   --ds-cn-arqueo-negocio-min: 43.75rem;
   --ds-cn-arqueo-casa-min: 28.75rem;
+  --ds-cn-month-card: 10.5rem;
 }
