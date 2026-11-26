@@ -164,6 +164,7 @@ export const cnNegocioRecipes = {
   assignLabel: "text-xs font-[var(--font-weight-semibold)] text-[var(--cn-color-attention-text)]",
   assignSelect: `min-h-10 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-attention-ring)] bg-[var(--cn-color-attention-surface)] px-2.5 text-sm text-[var(--cn-color-text)] disabled:cursor-wait disabled:opacity-60 ${focus}`,
   assignError: "basis-full text-xs text-[var(--cn-color-problem)]",
+  assignSave: `min-h-10 rounded-[var(--ds-radius-md)] border border-[var(--cn-color-border)] bg-[var(--cn-color-surface)] px-3.5 text-sm font-[var(--font-weight-semibold)] leading-[var(--leading-tight)] text-[var(--cn-color-text)] cursor-pointer disabled:cursor-wait disabled:opacity-60 ${focus}`,
   pending: "flex flex-col gap-1 rounded-[var(--ds-radius-card)] bg-[var(--cn-color-surface)] px-6 py-5 max-md:px-4",
   pendingRow: "flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--cn-color-flap)] py-3 first:border-t-0",
   pendingBody: "min-w-0 flex-[1_1_var(--ds-cn-form-field-min)]",
