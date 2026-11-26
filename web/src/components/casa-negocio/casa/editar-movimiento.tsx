@@ -11,7 +11,7 @@ import { Glyph } from "../shared/glyph";
 import { Notice } from "../shared/notice";
 import { avisoSinSaldo } from "./aviso-salida";
 import { CampoFecha, CampoMonto, CampoSelect, CampoTexto, EstadoLinea, useEnvio } from "./campos";
-import { FORMAS, montoInicial, montoNumero, payloadDe, type ValoresMovimiento } from "./formas";
+import { FORMAS, MARCA_LIBRO, montoInicial, montoNumero, payloadDe, type ValoresMovimiento } from "./formas";
 
 export interface OpcionesEdicion {
   cuentasCasa: CuentaOpcion[];
@@ -25,14 +25,30 @@ export interface OpcionesEdicion {
 const PENCIL = "M4 20h4L19 9l-4-4L4 16z";
 
 /**
- * Edit and void one manual movement, in a native modal `<dialog>` (focus
- * trapped and Escape handled by the browser). Both operations send back the
- * row's `version`: when someone changed it meanwhile the service refuses and
- * the dialog offers to reload instead of overwriting. Voiding asks for a
- * reason and a second, explicit confirmation.
+ * Where the focus lands once the dialog closed: back on the pencil that
+ * opened it while that button is still on the page, otherwise (the row was
+ * voided, or its new date moved it to another day) on the book itself, so
+ * keyboard and screen-reader users are not dropped at the top of the page.
+ */
+export function destinoDelFoco(boton: HTMLElement | null, libro: HTMLElement | null, filaSeVa: boolean): HTMLElement | null {
+  if (!filaSeVa && boton?.isConnected) return boton;
+  return libro ?? boton;
+}
+
+/**
+ * Edit and void one manual movement, in a native modal `<dialog>`: the
+ * browser traps the focus inside it and closes it with Escape (also while a
+ * request is in flight: the answer still refreshes the book). Both
+ * operations send back the row's `version`: when someone changed it
+ * meanwhile the service refuses and the dialog offers to reload instead of
+ * overwriting. Voiding asks for a reason and a second, explicit confirmation.
  */
 export function EditarMovimiento({ movimiento, nombre, opciones }: { movimiento: MovimientoEditable; nombre: string; opciones: OpcionesEdicion }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
+  // Looked up while the row still exists: after a void it is gone.
+  const libro = useRef<HTMLElement | null>(null);
+  const filaSeVa = useRef(false);
   const [modo, setModo] = useState<"editar" | "anular">("editar");
   // The dialog's content mounts only while open: a long book keeps one
   // closed <dialog> per row and no form state until someone edits.
@@ -43,17 +59,38 @@ export function EditarMovimiento({ movimiento, nombre, opciones }: { movimiento:
   }, [abierto]);
 
   function abrir() {
+    libro.current = boton.current?.closest<HTMLElement>(`[${MARCA_LIBRO}]`) ?? null;
+    filaSeVa.current = false;
     setModo("editar");
     setAbierto(true);
   }
   const cerrar = () => dialog.current?.close();
+  const alAnular = () => {
+    filaSeVa.current = true;
+    cerrar();
+  };
+
+  function alCerrar() {
+    setAbierto(false);
+    // The browser restores focus to the opener on close; one frame later
+    // the refreshed book may have dropped or moved that row, so the target
+    // is decided then.
+    requestAnimationFrame(() => destinoDelFoco(boton.current, libro.current, filaSeVa.current)?.focus());
+  }
 
   return (
     <>
-      <button type="button" className={cnCasaRecipes.rowEdit} aria-label={`Editar ${nombre}`} onClick={abrir}>
+      <button
+        ref={boton}
+        type="button"
+        className={cnCasaRecipes.rowEdit}
+        aria-label={`Editar ${nombre}`}
+        aria-haspopup="dialog"
+        onClick={abrir}
+      >
         <Glyph path={PENCIL} className="size-4" strokeWidth={2.2} />
       </button>
-      <dialog ref={dialog} className={cnDialogRecipes.dialog} aria-labelledby={`editar-${movimiento.id}`} onClose={() => setAbierto(false)}>
+      <dialog ref={dialog} className={cnDialogRecipes.dialog} aria-labelledby={`editar-${movimiento.id}`} onClose={alCerrar}>
         {!abierto ? null : modo === "editar" ? (
           <FormularioEdicion
             key={movimiento.version}
@@ -64,11 +101,23 @@ export function EditarMovimiento({ movimiento, nombre, opciones }: { movimiento:
             onAnular={() => setModo("anular")}
           />
         ) : (
-          <ConfirmarAnulacion movimiento={movimiento} nombre={nombre} onCerrar={cerrar} onVolver={() => setModo("editar")} />
+          <ConfirmarAnulacion movimiento={movimiento} nombre={nombre} onAnulado={alAnular} onVolver={() => setModo("editar")} />
         )}
       </dialog>
     </>
   );
+}
+
+/**
+ * Puts the focus on the first field when a step of the dialog mounts. On
+ * first open `showModal` would do it anyway; it matters when switching
+ * between «Editar» and «¿Anular?», because the button that was pressed
+ * unmounts and the focus would otherwise fall out of the dialog.
+ */
+function useFocoInicial(formRef: React.RefObject<HTMLFormElement | null>) {
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLElement>("input, select")?.focus();
+  }, [formRef]);
 }
 
 function FormularioEdicion({
@@ -94,8 +143,9 @@ function FormularioEdicion({
     categoriaId: movimiento.categoriaId ?? "",
     nota: movimiento.nota ?? "",
   });
-  const { pendiente, estado, enviar, limpiarCampo } = useEnvio<unknown>();
+  const { pendiente, estado, enviar, limpiarCampo, formRef } = useEnvio<unknown>();
   const [conflicto, setConflicto] = useState(false);
+  useFocoInicial(formRef);
   const forma = FORMAS[v.tipo];
   const e = estado.campos;
   const cuentas = (grupo: "CASA" | "NEGOCIO") => (grupo === "CASA" ? opciones.cuentasCasa : opciones.cuentasNegocio);
@@ -122,7 +172,7 @@ function FormularioEdicion({
 
   const categorias = forma.categoria?.clase === "FIJO" ? opciones.fijos : opciones.sobres;
   return (
-    <form onSubmit={guardar} noValidate className={cnDialogRecipes.body}>
+    <form ref={formRef} onSubmit={guardar} noValidate className={cnDialogRecipes.body}>
       <h2 id={`editar-${movimiento.id}`} className={cnDialogRecipes.title}>
         Editar {nombre}
       </h2>
@@ -199,18 +249,20 @@ function FormularioEdicion({
 function ConfirmarAnulacion({
   movimiento,
   nombre,
-  onCerrar,
+  onAnulado,
   onVolver,
 }: {
   movimiento: MovimientoEditable;
   nombre: string;
-  onCerrar: () => void;
+  /** Closes the dialog knowing the row is about to leave the book. */
+  onAnulado: () => void;
   onVolver: () => void;
 }) {
   const router = useRouter();
   const [motivo, setMotivo] = useState("");
   const [conflicto, setConflicto] = useState(false);
-  const { pendiente, estado, enviar, limpiarCampo } = useEnvio<unknown>();
+  const { pendiente, estado, enviar, limpiarCampo, formRef } = useEnvio<unknown>();
+  useFocoInicial(formRef);
 
   function anular(ev: React.FormEvent) {
     ev.preventDefault();
@@ -220,12 +272,12 @@ function ConfirmarAnulacion({
         if (!r.ok) setConflicto(r.conflicto);
         return r;
       },
-      () => onCerrar(),
+      () => onAnulado(),
     );
   }
 
   return (
-    <form onSubmit={anular} noValidate className={cnDialogRecipes.body}>
+    <form ref={formRef} onSubmit={anular} noValidate className={cnDialogRecipes.body}>
       <h2 id={`editar-${movimiento.id}`} className={cnDialogRecipes.title}>
         ¿Anular {nombre}?
       </h2>
