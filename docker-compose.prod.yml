@@ -48,6 +48,10 @@ services:
       DOCUMENT_UPLOAD_MAX_BYTES: ${DOCUMENT_UPLOAD_MAX_BYTES:-10485760}
       DOCUMENT_UPLOAD_MAX_FILES: ${DOCUMENT_UPLOAD_MAX_FILES:-10}
       DOCUMENTOS_CRON_SECRET: ${DOCUMENTOS_CRON_SECRET:?DOCUMENTOS_CRON_SECRET requerido}
+      # Casa y Negocio avisos -> Telegram (n8n). Optional on purpose: unset
+      # keeps /api/cron/casa-negocio-avisos closed (401) instead of blocking
+      # the deploy before the bot exists. See docs/estado/lanzamiento-casa-negocio.md.
+      CASA_NEGOCIO_CRON_SECRET: ${CASA_NEGOCIO_CRON_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
