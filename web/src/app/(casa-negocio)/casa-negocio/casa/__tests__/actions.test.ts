@@ -21,10 +21,11 @@ const h = vi.hoisted(() => {
     cnMovimiento: { findUnique: vi.fn() },
     $transaction: vi.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
   };
-  return { tx, prisma, revalidatePath: vi.fn(), user: { id: "u1", nombre: "Padre", roles: ["ADMIN"] } };
+  return { tx, prisma, revalidatePath: vi.fn(), logEvent: vi.fn(), user: { id: "u1", nombre: "Padre", roles: ["ADMIN"] } };
 });
 
 vi.mock("next/cache", () => ({ revalidatePath: h.revalidatePath }));
+vi.mock("@/server/observability/log", () => ({ logEvent: h.logEvent }));
 vi.mock("@/lib/prisma", () => ({ prisma: h.prisma }));
 vi.mock("@/server/auth/guards", () => ({
   requireUser: vi.fn(async () => h.user),
@@ -186,9 +187,8 @@ describe("asignarCuentaAction", () => {
 
 describe("fallo", () => {
   it("hides unexpected errors behind a generic message", () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(fallo(new Error("connection reset"))).toEqual({ ok: false, mensaje: MENSAJE_INESPERADO, campos: {}, conflicto: false });
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
+    const error = new Error("connection reset");
+    expect(fallo(error)).toEqual({ ok: false, mensaje: MENSAJE_INESPERADO, campos: {}, conflicto: false });
+    expect(h.logEvent).toHaveBeenCalledWith("error", "casa_negocio.accion_fallida", {}, error);
   });
 });

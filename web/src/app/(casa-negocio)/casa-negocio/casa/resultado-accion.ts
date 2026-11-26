@@ -12,6 +12,7 @@
  *
  * Plain module (no "use server"), so tests and both tabs' actions share it.
  */
+import { logEvent } from "@/server/observability/log";
 import { ConcurrentModificationError } from "@/server/optimistic-lock";
 import { CasaNegocioPermisoError, CasaNegocioReglaError } from "@/server/casa-negocio/errors";
 import { InputValidationError, type FieldErrors } from "@/server/validation/input";
@@ -35,7 +36,7 @@ export function fallo(error: unknown): ResultadoAccion<never> {
   if (error instanceof ConcurrentModificationError) {
     return { ok: false, mensaje: error.message, campos: {}, conflicto: true };
   }
-  console.error("[casa-negocio] acción falló", error);
+  logEvent("error", "casa_negocio.accion_fallida", {}, error);
   return { ok: false, mensaje: MENSAJE_INESPERADO, campos: {}, conflicto: false };
 }
 
