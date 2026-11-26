@@ -378,3 +378,13 @@ export const revertirCastigoSchema = z.object({
   motivo: requiredText(500, "el motivo"),
 });
 export type RevertirCastigoInput = z.input<typeof revertirCastigoSchema>;
+
+// ---------------------------------------------------------------------------
+// Account deletion (only for accounts nothing ever touched)
+// ---------------------------------------------------------------------------
+
+export const eliminarCuentaSchema = z.object({
+  cuentaId: entityId("la cuenta"),
+  version: rowVersion,
+});
+export type EliminarCuentaInput = z.input<typeof eliminarCuentaSchema>;

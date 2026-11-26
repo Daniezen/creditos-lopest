@@ -172,3 +172,8 @@
   --dataviz-cn-future-ground: var(--lopest-cn-paper);
   --dataviz-cn-surface: var(--lopest-cn-surface);
 }
+
+/* Casa y Negocio · Configuración: the variables column ground. */
+:root {
+  --cn-color-casa-tint: var(--lopest-cn-casa-tint);
+}

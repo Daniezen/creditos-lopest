@@ -123,3 +123,8 @@
   --lopest-cn-ahorro-on-ink: #fbbf24;
   --lopest-cn-ok-ring: #bbf7d0;
 }
+
+/* Casa y Negocio · Configuración (Configuracion.dc.html). */
+:root {
+  --lopest-cn-casa-tint: #e6f2f0;
+}
