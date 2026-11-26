@@ -106,6 +106,11 @@ export interface VistaNegocio {
   libro: FilaNegocio[];
   /** Cobros and disbursements of ANY month still without account, oldest first. */
   sinCuenta: PendienteAsignar[];
+  /**
+   * Account the picker starts on, so assigning several in a row is one click
+   * each: the one most used this month for that kind, else the first account.
+   */
+  sugerida: { cobro: string | null; desembolso: string | null };
 }
 
 const fmt = (n: number) => `$ ${Math.round(Math.abs(n)).toLocaleString("es-CO")}`;
@@ -272,7 +277,19 @@ export function construirVistaNegocio(datos: CasaNegocioMes): VistaNegocio {
     },
     libro,
     sinCuenta,
+    sugerida: {
+      cobro: masUsada(datos.cobros.map((c) => c.cuentaId), idsNegocio) ?? cuentasNegocio[0]?.id ?? null,
+      desembolso: masUsada(datos.desembolsos.map((d) => d.cuentaId), idsNegocio) ?? cuentasNegocio[0]?.id ?? null,
+    },
   };
+}
+
+function masUsada(ids: readonly (string | null)[], validas: ReadonlySet<string>): string | null {
+  const cuenta = new Map<string, number>();
+  for (const id of ids) if (id && validas.has(id)) cuenta.set(id, (cuenta.get(id) ?? 0) + 1);
+  let mejor: string | null = null;
+  for (const [id, n] of cuenta) if (mejor === null || n > cuenta.get(mejor)!) mejor = id;
+  return mejor;
 }
 
 /** Manual movement as a book row, or null when it touches no business account. */
