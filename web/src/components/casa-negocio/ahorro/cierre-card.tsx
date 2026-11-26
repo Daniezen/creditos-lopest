@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 
 import { cnAhorroRecipes } from "@/design-system/recipes/casa-negocio-ahorro-arqueo";
@@ -42,6 +42,19 @@ export function CierreCard({ cierre, destino, pasar }: CierreCardProps) {
   const [resultado, setResultado] = useState<ResultadoAccion<unknown> | null>(null);
   const [pendiente, startTransition] = useTransition();
   const ids = { titulo: useId(), monto: useId(), origen: useId(), mensaje: useId() };
+  // Focus targets: the opener gets focus back when the confirmation closes
+  // (cancel or failure-free submit removes the form the focus was in), and a
+  // success message takes it so it is read even if the button disappeared.
+  const abrirRef = useRef<HTMLButtonElement>(null);
+  const mensajeRef = useRef<HTMLParagraphElement>(null);
+  // Set by the handlers, consumed after the next commit (when the target exists).
+  const focoPendiente = useRef<"abrir" | "mensaje" | null>(null);
+  useEffect(() => {
+    const destino = focoPendiente.current;
+    focoPendiente.current = null;
+    if (destino === "abrir") abrirRef.current?.focus();
+    if (destino === "mensaje") mensajeRef.current?.focus();
+  }, [confirmando, resultado]);
 
   const origen = cierre.origenes.find((o) => o.id === origenId) ?? null;
   const figura = cierre.estado === "HECHO" && cierre.hecho ? cierre.hecho.monto : cierre.estado === "FUTURO" ? null : cierre.sobrante;
@@ -52,7 +65,10 @@ export function CierreCard({ cierre, destino, pasar }: CierreCardProps) {
     startTransition(async () => {
       const r = await pasar({ mes: cierre.mes, cuentaOrigenId: origenId, monto });
       setResultado(r);
-      if (r.ok) setConfirmando(false);
+      if (r.ok) {
+        setConfirmando(false);
+        focoPendiente.current = "mensaje";
+      }
     });
   };
 
@@ -145,6 +161,7 @@ export function CierreCard({ cierre, destino, pasar }: CierreCardProps) {
                   setConfirmando(false);
                   setResultado(null);
                   setMonto(montoEditable(cierre.propuesto));
+                  focoPendiente.current = "abrir";
                 }}
                 disabled={pendiente}
               >
@@ -154,6 +171,7 @@ export function CierreCard({ cierre, destino, pasar }: CierreCardProps) {
           </form>
         ) : (
           <button
+            ref={abrirRef}
             type="button"
             className={cnAhorroRecipes.closingButton}
             onClick={() => setConfirmando(true)}
@@ -166,7 +184,12 @@ export function CierreCard({ cierre, destino, pasar }: CierreCardProps) {
 
       <div aria-live="polite">
         {resultado ? (
-          <p id={ids.mensaje} role={resultado.ok ? "status" : "alert"} className={resultado.ok ? cnAhorroRecipes.message : cnAhorroRecipes.messageError}>
+          <p
+            ref={mensajeRef}
+            id={ids.mensaje}
+            tabIndex={-1}
+            role={resultado.ok ? "status" : "alert"}
+            className={resultado.ok ? cnAhorroRecipes.message : cnAhorroRecipes.messageError}>
             {resultado.mensaje}
           </p>
         ) : null}

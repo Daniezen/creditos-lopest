@@ -73,15 +73,29 @@ describe("Arqueo markup", () => {
     expect(cnArqueoRecipes.grid).toContain("max-md:grid-cols-1");
   });
 
-  it("without `contar` the fields are read-only and there is no save", () => {
+  it("without `contar` nothing is editable: no field, no live tally, no save", () => {
     const sinContar = construirVistaArqueo(mesFixture({ usuario: { id: "m", nombre: "Madre", capacidades: ["VER"] } }));
     const html = renderToStaticMarkup(<ArqueoView vista={sinContar} />);
     expect(html).not.toContain("Guardar arqueo");
-    expect((html.match(/readOnly=""/gi) ?? []).length).toBe(5);
+    expect(html).not.toContain("<input");
+    // «0 de 5 cuadran» would be false for someone who cannot count.
+    expect(html).not.toMatch(/de 5<\/span>/);
+    // Still readable: what Lopest says and when each account was last counted.
+    expect(html).toContain("$ 11.900.000");
+    expect(html).toMatch(/Nunca contada|Contada el /);
   });
 
   it("with no accounts it is an empty state", () => {
     const html = renderToStaticMarkup(<ArqueoView vista={construirVistaArqueo(mesFixture({ cuentas: [] }))} />);
     expect(html).toContain("No hay cuentas para contar");
+  });
+});
+
+describe("touch targets of the small controls (44px)", () => {
+  it("the cierre's origin picker and Resumen's range options", async () => {
+    const { cnAhorroRecipes } = await import("@/design-system/recipes/casa-negocio-ahorro-arqueo");
+    const { cnResumenRecipes } = await import("@/design-system/recipes/casa-negocio");
+    expect(cnAhorroRecipes.closingSelect).toContain("min-h-11");
+    expect(cnResumenRecipes.rangeOption).toContain("min-h-11");
   });
 });
