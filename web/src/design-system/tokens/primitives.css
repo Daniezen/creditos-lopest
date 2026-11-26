@@ -96,3 +96,15 @@
   --ds-cn-money-min: 32.5rem;
   --ds-cn-street-min: 16.25rem;
 }
+
+/* Casa y Negocio · Configuración geometry (Configuracion.dc.html). */
+:root {
+  --ds-cn-config-card-min: 11.25rem;
+  --ds-cn-config-column: 26.25rem;
+  --ds-cn-config-meta: 9.375rem;
+  --ds-cn-config-umbral: 3.25rem;
+  --ds-cn-config-matrix-min: 40rem;
+  --ds-cn-config-dialog: 30rem;
+  --ds-cn-config-switch-on: 1.3125rem;
+  --ds-cn-config-switch-off: 0.1875rem;
+}

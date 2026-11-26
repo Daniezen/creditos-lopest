@@ -149,3 +149,8 @@
   --dataviz-cn-tooltip-surface: var(--lopest-cn-ink);
   --dataviz-cn-tooltip-text: var(--lopest-cn-on-ink);
 }
+
+/* Casa y Negocio · Configuración: the variables column ground. */
+:root {
+  --cn-color-casa-tint: var(--lopest-cn-casa-tint);
+}
