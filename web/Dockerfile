@@ -67,7 +67,11 @@ RUN DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm exec prisma generate
 # CHANGELOG.md mal formado detiene aquí la imagen (docs/specs/versiones.md §6).
 # Next build puede cargar módulos server-side que importan Prisma.
 # Mantener DATABASE_URL dummy aquí evita acoplar el build a la base real.
-RUN DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm build
+# Same heap as `pnpm validate` (scripts/validate.mjs): with Node's default
+# ceiling `next build` dies of "heap out of memory" since Casa y Negocio
+# landed. 3.5 GB fits the VPS next to Postgres, n8n and the live app.
+ARG BUILD_NODE_OPTIONS="--max-old-space-size=3584"
+RUN NODE_OPTIONS="${BUILD_NODE_OPTIONS}" DATABASE_URL="${PRISMA_GENERATE_DATABASE_URL}" pnpm build
 
 # ----------------------------------------------------------------------------
 # Migraciones Prisma
