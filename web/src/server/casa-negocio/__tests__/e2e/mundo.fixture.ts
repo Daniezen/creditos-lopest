@@ -269,7 +269,6 @@ export function corte(m: Mundo, ahora: Date): Mundo {
 // Readers
 // ---------------------------------------------------------------------------
 
-const POR_COBRAR = ["PENDIENTE", "ATRASADO", "MORA"] as const;
 const vivos = (m: Mundo) => m.movimientos.filter((x) => !x.anulado);
 const castigoActivo = (m: Mundo, creditoId: string) => m.castigos.some((c) => c.creditoId === creditoId && !c.revertido);
 const estadoDe = (e: EventoMundo) => (e.pago ? "PAGADO" : (e.estadoPendiente ?? "PENDIENTE"));
@@ -426,7 +425,7 @@ export function leerMes(mundo: Mundo, mes: string, ahora: Date): CasaNegocioMes 
           ...ref(e.creditoId),
           numeroCuota: e.numeroCuota,
           fechaProgramada: e.fechaProgramada,
-          estado: (e.estadoPendiente ?? "PENDIENTE") as (typeof POR_COBRAR)[number],
+          estado: e.estadoPendiente ?? "PENDIENTE",
           pendiente: e.capitalProgramado + e.interesProgramado,
           capital: e.capitalProgramado,
           interes: e.interesProgramado,

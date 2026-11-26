@@ -67,7 +67,6 @@ import { cierresDe, dia, leerMes, local, mundoBase, type Mundo } from "./mundo.f
 
 const run = randomUUID().slice(0, 8);
 const PADRE = { id: `padre_e2e_${run}`, nombre: "Padre", roles: ["ADMIN"] };
-const E01 = local("2027-01-01", "10:00");
 const E02 = local("2027-01-02", "09:00");
 const E20 = local("2027-01-20", "12:00");
 
