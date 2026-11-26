@@ -39,6 +39,27 @@
     radial-gradient(circle at 12% 20%, rgb(217 70 239 / 10%), transparent 30%),
     linear-gradient(100deg, #faf5ff 0%, #ffffff 52%, #fff7ed 100%);
   --lopest-title-accent: linear-gradient(90deg, #7c3aed, #d946ef);
+  --lopest-login-bg: radial-gradient(circle at top left, #ede9fe 0%, #faf5ff 38%, #fff7ed 100%);
+  --lopest-avatar-gradient: linear-gradient(145deg, #7c3aed, #d946ef);
+  --lopest-card-gradient: linear-gradient(135deg, #ffffff 0%, #f5f3ff 60%, #fff7ed 100%);
+  --lopest-initials-bg: radial-gradient(circle at top left, #ddd6fe 0%, #f5d0fe 45%, #ffedd5 100%);
+
+  /*
+    Data visualization (consumed through the semantic --dataviz-* roles).
+    Series colors come in role pairs: the realized pair reads as "already in
+    the bank" (blue capital, green interest); the projected pair is one violet
+    hue in two strengths so a forecast never looks like collected money.
+  */
+  --lopest-dataviz-realized-primary: #3b82f6;
+  --lopest-dataviz-realized-secondary: #10b981;
+  --lopest-dataviz-projected-primary: #8b5cf6;
+  --lopest-dataviz-projected-secondary: #c4b5fd;
+  --lopest-dataviz-grid: #e2e8f0;
+  --lopest-dataviz-cursor: #f1f5f9;
+}
+
+/*
+  ============================================================================
   Casa y Negocio visual language (approved canvas, 25-nov-2026).
   Source: docs/design-system/lienzo-casa-negocio/*.dc.html and
   docs/specs/casa-negocio.md §6. It is the base of the app-wide redesign;
@@ -110,25 +131,4 @@
 /* Casa y Negocio · Configuración (Configuracion.dc.html). */
 :root {
   --lopest-cn-casa-tint: #e6f2f0;
-=======
-  --lopest-login-bg: radial-gradient(circle at top left, #ede9fe 0%, #faf5ff 38%, #fff7ed 100%);
-  --lopest-avatar-gradient: linear-gradient(145deg, #7c3aed, #d946ef);
-  --lopest-card-gradient: linear-gradient(135deg, #ffffff 0%, #f5f3ff 60%, #fff7ed 100%);
-  --lopest-initials-bg: radial-gradient(circle at top left, #ddd6fe 0%, #f5d0fe 45%, #ffedd5 100%);
-
-  /*
-    Data visualization (consumed through the semantic --dataviz-* roles).
-    Series colors come in role pairs: the realized pair reads as "already in
-    the bank" (blue capital, green interest); the projected pair is one violet
-    hue in two strengths so a forecast never looks like collected money.
-  */
-  --lopest-dataviz-realized-primary: #3b82f6;
-  --lopest-dataviz-realized-secondary: #10b981;
-  --lopest-dataviz-projected-primary: #8b5cf6;
-  --lopest-dataviz-projected-secondary: #c4b5fd;
-  --lopest-dataviz-grid: #e2e8f0;
-  --lopest-dataviz-cursor: #f1f5f9;
 }
-
-/*
-  =====================================================================}

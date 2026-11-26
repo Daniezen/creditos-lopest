@@ -115,11 +115,8 @@ export function ClientDocumentsPanel(props: ClientDocumentsPanelProps) {
             updateStatus(current.id, "success");
             finalStatuses.set(current.id, "success");
           } catch (error) {
-            console.error("Fallo al adjuntar documento", {
-              clienteId: props.clienteId,
-              fileName: current.file.name,
-              error,
-            });
+            // Shown on the file's row below; the server route logs the cause
+            // with logEvent, so the browser console adds nothing.
             finalStatuses.set(current.id, "error");
             updateStatus(
               current.id,
