@@ -34,8 +34,36 @@ async function correr(nombre: string, servicio: () => Promise<unknown>): Promise
   return resultado;
 }
 
+/**
+ * Creates an account and, when the form asked for it («Es la cuenta de
+ * ahorro», the 1-dic case of a new Nu account), makes it the savings account
+ * right after. Two services, two transactions, each re-checking CONFIGURAR:
+ * the settings row has its own version, so it cannot join the account's
+ * transaction without duplicating that service. If the second step fails the
+ * account exists anyway, and the message says exactly that so nobody creates
+ * it twice.
+ *
+ * Extra form fields (`esAhorro`, `configVersion`, the two goals as last read)
+ * are taken out here; the account schema never sees them.
+ */
 export async function crearCuentaAction(input: unknown): Promise<ResultadoAccion> {
-  return correr("cuenta.crear", () => crearCuenta(input));
+  const { esAhorro, configVersion, metaAsignacionCasa, metaAhorro, ...cuenta } =
+    typeof input === "object" && input !== null ? (input as Record<string, unknown>) : {};
+  let cuentaId: string | null = null;
+  const creada = await ejecutarAccion("cuenta.crear", async () => {
+    cuentaId = (await crearCuenta(cuenta)).cuentaId;
+  });
+  if (!creada.ok) return creada;
+  revalidatePath(MODULO, "layout");
+  if (esAhorro !== "true" || cuentaId === null) return creada;
+
+  const marcada = await ejecutarAccion("configuracion.editar", () =>
+    editarConfiguracion({ version: configVersion, metaAsignacionCasa, metaAhorro, cuentaAhorroId: cuentaId }),
+  );
+  if (!marcada.ok) {
+    return { ok: false, error: `La cuenta se creó, pero no quedó como cuenta de ahorro: ${marcada.error}` };
+  }
+  return marcada;
 }
 
 export async function editarCuentaAction(input: unknown): Promise<ResultadoAccion> {

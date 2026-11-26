@@ -75,22 +75,26 @@ function Regla({ aviso, puedeConfigurar }: { aviso: AvisoConfig; puedeConfigurar
         {def.antes}
         {def.despues !== null ? (
           <>
-            <input
-              className={r.umbral}
-              inputMode="numeric"
-              value={umbral}
-              aria-label={`Valor: ${frase}`}
-              readOnly={!puedeConfigurar}
-              aria-invalid={accion.error ? true : undefined}
-              onChange={(e) => setUmbral(e.target.value)}
-              onBlur={() => {
-                if (umbral.trim() !== inicial) guardar({ umbral: umbral.trim() });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-                if (e.key === "Escape") setUmbral(inicial);
-              }}
-            />
+            {puedeConfigurar ? (
+              <input
+                className={r.umbral}
+                inputMode="numeric"
+                value={umbral}
+                aria-label={`Valor: ${frase}`}
+                aria-invalid={accion.error ? true : undefined}
+                onChange={(e) => setUmbral(e.target.value)}
+                onBlur={() => {
+                  if (umbral.trim() !== inicial) guardar({ umbral: umbral.trim() });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") setUmbral(inicial);
+                }}
+              />
+            ) : (
+              // Read-only viewer: the number inside the sentence, nothing editable.
+              <span className={r.umbralValue}>{inicial || "—"}</span>
+            )}
             {def.despues}
           </>
         ) : null}

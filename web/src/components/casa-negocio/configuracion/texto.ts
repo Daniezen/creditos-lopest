@@ -188,3 +188,37 @@ export function quitariaUltimoConfigurador(
 
 export const ULTIMO_CONFIGURADOR =
   "Alguien tiene que poder configurar el módulo; da ese permiso a otra persona primero.";
+
+// ---------------------------------------------------------------------------
+// Account cards
+// ---------------------------------------------------------------------------
+
+/** «1 dic 2026» from a `AAAA-MM-DD` day (no time zone involved: it is a calendar day). */
+export function diaConAnio(dia: string): string {
+  const [anio, mes, d] = dia.split("-").map(Number);
+  return `${d} ${MESES[mes - 1]?.slice(0, 3) ?? ""} ${anio}`;
+}
+
+/**
+ * Third line of an account card: the opening balance and the day it was
+ * counted («Inicial $ 1.320.000 · 1 dic 2026»). It is what the father types
+ * on the first day, so a wrong figure is visible without opening the editor.
+ */
+export function saldoInicialTexto(saldoInicial: number, fecha: string): string {
+  return `Inicial $ ${Math.round(saldoInicial).toLocaleString("es-CO")} · ${diaConAnio(fecha)}`;
+}
+
+/**
+ * Whether «Es la cuenta de ahorro» starts ticked in the account editor: yes
+ * when it already is, or when a new household savings account is created
+ * and none is chosen yet (the usual 1-dic case: one savings account, Nu).
+ */
+export function ahorroMarcadoPorDefecto(
+  cuenta: { esCuentaAhorro: boolean } | null,
+  grupo: GrupoCuenta,
+  tipo: TipoCuenta,
+  cuentaAhorroId: string | null,
+): boolean {
+  if (cuenta) return cuenta.esCuentaAhorro;
+  return grupo === "CASA" && tipo === "AHORRO" && cuentaAhorroId === null;
+}
