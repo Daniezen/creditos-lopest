@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, LogOut, MoreHorizontal } from "lucide-react";
+import { LogOut, MoreHorizontal } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 import { VersionFooterLink } from "@/components/versiones/version-footer-link";
@@ -24,11 +24,12 @@ export function MobileBottomNav({ version = null }: MobileBottomNavProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Four destinations fit the bar; the rest (Reportes, Casa y Negocio, …)
+  // go into «Más», in the sidebar's order.
   const primaryItems = dashboardNavigation.slice(0, 4);
-  const reportsItem = dashboardNavigation.find((item) => item.href === "/reportes");
-  const moreActive = Boolean(
-    reportsItem &&
-      (pathname === reportsItem.href || pathname.startsWith(`${reportsItem.href}/`)),
+  const moreItems = dashboardNavigation.slice(4).filter((item) => !item.disabled);
+  const moreActive = moreItems.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
 
   useEffect(() => {
@@ -67,16 +68,20 @@ export function MobileBottomNav({ version = null }: MobileBottomNavProps) {
           >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--color-border-default)]" />
 
-            {reportsItem ? (
-              <Link
-                href={reportsItem.href}
-                onClick={() => setMoreOpen(false)}
-                className="flex min-h-12 items-center gap-3 border-b border-[var(--color-border-subtle)] px-2 py-3 text-sm font-[var(--font-weight-action)] text-[var(--color-text-primary)] transition hover:bg-[var(--color-selection)] hover:text-[var(--color-selection-strong)]"
-              >
-                <BarChart3 className="h-5 w-5 text-[var(--color-selection-strong)]" />
-                <span>Reportes</span>
-              </Link>
-            ) : null}
+            {moreItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreOpen(false)}
+                  className="flex min-h-12 items-center gap-3 border-b border-[var(--color-border-subtle)] px-2 py-3 text-sm font-[var(--font-weight-action)] text-[var(--color-text-primary)] transition hover:bg-[var(--color-selection)] hover:text-[var(--color-selection-strong)]"
+                >
+                  <Icon className="h-5 w-5 text-[var(--color-selection-strong)]" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
 
             <button
               type="button"

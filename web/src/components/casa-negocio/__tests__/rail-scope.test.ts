@@ -57,7 +57,9 @@ describe("rail destinations", () => {
   const items = buildRailItems();
 
   it("are the app sidebar's, in its order, plus Casa y Negocio at the end", () => {
-    expect(items.map((item) => item.href)).toEqual([...dashboardNavigation.map((item) => item.href), CASA_NEGOCIO_HREF]);
+    const sinModulo = dashboardNavigation.filter((item) => item.href !== CASA_NEGOCIO_HREF).map((item) => item.href);
+    expect(items.map((item) => item.href)).toEqual([...sinModulo, CASA_NEGOCIO_HREF]);
+    expect(items.filter((item) => item.href === CASA_NEGOCIO_HREF)).toHaveLength(1);
   });
 
   it("use the canvas' short names and glyphs", () => {

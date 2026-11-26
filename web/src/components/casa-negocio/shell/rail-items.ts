@@ -60,9 +60,14 @@ const CASA_NEGOCIO_NAV: DashboardNavItem = {
   icon: House,
 };
 
-/** Rail destinations: the app sidebar's, in its order, then Casa y Negocio. */
+/**
+ * Rail destinations: the app sidebar's, in its order, with Casa y Negocio
+ * last. The sidebar lists the module itself now; it is appended only when a
+ * navigation without it is passed, so it never shows twice.
+ */
 export function buildRailItems(navigation: readonly DashboardNavItem[] = dashboardNavigation): RailItem[] {
-  return [...navigation.filter((item) => !item.disabled), CASA_NEGOCIO_NAV].map((item) => {
+  const visibles = navigation.filter((item) => !item.disabled && item.href !== CASA_NEGOCIO_HREF);
+  return [...visibles, CASA_NEGOCIO_NAV].map((item) => {
     const canvas = CANVAS[item.href];
     return {
       href: item.href,

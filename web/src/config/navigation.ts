@@ -3,6 +3,7 @@ import {
   BarChart3,
   Calculator,
   CreditCard,
+  House,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -15,6 +16,8 @@ import {
  * - Las reglas de autorización viven en las rutas/acciones de servidor.
  * - Transferencias se muestra como módulo; usuarios sin permiso quedan
  *   bloqueados por el guard de /transferencias.
+ * - Casa y Negocio igual: su layout exige `casa_negocio.ver` y, sin ella,
+ *   muestra «sin acceso» en vez de las pestañas.
  */
 export interface DashboardNavItem {
   label: string;
@@ -54,5 +57,11 @@ export const dashboardNavigation: DashboardNavItem[] = [
     href: "/reportes",
     description: "Panel de reportes e indicadores financieros.",
     icon: BarChart3,
+  },
+  {
+    label: "Casa y Negocio",
+    href: "/casa-negocio",
+    description: "La plata del negocio y de la casa, mes a mes.",
+    icon: House,
   },
 ];
