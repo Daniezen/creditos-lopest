@@ -39,13 +39,24 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { calcularCumplimientoCobros, calcularGananciaRetiros, proyectarCobros } from "@/features/casa-negocio/domain/resumen";
 import { NOMBRES_MES } from "@/features/casa-negocio/domain/dates";
 import { fechaClave, mesClave, rangoMes, sumarMeses } from "@/features/casa-negocio/mes";
-import type { FechaDia, HistorialMes, Mes, TipoCuenta, TramoAtraso, TramoCartera } from "@/features/casa-negocio/types";
+import type {
+  CasaNegocioMes,
+  ClaseGasto,
+  FechaDia,
+  HistorialMes,
+  Mes,
+  Periodicidad,
+  TipoCuenta,
+  TramoAtraso,
+  TramoCartera,
+} from "@/features/casa-negocio/types";
 
-import { construirHistorial, type HechoMovimiento } from "./agregados";
+import { categoriaDelMes, construirHistorial, type HechoMovimiento } from "./agregados";
 import { requireCapacidad } from "./capacidades";
 import { aCentavos, aPesos, type Monetario } from "./dinero";
 import { cargarAsientos, desgloseCobro, resumirSaldo, type EventoCobro } from "./saldos";
 import type { LectorCasaNegocio } from "./queries";
+import { alCierreCasa } from "./vista-mes";
 
 // ---------------------------------------------------------------------------
 // Contract (plain data, safe to pass to Client Components)
@@ -164,6 +175,27 @@ export interface FilaPendiente extends FilaProgramada {
   interesPagado: Monetario;
 }
 
+/**
+ * A movement of the window. `fecha` and `categoriaId` are what the house
+ * «al cierre» needs (which fixed expense a payment settles, and when).
+ */
+export interface MovimientoResumen extends HechoMovimiento {
+  fecha?: FechaDia;
+  categoriaId?: string | null;
+}
+
+/** A household expense category, as stored (its month figures are derived here). */
+export interface CategoriaResumen {
+  id: string;
+  nombre: string;
+  clase: ClaseGasto;
+  monto: number | null;
+  periodicidad: Periodicidad;
+  mesAnual: number | null;
+  diaPago: number | null;
+  activa: boolean;
+}
+
 export interface DatosResumen {
   hoy: FechaDia;
   inicioModulo: FechaDia | null;
@@ -171,7 +203,13 @@ export interface DatosResumen {
   cobros: readonly FilaCobro[];
   programadas: readonly FilaProgramada[];
   pendientes: readonly FilaPendiente[];
-  movimientos: readonly HechoMovimiento[];
+  movimientos: readonly MovimientoResumen[];
+  /**
+   * Household categories, for «Casa sobró» of closed months. The loaders
+   * always pass them; without them (older hand-written fixtures) a closed
+   * month falls back to «hoy», which ignores unpaid fixed expenses.
+   */
+  categorias?: readonly CategoriaResumen[];
   castigos: readonly { mes: Mes; monto: Monetario }[];
   /** Savings balance at the end of each month, null where no savings account existed yet. */
   ahorroFinMes: Readonly<Record<Mes, number | null>>;
@@ -377,6 +415,40 @@ export function construirVistaResumen(datos: DatosResumen): VistaResumen {
   const creditos = tramos.reduce((s, t) => s + t.creditos, 0);
 
   // --- Mes a mes ----------------------------------------------------------------
+  // «Casa sobró» of a CLOSED month is the house «al cierre» (spec §3: entró −
+  // fijos − variables − fijos sin pagar), computed by the same bridge function
+  // Ahorro's cierre and the Tablero's rule 10 use, so the card and «Pasar al
+  // ahorro» never disagree about a month with a fixed expense left unpaid.
+  // The current month keeps «hoy» (what is left right now): its unpaid fixed
+  // expenses may still be paid before the month ends.
+  const casaAlCierre = (mes: Mes): number | null => {
+    if (!datos.categorias) return null;
+    const delMes = datos.movimientos.filter((m) => m.mes === mes && m.fecha !== undefined);
+    const movimientos = delMes.map((m) => ({
+      tipo: m.tipo,
+      fecha: m.fecha!,
+      monto: aPesos(aCentavos(m.monto)),
+      categoriaId: m.categoriaId ?? null,
+    }));
+    const categorias = datos.categorias.map((c, orden) => ({
+      ...c,
+      orden,
+      ...categoriaDelMes(
+        c,
+        mes,
+        datos.hoy,
+        delMes.filter((m) => m.categoriaId === c.id).map((m) => m.monto),
+      ),
+    }));
+    // alCierreCasa reads only tipo/fecha/monto/categoriaId of the movements and
+    // the expense fields of the categories; the rest of the read contract
+    // (ids, versions, actors) does not exist in this multi-month read.
+    return alCierreCasa(mes, datos.hoy, {
+      movimientos: movimientos as unknown as CasaNegocioMes["movimientos"],
+      categorias: categorias as unknown as CasaNegocioMes["categorias"],
+    });
+  };
+
   const tarjetas: TarjetaMes[] = recortar(ventana(mesActual, datos.rango))
     .map((mes): TarjetaMes => {
       const h = historialPorMes.get(mes)!;
@@ -389,7 +461,7 @@ export function construirVistaResumen(datos: DatosResumen): VistaResumen {
         ganancia: aPesos(ganancia),
         retiros: a ? aPesos(n.retirosCasa) : null,
         reinvertido: a ? aPesos(ganancia - n.retirosCasa) : null,
-        casaSobro: a ? aPesos(casa) : null,
+        casaSobro: a ? (mes < mesActual ? (casaAlCierre(mes) ?? aPesos(casa)) : aPesos(casa)) : null,
         ahorro: a ? (datos.ahorroFinMes[mes] ?? null) : null,
         actual: mes === mesActual,
       };
@@ -542,7 +614,7 @@ export async function cargarVistaResumen(
     }),
     db.cnMovimiento.findMany({
       where: { eliminadoEn: null, fecha: { gte: inicioVentana, lt: finActual } },
-      select: { fecha: true, tipo: true, monto: true, cuentaOrigenId: true, cuentaDestinoId: true },
+      select: { fecha: true, tipo: true, monto: true, cuentaOrigenId: true, cuentaDestinoId: true, categoriaId: true },
     }),
     db.cnCuenta.findMany({ select: { id: true, tipo: true, saldoInicial: true, fechaSaldoInicial: true } }),
     db.cnCastigoCredito.findMany({
@@ -574,6 +646,8 @@ export async function cargarVistaResumen(
     pendientes,
     movimientos: movimientos.map((m) => ({
       mes: mesClave(m.fecha),
+      fecha: fechaClave(m.fecha),
+      categoriaId: m.categoriaId,
       tipo: m.tipo,
       monto: m.monto,
       tipoOrigen: m.cuentaOrigenId ? (tipoCuenta.get(m.cuentaOrigenId) ?? null) : null,
@@ -582,5 +656,16 @@ export async function cargarVistaResumen(
     castigos: castigos.map((c) => ({ mes: mesClave(c.fecha), monto: c.monto })),
     ahorroFinMes,
     tramos: mesModulo.cartera.tramos,
+    // The month read already carries every category (active or not) as stored.
+    categorias: mesModulo.categorias.map((c) => ({
+      id: c.id,
+      nombre: c.nombre,
+      clase: c.clase,
+      monto: c.monto,
+      periodicidad: c.periodicidad,
+      mesAnual: c.mesAnual,
+      diaPago: c.diaPago,
+      activa: c.activa,
+    })),
   });
 }

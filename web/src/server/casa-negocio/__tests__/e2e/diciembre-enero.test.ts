@@ -248,7 +248,7 @@ describe("Enero 2027 (20-ene)", () => {
    * Either the card shows «al cierre» for closed months, or its label must
    * say it is «hoy». Flip to `it` once decided and fixed.
    */
-  it.fails("Resumen y Ahorro dicen lo mismo de un mes cerrado con un fijo sin pagar", () => {
+  it("Resumen y Ahorro dicen lo mismo de un mes cerrado con un fijo sin pagar", () => {
     const m = mundoBase();
     m.movimientos = m.movimientos.filter((x) => x.id !== "d-servicios" && x.id !== "e-cierre-dic");
     const ahorro = construirVistaAhorro(leerMes(m, "2026-12", E20), cierresDe(m, E20));

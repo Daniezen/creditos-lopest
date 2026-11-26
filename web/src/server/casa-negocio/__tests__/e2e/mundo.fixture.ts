@@ -599,6 +599,8 @@ export function leerResumen(mundo: Mundo, ahora: Date, rango: 12 | 24 = 12): Dat
       .filter((x) => enVentana(dia(x.fecha)))
       .map((x) => ({
         mes: mesClave(dia(x.fecha)),
+        fecha: x.fecha,
+        categoriaId: x.categoria ?? null,
         tipo: x.tipo,
         monto: x.monto,
         tipoOrigen: x.origen ? (tipoCuenta.get(x.origen) ?? null) : null,
@@ -607,5 +609,6 @@ export function leerResumen(mundo: Mundo, ahora: Date, rango: 12 | 24 = 12): Dat
     castigos: m.castigos.filter((c) => !c.revertido && enVentana(dia(c.fecha))).map((c) => ({ mes: mesClave(dia(c.fecha)), monto: c.monto })),
     ahorroFinMes,
     tramos: leerMes(mundo, mesActual, ahora).cartera.tramos,
+    categorias: m.categorias.map((c) => ({ ...c, activa: c.activa ?? true })),
   };
 }
