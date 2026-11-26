@@ -276,7 +276,7 @@ export async function leerCierresAhorro(db: MovimientosCierre, prefijo = PREFIJO
 
 /** For the page: the cierre movements, behind `casa_negocio.ver`. */
 export async function obtenerCierresAhorro(): Promise<CierreAhorroRegistro[]> {
-  const [{ requireCapacidad }, { prisma }] = await Promise.all([import("./capacidades"), import("@/lib/prisma")]);
+  const { requireCapacidad, prisma } = await dependencias();
   await requireCapacidad("VER");
   return leerCierresAhorro(prisma as unknown as MovimientosCierre);
 }
@@ -305,19 +305,43 @@ function montoTexto(monto: number): string {
 }
 
 /**
+ * Server-only modules, loaded lazily (so the pure view model above imports
+ * without Prisma or NextAuth) and once: concurrent calls share one promise.
+ */
+let dependenciasCargadas: Promise<{
+  requireCapacidad: typeof import("./capacidades").requireCapacidad;
+  prisma: typeof import("@/lib/prisma").prisma;
+  pasarAlAhorro: typeof import("./movimientos").pasarAlAhorro;
+  cargarAsientos: typeof import("./saldos").cargarAsientos;
+  saldosActuales: typeof import("./saldos").saldosActuales;
+  CasaNegocioReglaError: typeof import("./errors").CasaNegocioReglaError;
+}> | null = null;
+
+function dependencias() {
+  dependenciasCargadas ??= Promise.all([
+    import("./capacidades"),
+    import("@/lib/prisma"),
+    import("./movimientos"),
+    import("./saldos"),
+    import("./errors"),
+  ]).then(([capacidades, db, movimientos, saldos, errors]) => ({
+    requireCapacidad: capacidades.requireCapacidad,
+    prisma: db.prisma,
+    pasarAlAhorro: movimientos.pasarAlAhorro,
+    cargarAsientos: saldos.cargarAsientos,
+    saldosActuales: saldos.saldosActuales,
+    CasaNegocioReglaError: errors.CasaNegocioReglaError,
+  }));
+  return dependenciasCargadas;
+}
+
+/**
  * «Pasar al ahorro» of a month's cierre. Capability `anotar` first, then the
  * input, then the once-per-month check; the transfer itself is the phase-1
  * `pasarAlAhorro`, which validates the accounts, audits and enforces the key.
  */
 export async function pasarCierreAlAhorro(raw: unknown, ahora: Date = new Date()): Promise<ResultadoCierre> {
-  const [{ requireCapacidad }, { prisma }, { pasarAlAhorro }, { cargarAsientos, saldosActuales }, { CasaNegocioReglaError }] =
-    await Promise.all([
-      import("./capacidades"),
-      import("@/lib/prisma"),
-      import("./movimientos"),
-      import("./saldos"),
-      import("./errors"),
-    ]);
+  const { requireCapacidad, prisma, pasarAlAhorro, cargarAsientos, saldosActuales, CasaNegocioReglaError } = await dependencias();
   await requireCapacidad("ANOTAR");
   const { mes, cuentaOrigenId, monto } = parseInput(pasarCierreSchema, raw);
   if (mes > mesClave(ahora)) throw new CasaNegocioReglaError("Ese mes todavía no empieza.");
