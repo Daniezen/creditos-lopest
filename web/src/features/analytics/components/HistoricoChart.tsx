@@ -30,8 +30,8 @@ export function HistoricoChart({ data }: { data: RecaudacionMes[] }) {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-        <p className="text-sm text-slate-500">No hay datos de recaudación históricos.</p>
+      <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)]">
+        <p className="text-sm font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">No hay datos de recaudación históricos.</p>
       </div>
     );
   }
@@ -47,12 +47,12 @@ export function HistoricoChart({ data }: { data: RecaudacionMes[] }) {
               data={chartData}
               margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-subtle)" />
               <XAxis 
                 dataKey="label" 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#64748b", fontSize: 12 }}
+                tick={{ fill: "var(--color-text-secondary)", fontSize: 12 }}
                 dy={10}
                 interval={0} 
               />
@@ -64,17 +64,17 @@ export function HistoricoChart({ data }: { data: RecaudacionMes[] }) {
                 }}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#64748b", fontSize: 12 }}
+                tick={{ fill: "var(--color-text-secondary)", fontSize: 12 }}
                 dx={-10}
               />
               <Tooltip 
                 formatter={(value: unknown) => formatCurrencyCOP(Number(value))}
-                cursor={{ fill: "#f1f5f9" }}
-                contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                cursor={{ fill: "var(--color-selection)" }}
+                contentStyle={{ borderRadius: "var(--ds-radius-md)", border: "1px solid var(--color-border-default)", backgroundColor: "var(--color-surface-elevated)", color: "var(--color-text-primary)", boxShadow: "var(--ds-shadow-overlay)" }}
               />
               <Legend wrapperStyle={{ paddingTop: "20px" }} />
-              <Bar dataKey="capital" name="Capital Recuperado" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
-              <Bar dataKey="interes" name="Interés Ganado" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="capital" name="Capital Recuperado" stackId="a" fill="var(--color-action-primary)" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="interes" name="Interés Ganado" stackId="a" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

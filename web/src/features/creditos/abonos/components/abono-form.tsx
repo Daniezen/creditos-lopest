@@ -91,8 +91,8 @@ export function AbonoForm({
           role="status"
           className={
             state.ok
-              ? "text-xs font-medium text-[var(--color-success)]"
-              : "text-xs font-medium text-[var(--color-danger)]"
+              ? "text-xs font-[var(--font-weight-label)] text-[var(--color-success)]"
+              : "text-xs font-[var(--font-weight-label)] text-[var(--color-danger)]"
           }
         >
           {state.message}

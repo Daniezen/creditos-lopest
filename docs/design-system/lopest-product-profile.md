@@ -8,18 +8,20 @@ Cercana, clara, austera, financiera y responsable.
 
 - Nombre principal: Lopest.
 - Descriptor: Créditos.
-- Tipografía: Geist.
+- Tipografía: Inter.
 - Familia cromática: violeta y magenta del logo, con acentos cálidos controlados.
 - Gradientes: solo en elementos identitarios justificados.
 - Sombras cromáticas: excluidas de superficies operativas.
 
 ## Tipografía
 
+- Familia: Inter (fuente sobria de alta legibilidad con soporte de cifras tabulares para finanzas).
 - Contenido: 400.
-- Navegación y acciones: 500.
+- Etiquetas, navegación y acciones: 500.
 - Títulos y cifras relevantes: 600.
-- Enfasis financiero excepcional: 700.
+- Énfasis financiero excepcional: 700.
 - Peso 900: excluido.
+- Mayúsculas: capitalización natural (sentence case / title case sobrio) en títulos, secciones, métricas, datos y encabezados de tabla. Mayúsculas sostenidas (`uppercase`) excluidas del portal.
 
 ## Shell aprobado
 

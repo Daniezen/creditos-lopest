@@ -8,6 +8,7 @@ import {
   Landmark,
 } from "lucide-react";
 
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 import type { ResumenSimulacion } from "@/domain/creditos/simulador/tipos";
@@ -78,43 +79,25 @@ interface SummaryCardProps {
 }
 
 /**
- * Tarjeta compacta de métrica.
- *
- * Ajuste:
- * - Menor padding en móvil.
- * - Texto de valor ligeramente más pequeño en móvil.
- * - Mantiene jerarquía suficiente en desktop.
+ * Tarjeta compacta de métrica con densidad visual estandarizada.
  */
 function SummaryCard({ icon: Icon, label, value, featured }: SummaryCardProps) {
   return (
-    <div
-      className={[
-        "rounded-[1.5rem] border p-4 shadow-sm shadow-violet-100/40 sm:rounded-[1.75rem] sm:p-5",
-        featured
-          ? "border-violet-100 bg-gradient-to-br from-white to-violet-50"
-          : "border-violet-100 bg-white",
-      ].join(" ")}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium leading-5 text-slate-500 sm:text-sm">
-          {label}
-        </p>
+    <div className={dataDisplayRecipes.metricCompact}>
+      <p className={dataDisplayRecipes.metricCompactLabel}>
+        <Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)] shrink-0" />
+        <span>{label}</span>
+      </p>
 
-        <div
-          className={[
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl sm:h-10 sm:w-10",
-            featured
-              ? "bg-white text-violet-700 ring-1 ring-violet-100"
-              : "bg-violet-100 text-violet-700",
-          ].join(" ")}
-        >
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-        </div>
-      </div>
-
-      <p className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:mt-2 sm:text-2xl">
+      <p
+        className={[
+          dataDisplayRecipes.metricCompactValue,
+          featured ? "font-[var(--font-weight-heading)] text-[var(--color-selection-strong)]" : "",
+        ].join(" ")}
+      >
         {value}
       </p>
     </div>
   );
 }
+

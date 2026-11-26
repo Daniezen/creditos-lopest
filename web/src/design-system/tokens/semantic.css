@@ -37,6 +37,11 @@
   --surface-overlay: var(--color-surface-elevated);
   --border-section: 1px solid var(--color-border-subtle);
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-focus) 24%, transparent);
+
+  --background-login: var(--lopest-login-bg);
+  --gradient-avatar: var(--lopest-avatar-gradient);
+  --gradient-card: var(--lopest-card-gradient);
+  --gradient-initials: var(--lopest-initials-bg);
 }
 @media (max-width: 767px) {
   :root {

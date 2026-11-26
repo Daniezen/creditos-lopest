@@ -7,6 +7,8 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
+
 interface CreateCreditStepperProps {
   currentStep: number;
   canGoToStep: (step: number) => boolean;
@@ -48,7 +50,7 @@ export function CreateCreditStepper({
   onStepClick,
 }: CreateCreditStepperProps) {
   return (
-    <nav className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+    <nav className={surfaceRecipes.card}>
       <ol className="grid gap-3 md:grid-cols-3">
         {steps.map((step) => {
           const Icon = step.icon;
@@ -65,10 +67,10 @@ export function CreateCreditStepper({
                 className={[
                   "w-full rounded-2xl border p-4 text-left transition",
                   isActive
-                    ? "border-violet-300 bg-violet-50 shadow-sm ring-2 ring-violet-500/10"
+                    ? "border-[var(--color-border-default)] bg-[var(--color-selection)] shadow-[var(--ds-shadow-surface)] ring-2 ring-[var(--color-focus-soft)]"
                     : isCompleted
-                      ? "border-violet-100 bg-white hover:border-violet-200 hover:bg-violet-50/50"
-                      : "border-slate-200 bg-slate-50",
+                      ? "border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)] hover:border-[var(--color-border-default)] hover:bg-[var(--color-selection)]/40"
+                      : "border-[var(--color-border-subtle)] bg-[var(--color-surface-subtle)]",
                   isAvailable
                     ? "cursor-pointer"
                     : "cursor-not-allowed opacity-50",
@@ -77,18 +79,18 @@ export function CreateCreditStepper({
                 <div className="flex items-center gap-3">
                   <span
                     className={[
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-bold",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-[var(--font-weight-data-emphasis)]",
                       isActive || isCompleted
-                        ? "bg-violet-600 text-white"
-                        : "bg-slate-200 text-slate-600",
+                        ? "bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
+                        : "bg-[var(--color-border-default)] text-[var(--color-text-secondary)]",
                     ].join(" ")}
                   >
                     {isCompleted ? (
-                      <Check className="h-5 w-5" />
+                      <Check className="h-4 w-4" />
                     ) : isAvailable ? (
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-4 w-4" />
                     ) : (
-                      <Lock className="h-5 w-5" />
+                      <Lock className="h-4 w-4" />
                     )}
                   </span>
 
@@ -96,19 +98,21 @@ export function CreateCreditStepper({
                     <div className="flex items-center gap-2">
                       <p
                         className={[
-                          "text-sm font-semibold",
-                          isActive ? "text-violet-950" : "text-slate-800",
+                          "text-sm font-[var(--font-weight-heading)]",
+                          isActive
+                            ? "text-[var(--color-selection-strong)]"
+                            : "text-[var(--color-text-primary)]",
                         ].join(" ")}
                       >
                         {step.label}
                       </p>
 
                       {step.number === 2 ? (
-                        <CreditCard className="h-3.5 w-3.5 text-violet-500" />
+                        <CreditCard className="h-3.5 w-3.5 text-[var(--color-action-primary)]" />
                       ) : null}
                     </div>
 
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                    <p className="mt-1 text-xs leading-5 font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
                       {step.description}
                     </p>
                   </div>

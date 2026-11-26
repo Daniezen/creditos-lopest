@@ -1,5 +1,9 @@
 import { ShieldCheck, UserRound } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { transferirClienteOwnerAction } from "../admin-actions";
 import type { UsuarioOperadorActivoItem } from "../admin-queries";
 
@@ -24,17 +28,17 @@ export function ClienteOwnerTransferCard({
     operadores.find((operador) => operador.id === currentOwnerUserId) ?? null;
 
   return (
-    <section className="mb-5 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-      <div className="flex flex-col justify-between gap-3 border-b border-violet-100 pb-4 sm:flex-row sm:items-center">
+    <section className={`mb-5 ${surfaceRecipes.card}`}>
+      <div className="flex flex-col justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4 sm:flex-row sm:items-center">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+          <p className={`flex items-center gap-2 ${dataDisplayRecipes.eyebrow}`}>
             <ShieldCheck className="h-4 w-4" />
             Administración
           </p>
-          <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
+          <h3 className="mt-2 text-xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
             Propietario del cliente
           </h3>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
+          <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
             Transfiere la visibilidad operativa del cliente. Sus créditos,
             cuotas y documentos permanecen asociados al mismo cliente.
           </p>
@@ -42,15 +46,15 @@ export function ClienteOwnerTransferCard({
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
-        <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] p-4">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-            <UserRound className="h-3.5 w-3.5 text-violet-600" />
+        <div className={surfaceRecipes.cardSubtle}>
+          <p className="flex items-center gap-2 text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
+            <UserRound className="h-3.5 w-3.5 text-[var(--color-selection-strong)]" />
             Propietario actual
           </p>
-          <p className="mt-2 font-black text-slate-950">
+          <p className="mt-2 font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
             {ownerActual?.nombre ?? "Sin propietario reconocido"}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {ownerActual?.email ?? currentOwnerUserId ?? "ownerUserId vacío"}
           </p>
         </div>
@@ -59,13 +63,13 @@ export function ClienteOwnerTransferCard({
           <input type="hidden" name="clienteId" value={clienteId} />
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            <span className={formRecipes.label}>
               Nuevo propietario
             </span>
             <select
               name="targetOwnerUserId"
               defaultValue=""
-              className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+              className={formRecipes.controlSpacious}
             >
               <option value="" disabled>
                 Selecciona usuario
@@ -83,19 +87,19 @@ export function ClienteOwnerTransferCard({
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            <span className={formRecipes.label}>
               Motivo opcional
             </span>
             <input
               name="reason"
               placeholder="Ej: asignación a cartera de Martha"
-              className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+              className={formRecipes.controlSpacious}
             />
           </label>
 
           <button
             type="submit"
-            className="inline-flex w-fit items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700"
+            className={actionRecipes.primaryLarge}
           >
             Transferir cliente
           </button>

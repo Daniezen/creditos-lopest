@@ -47,7 +47,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
   }, [drawerOpen]);
 
   return (
-    <div className="min-h-screen bg-[#f7f3ff] min-[1200px]:flex">
+    <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)] min-[1200px]:flex">
       <div className={styles.desktopSidebar}>
         <DashboardSidebar />
       </div>

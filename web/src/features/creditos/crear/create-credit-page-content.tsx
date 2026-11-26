@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type { ClienteSelectorOption } from "@/features/clientes/types";
 import { useCreditSimulation } from "@/features/simulador-creditos/hooks/use-credit-simulation";
 
@@ -106,22 +108,14 @@ export function CreateCreditPageContent({
       }
 
       router.push(`/creditos/${response.creditoId}`);
+      router.refresh();
     });
   }
 
-  function canGoToStep(step: number) {
-    if (step === 1) {
-      return true;
-    }
-
-    if (step === 2) {
-      return selectedCliente !== null;
-    }
-
-    if (step === 3) {
-      return selectedCliente !== null && hasValidSimulation;
-    }
-
+  function canGoToStep(step: number): boolean {
+    if (step === 1) return true;
+    if (step === 2) return selectedCliente !== null;
+    if (step === 3) return selectedCliente !== null && hasValidSimulation;
     return false;
   }
 
@@ -168,12 +162,12 @@ export function CreateCreditPageContent({
   return (
     <main className="min-w-0 pb-28">
       <div className="px-4 py-6 sm:px-6 lg:px-10">
-        <section className="mb-5 flex flex-col justify-between gap-3 rounded-[2rem] border border-violet-100 bg-white/90 p-4 shadow-sm shadow-violet-100/40 sm:flex-row sm:items-center">
+        <section className={surfaceRecipes.pageHeaderBand}>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+            <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)]">
               Flujo de creación
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
               Paso {currentStep} de 3
               {selectedCliente ? ` · ${selectedCliente.nombre}` : ""}
             </p>
@@ -182,7 +176,7 @@ export function CreateCreditPageContent({
           <div className="flex flex-wrap gap-2">
             <Link
               href="/creditos"
-              className="rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+              className={actionRecipes.secondary}
             >
               Volver a créditos
             </Link>
@@ -190,7 +184,7 @@ export function CreateCreditPageContent({
             <button
               type="button"
               onClick={resetWizard}
-              className="inline-flex items-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 hover:text-fuchsia-700"
+              className={actionRecipes.secondary}
             >
               <RotateCcw className="h-4 w-4" />
               Reiniciar
@@ -235,12 +229,12 @@ export function CreateCreditPageContent({
         </div>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 lg:left-[92px] lg:px-10">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/95 px-4 py-3 shadow-[var(--ds-shadow-overlay)] backdrop-blur sm:px-6 lg:left-[var(--ds-sidebar-width)] lg:px-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm text-slate-500">
+          <div className="text-sm font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
             Paso {currentStep} de 3
             {selectedCliente ? (
-              <span className="ml-2 hidden text-slate-700 sm:inline">
+              <span className="ml-2 hidden text-[var(--color-text-primary)] sm:inline">
                 · {selectedCliente.nombre}
               </span>
             ) : null}
@@ -251,7 +245,7 @@ export function CreateCreditPageContent({
               type="button"
               onClick={goBack}
               disabled={currentStep === 1}
-              className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900 disabled:cursor-not-allowed disabled:opacity-40"
+              className={actionRecipes.secondary}
             >
               Atrás
             </button>
@@ -261,7 +255,7 @@ export function CreateCreditPageContent({
                 type="button"
                 onClick={handleGuardarCredito}
                 disabled={!canSaveCredit || isPending}
-                className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className={actionRecipes.primaryLarge}
               >
                 {isPending ? "Guardando..." : "Guardar crédito"}
               </button>
@@ -270,7 +264,7 @@ export function CreateCreditPageContent({
                 type="button"
                 onClick={goNext}
                 disabled={!canGoToStep(currentStep + 1)}
-                className="rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className={actionRecipes.primaryLarge}
               >
                 Continuar
               </button>

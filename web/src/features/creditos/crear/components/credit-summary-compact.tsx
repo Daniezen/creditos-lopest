@@ -8,8 +8,9 @@ import {
   Landmark,
 } from "lucide-react";
 
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type { ResumenSimulacion } from "@/domain/creditos/simulador/tipos";
-
 import { formatCurrencyCOP, formatDateCO } from "@/lib/formatters";
 
 interface CreditSummaryCompactProps {
@@ -26,7 +27,7 @@ interface CreditSummaryCompactProps {
  */
 export function CreditSummaryCompact({ resumen }: CreditSummaryCompactProps) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className={surfaceRecipes.card}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryItem
           icon={Landmark}
@@ -78,26 +79,16 @@ interface SummaryItemProps {
 
 function SummaryItem({ icon: Icon, label, value, featured }: SummaryItemProps) {
   return (
-    <div
-      className={[
-        "rounded-2xl border p-4",
-        "border-slate-200 bg-slate-50",
-      ].join(" ")}
-    >
-      <p
-        className={[
-          "flex items-center gap-2 text-xs font-semibold uppercase tracking-wide",
-          featured ? "text-violet-700" : "text-slate-500",
-        ].join(" ")}
-      >
-        <Icon className="h-3.5 w-3.5" />
-        {label}
+    <div className={dataDisplayRecipes.metricCompact}>
+      <p className={dataDisplayRecipes.metricCompactLabel}>
+        <Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)] shrink-0" />
+        <span>{label}</span>
       </p>
 
       <p
         className={[
-          "mt-2 text-lg font-bold tracking-tight",
-          featured ? "text-violet-950" : "text-slate-950",
+          dataDisplayRecipes.metricCompactValue,
+          featured ? "text-[var(--color-selection-strong)] font-[var(--font-weight-heading)]" : "",
         ].join(" ")}
       >
         {value}

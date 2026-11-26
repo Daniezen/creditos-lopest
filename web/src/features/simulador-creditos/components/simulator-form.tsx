@@ -8,13 +8,15 @@ import {
   Percent,
   Repeat,
   SlidersHorizontal,
-  WalletCards } from "lucide-react";
+  WalletCards,
+} from "lucide-react";
 
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type {
   FrecuenciaPago,
   TipoAmortizacion,
 } from "@/domain/creditos/simulador/tipos";
-
 import {
   formatPercent,
   parseTasaMensualInput,
@@ -69,13 +71,13 @@ export function SimulatorForm({
       : null;
 
   return (
-    <section className="rounded-[2rem] border border-violet-100 bg-white/95 p-5 shadow-sm shadow-violet-100/40">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
-          <SlidersHorizontal className="h-5 w-5" />
+    <section className={surfaceRecipes.card}>
+      <div className="mb-4 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]">
+          <SlidersHorizontal className="h-4 w-4" />
         </div>
 
-        <h3 className="text-lg font-bold tracking-tight text-slate-950">
+        <h3 className="text-sm font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
           Condiciones del crédito
         </h3>
       </div>
@@ -161,14 +163,16 @@ interface FieldProps {
 function Field({ icon: Icon, label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="mb-1.5 flex items-center justify-between gap-3 text-sm font-medium text-slate-700">
-        <span className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-violet-600" />
+      <span className="mb-1.5 flex items-center justify-between gap-2 text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
+        <span className="flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5 text-[var(--color-action-primary)] shrink-0" />
           {label}
         </span>
 
         {hint ? (
-          <span className="text-xs font-semibold text-violet-700">{hint}</span>
+          <span className="text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)]">
+            {hint}
+          </span>
         ) : null}
       </span>
 
@@ -199,7 +203,7 @@ function Input({
       placeholder={placeholder}
       inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+      className={formRecipes.control}
     />
   );
 }
@@ -216,14 +220,14 @@ function Select({ value, placeholder, options, onChange }: SelectProps) {
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+      className={formRecipes.control}
     >
       <option value="" disabled>
         {placeholder}
       </option>
 
       {options.map((option) => (
-        <option key={option} value={option} className="bg-white text-slate-950">
+        <option key={option} value={option}>
           {option}
         </option>
       ))}

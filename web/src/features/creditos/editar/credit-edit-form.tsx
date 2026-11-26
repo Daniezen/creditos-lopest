@@ -4,13 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Save, Trash2 } from "lucide-react";
 
-import { actualizarCredito, eliminarCredito } from "./actions";
-
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type {
   FrecuenciaPago,
   TipoAmortizacion,
 } from "@/domain/creditos/simulador/tipos";
 import type { SimulatorFormState } from "@/features/simulador-creditos/types";
+
+import { actualizarCredito, eliminarCredito } from "./actions";
 
 interface CreditEditFormProps {
   creditoId: string;
@@ -108,20 +111,14 @@ export function CreditEditForm({
   }
 
   return (
-    <section className="rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
+    <section className={surfaceRecipes.card}>
       {!canEditFinancial ? (
-        <div className="mb-5 space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          <div className="flex gap-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>
-              Este crédito ya tiene actividad financiera. Para proteger el
-              historial y el saldo, solo se pueden editar notas y observaciones.
-            </p>
-          </div>
-
-
-
-
+        <div className={`mb-5 ${surfaceRecipes.alertWarning}`}>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Este crédito ya tiene actividad financiera. Para proteger el
+            historial y el saldo, solo se pueden editar notas y observaciones.
+          </p>
         </div>
       ) : null}
 
@@ -183,18 +180,18 @@ export function CreditEditForm({
       </div>
 
       {error ? (
-        <div className="mt-5 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className={`mt-5 ${surfaceRecipes.alertDanger}`}>
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
         </div>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap justify-between gap-3 border-t border-violet-100 pt-5">
+      <div className="mt-6 flex flex-wrap justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-5">
         <button
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className={actionRecipes.destructive}
         >
           <Trash2 className="h-4 w-4" />
           Borrar crédito
@@ -204,7 +201,7 @@ export function CreditEditForm({
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-100 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className={actionRecipes.primaryLarge}
         >
           <Save className="h-4 w-4" />
           {isPending ? "Guardando..." : "Guardar cambios"}
@@ -225,7 +222,7 @@ interface InputProps {
 function Input({ label, value, type = "text", disabled, onChange }: InputProps) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className={formRecipes.label}>
         {label}
       </span>
 
@@ -234,7 +231,7 @@ function Input({ label, value, type = "text", disabled, onChange }: InputProps) 
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        className={formRecipes.controlSpacious}
       />
     </label>
   );
@@ -251,7 +248,7 @@ interface SelectProps {
 function Select({ label, value, options, disabled, onChange }: SelectProps) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className={formRecipes.label}>
         {label}
       </span>
 
@@ -259,7 +256,7 @@ function Select({ label, value, options, disabled, onChange }: SelectProps) {
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        className={formRecipes.controlSpacious}
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -280,7 +277,7 @@ interface TextAreaProps {
 function TextArea({ label, value, onChange }: TextAreaProps) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className={formRecipes.label}>
         {label}
       </span>
 
@@ -288,8 +285,9 @@ function TextArea({ label, value, onChange }: TextAreaProps) {
         value={value}
         rows={4}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full resize-none rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15"
+        className={formRecipes.textarea}
       />
     </label>
   );
 }
+

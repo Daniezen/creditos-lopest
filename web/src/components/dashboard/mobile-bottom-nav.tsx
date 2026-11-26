@@ -7,6 +7,7 @@ import { BarChart3, LogOut, MoreHorizontal } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 import { dashboardNavigation } from "@/config/navigation";
+import { navigationRecipes } from "@/design-system/recipes/navigation";
 
 /**
  * Mobile navigation keeps primary destinations visible and moves secondary
@@ -47,26 +48,26 @@ export function MobileBottomNav() {
         <div className="fixed inset-0 z-40 md:hidden">
           <button
             type="button"
-            className="absolute inset-0 border-0 bg-slate-950/45"
+            className="absolute inset-0 border-0 bg-[var(--color-overlay-backdrop)]"
             aria-label="Cerrar menú adicional"
             onClick={() => setMoreOpen(false)}
           />
 
           <section
-            className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 rounded-t-3xl border-t border-slate-200 bg-white px-4 pb-3 pt-3 shadow-[0_-14px_36px_rgb(15_23_42/0.12)]"
+            className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 rounded-t-3xl border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-4 pb-3 pt-3 shadow-[var(--ds-shadow-overlay)]"
             role="dialog"
             aria-modal="true"
             aria-label="Más opciones"
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-slate-200" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--color-border-default)]" />
 
             {reportsItem ? (
               <Link
                 href={reportsItem.href}
                 onClick={() => setMoreOpen(false)}
-                className="flex min-h-12 items-center gap-3 border-b border-slate-100 px-2 py-3 text-sm font-medium text-slate-700 transition hover:bg-violet-50 hover:text-violet-900"
+                className="flex min-h-12 items-center gap-3 border-b border-[var(--color-border-subtle)] px-2 py-3 text-sm font-[var(--font-weight-action)] text-[var(--color-text-primary)] transition hover:bg-[var(--color-selection)] hover:text-[var(--color-selection-strong)]"
               >
-                <BarChart3 className="h-5 w-5 text-violet-700" />
+                <BarChart3 className="h-5 w-5 text-[var(--color-selection-strong)]" />
                 <span>Reportes</span>
               </Link>
             ) : null}
@@ -74,16 +75,16 @@ export function MobileBottomNav() {
             <button
               type="button"
               onClick={() => void signOut({ callbackUrl: "/login" })}
-              className="flex min-h-12 w-full items-center gap-3 px-2 py-3 text-sm font-medium text-slate-700 transition hover:bg-violet-50 hover:text-violet-900"
+              className="flex min-h-12 w-full items-center gap-3 px-2 py-3 text-sm font-[var(--font-weight-action)] text-[var(--color-text-primary)] transition hover:bg-[var(--color-selection)] hover:text-[var(--color-selection-strong)]"
             >
-              <LogOut className="h-5 w-5 text-violet-700" />
+              <LogOut className="h-5 w-5 text-[var(--color-selection-strong)]" />
               <span>Cerrar sesión</span>
             </button>
           </section>
         </div>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden">
         <div className="grid grid-cols-5 gap-1">
           {primaryItems.map((item) => {
             const Icon = item.icon;
@@ -97,10 +98,10 @@ export function MobileBottomNav() {
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => setMoreOpen(false)}
                 className={[
-                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition",
+                  navigationRecipes.mobileItem,
                   isActive
-                    ? "bg-violet-100/80 text-violet-950"
-                    : "text-slate-500 hover:bg-violet-50 hover:text-violet-800",
+                    ? navigationRecipes.mobileItemActive
+                    : navigationRecipes.mobileItemIdle,
                 ].join(" ")}
               >
                 <Icon className="h-[1.125rem] w-[1.125rem]" />
@@ -115,10 +116,10 @@ export function MobileBottomNav() {
             aria-expanded={moreOpen}
             aria-haspopup="dialog"
             className={[
-              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-medium transition",
+              navigationRecipes.mobileItem,
               moreOpen || moreActive
-                ? "bg-violet-100/80 text-violet-950"
-                : "text-slate-500 hover:bg-violet-50 hover:text-violet-800",
+                ? navigationRecipes.mobileItemActive
+                : navigationRecipes.mobileItemIdle,
             ].join(" ")}
           >
             <MoreHorizontal className="h-[1.125rem] w-[1.125rem]" />

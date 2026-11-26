@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import type { ClienteSelectorOption } from "@/features/clientes/types";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import type {
   SimulationResult,
   SimulatorFormState,
@@ -25,7 +27,6 @@ import {
   parseNumericInput,
   parseTasaMensualInput,
 } from "@/lib/formatters";
-
 
 interface ConfirmationStepProps {
   cliente: ClienteSelectorOption | null;
@@ -44,27 +45,25 @@ export function ConfirmationStep({
   onNotaChange,
   error,
 }: ConfirmationStepProps) {
-
   const monto = parseNumericInput(form.monto);
   const tasaMensual = parseTasaMensualInput(form.tasaMensual);
   const fechaPrestamo = form.fechaPrestamo
     ? parseDateInputValue(form.fechaPrestamo)
     : null;
 
-
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className={surfaceRecipes.card}>
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-selection)] text-[var(--color-selection-strong)]">
             <ClipboardCheck className="h-5 w-5" />
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-slate-950">
+            <h3 className="text-lg font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
               Confirmación del crédito
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
               Al guardar, se abrirá el detalle del crédito creado.
             </p>
           </div>
@@ -72,10 +71,10 @@ export function ConfirmationStep({
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           <ReviewCard icon={UserRound} title="Cliente">
-            <p className="font-semibold text-slate-950">
+            <p className="font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
               {cliente ? cliente.nombre : "Sin cliente"}
             </p>
-            <p className="mt-1 text-slate-500">
+            <p className="mt-1 text-[var(--color-text-secondary)]">
               {cliente ? `C.C. ${cliente.cedula}` : "-"}
             </p>
           </ReviewCard>
@@ -130,13 +129,12 @@ export function ConfirmationStep({
           </ReviewCard>
         </div>
 
-
-        <label className="mt-5 block rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
-          <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-            <StickyNote className="h-4 w-4 text-violet-600" />
+        <label className={`mt-5 block ${surfaceRecipes.cardSubtle}`}>
+          <span className="flex items-center gap-2 text-sm font-[var(--font-weight-label)] text-[var(--color-text-primary)]">
+            <StickyNote className="h-4 w-4 text-[var(--color-selection-strong)]" />
             Nota opcional
           </span>
-          <span className="mt-1 block text-xs leading-5 text-slate-500">
+          <span className="mt-1 block text-xs leading-5 text-[var(--color-text-secondary)]">
             Información útil para el seguimiento del crédito. Podrás editarla después.
           </span>
           <textarea
@@ -145,15 +143,15 @@ export function ConfirmationStep({
             rows={3}
             onChange={(event) => onNotaChange(event.target.value)}
             placeholder="Ej.: Paga quincenal $150.000. Inicia pagos el 15/02/2026."
-            className="mt-3 w-full resize-y rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+            className={`mt-3 ${formRecipes.textarea}`}
           />
-          <span className="mt-1 block text-right text-[11px] text-slate-400">
+          <span className="mt-1 block text-right text-xs text-[var(--color-text-muted)]">
             {nota.length}/1000
           </span>
         </label>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className={`mt-5 ${surfaceRecipes.alertDanger}`}>
             {error}
           </div>
         ) : null}
@@ -173,12 +171,13 @@ function ReviewCard({ icon: Icon, title, children, wideOnMedium }: ReviewCardPro
   return (
     <div
       className={[
-        "rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700",
+        surfaceRecipes.cardSubtle,
+        "text-sm leading-6 text-[var(--color-text-primary)]",
         wideOnMedium ? "lg:col-span-2 2xl:col-span-1" : "",
       ].join(" ")}
     >
-      <p className="mb-3 flex items-center gap-2 font-semibold text-slate-950">
-        <Icon className="h-4 w-4 text-violet-600" />
+      <p className="mb-3 flex items-center gap-2 font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
+        <Icon className="h-4 w-4 text-[var(--color-selection-strong)]" />
         {title}
       </p>
       {children}
@@ -198,12 +197,12 @@ function ReviewLine({ icon: Icon, label, value, strong }: ReviewLineProps) {
     <p
       className={[
         "grid grid-cols-[1rem_minmax(7.5rem,auto)_minmax(0,1fr)] items-start gap-2",
-        strong ? "font-semibold text-violet-900" : "",
+        strong ? "font-[var(--font-weight-data-emphasis)] text-[var(--color-selection-strong)]" : "",
       ].join(" ")}
     >
-      <Icon className="mt-1 h-3.5 w-3.5 text-violet-500" />
-      <span className="text-slate-500">{label}:</span>
-      <span className="min-w-0 break-words text-slate-950">{value}</span>
+      <Icon className="mt-1 h-3.5 w-3.5 text-[var(--color-selection-strong)]" />
+      <span className="text-[var(--color-text-secondary)]">{label}:</span>
+      <span className="min-w-0 break-words font-[var(--font-weight-data)] text-[var(--color-text-primary)]">{value}</span>
     </p>
   );
 }
@@ -218,14 +217,14 @@ function SummaryDatum({
   strong?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-violet-100 bg-white px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+    <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)] px-3 py-2">
+      <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-text-secondary)]">
         {label}
       </p>
       <p
         className={[
-          "mt-1 break-words text-right font-black",
-          strong ? "text-violet-800" : "text-slate-950",
+          "mt-1 break-words text-right font-[var(--font-weight-heading)]",
+          strong ? "text-[var(--color-selection-strong)]" : "text-[var(--color-text-primary)]",
         ].join(" ")}
       >
         {value}

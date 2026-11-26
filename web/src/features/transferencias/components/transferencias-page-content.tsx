@@ -3,6 +3,10 @@
 import { useActionState, useMemo, useState, type ReactNode } from "react";
 import { CreditCard, Search, Users } from "lucide-react";
 
+import { actionRecipes } from "@/design-system/recipes/actions";
+import { dataDisplayRecipes } from "@/design-system/recipes/data-display";
+import { formRecipes } from "@/design-system/recipes/forms";
+import { surfaceRecipes } from "@/design-system/recipes/surfaces";
 import { formatCurrencyCOP } from "@/lib/formatters";
 
 import {
@@ -83,11 +87,11 @@ function SearchableSelect({
 
   return (
     <label className="relative block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className={formRecipes.label}>
         {label}
       </span>
       <div className="relative">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-500" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-selection-strong)]" />
         <input
           type="text"
           value={query}
@@ -100,14 +104,14 @@ function SearchableSelect({
             onChange("");
             setOpen(true);
           }}
-          className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] py-3 pl-11 pr-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+          className={formRecipes.searchControl}
         />
       </div>
 
       {open && !disabled ? (
-        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-violet-100 bg-white p-1 shadow-xl shadow-violet-950/10">
+        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-1 shadow-[var(--ds-shadow-overlay)]">
           {filteredOptions.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">{emptyMessage}</p>
+            <p className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">{emptyMessage}</p>
           ) : (
             filteredOptions.map((option) => (
               <button
@@ -115,18 +119,18 @@ function SearchableSelect({
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => handleSelect(option)}
-                className="block w-full rounded-xl px-4 py-3 text-left transition hover:bg-violet-50"
+                className="block w-full rounded-xl px-4 py-3 text-left transition hover:bg-[var(--color-selection)]"
               >
                 {option.eyebrow ? (
-                  <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-violet-600">
+                  <span className="mb-1 block text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)]">
                     {option.eyebrow}
                   </span>
                 ) : null}
-                <span className="block text-sm font-black text-slate-950">
+                <span className="block text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">
                   {option.label}
                 </span>
                 {option.description ? (
-                  <span className="mt-0.5 block text-xs font-semibold text-slate-500">
+                  <span className="mt-0.5 block text-xs font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">
                     {option.description}
                   </span>
                 ) : null}
@@ -142,7 +146,7 @@ function SearchableSelect({
 function FieldShell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
+      <span className={formRecipes.label}>
         {label}
       </span>
       {children}
@@ -157,12 +161,7 @@ function ActionFeedback({ ok, message }: { ok: boolean; message: string | null }
 
   return (
     <div
-      className={[
-        "rounded-2xl border px-4 py-3 text-sm font-semibold",
-        ok
-          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-rose-200 bg-rose-50 text-rose-800",
-      ].join(" ")}
+      className={ok ? surfaceRecipes.alertSuccess : surfaceRecipes.alertDanger}
     >
       {message}
     </div>
@@ -172,16 +171,16 @@ function ActionFeedback({ ok, message }: { ok: boolean; message: string | null }
 function DestinationSummary({ owner }: { owner: TransferOwnerOption | null }) {
   if (!owner) {
     return (
-      <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-400">
+      <div className={`${surfaceRecipes.cardSubtle} text-sm text-[var(--color-text-muted)]`}>
         Primero selecciona el origen para calcular el destino.
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3">
-      <p className="text-sm font-black text-slate-950">{owner.nombre}</p>
-      <p className="mt-0.5 text-xs font-semibold text-slate-500">{owner.email}</p>
+    <div className={surfaceRecipes.cardSubtle}>
+      <p className="text-sm font-[var(--font-weight-heading)] text-[var(--color-text-primary)]">{owner.nombre}</p>
+      <p className="mt-0.5 text-xs font-[var(--font-weight-body)] text-[var(--color-text-secondary)]">{owner.email}</p>
     </div>
   );
 }
@@ -268,16 +267,16 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
   return (
     <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-10">
       <div className="grid gap-5 xl:grid-cols-2">
-        <section className="rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-          <div className="border-b border-violet-100 pb-4">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+        <section className={surfaceRecipes.card}>
+          <div className="border-b border-[var(--color-border-subtle)] pb-4">
+            <p className={`flex items-center gap-2 ${dataDisplayRecipes.eyebrow}`}>
               <Users className="h-4 w-4" />
               Cliente completo
             </p>
-            <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
+            <h3 className="mt-2 text-xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
               Transferir cliente y todos sus créditos
             </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
               Cambia el propietario principal del cliente y mueve todos sus créditos al mismo destino.
             </p>
           </div>
@@ -303,7 +302,7 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               <input
                 name="reason"
                 placeholder="Ej: cliente asignado a cartera de Martha"
-                className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                className={formRecipes.control}
               />
             </FieldShell>
 
@@ -312,23 +311,23 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
             <button
               type="submit"
               disabled={!clienteCompletoId || !clienteCompletoDestino || clientePending}
-              className="inline-flex w-fit items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={actionRecipes.primaryLarge}
             >
               {clientePending ? "Transfiriendo..." : "Transferir cliente completo"}
             </button>
           </form>
         </section>
 
-        <section className="rounded-[2rem] border border-violet-100 bg-white p-5 shadow-sm shadow-violet-100/40">
-          <div className="border-b border-violet-100 pb-4">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+        <section className={surfaceRecipes.card}>
+          <div className="border-b border-[var(--color-border-subtle)] pb-4">
+            <p className={`flex items-center gap-2 ${dataDisplayRecipes.eyebrow}`}>
               <CreditCard className="h-4 w-4" />
               Crédito individual
             </p>
-            <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-950">
+            <h3 className="mt-2 text-xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
               Transferir solo un crédito
             </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
               Selecciona primero el cliente y luego el crédito asociado que vas a transferir.
             </p>
           </div>
@@ -371,7 +370,7 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
               <input
                 name="reason"
                 placeholder="Ej: crédito asignado a cartera de Martha"
-                className="w-full rounded-2xl border border-violet-100 bg-[#fbfaff] px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                className={formRecipes.control}
               />
             </FieldShell>
 
@@ -380,7 +379,7 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
             <button
               type="submit"
               disabled={!creditoId || !creditoDestino || creditoPending}
-              className="inline-flex w-fit items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className={actionRecipes.primaryLarge}
             >
               {creditoPending ? "Transfiriendo..." : "Transferir crédito"}
             </button>
@@ -390,3 +389,4 @@ export function TransferenciasPageContent({ context }: TransferenciasPageContent
     </main>
   );
 }
+

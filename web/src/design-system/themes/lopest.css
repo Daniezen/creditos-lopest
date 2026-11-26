@@ -39,4 +39,8 @@
     radial-gradient(circle at 12% 20%, rgb(217 70 239 / 10%), transparent 30%),
     linear-gradient(100deg, #faf5ff 0%, #ffffff 52%, #fff7ed 100%);
   --lopest-title-accent: linear-gradient(90deg, #7c3aed, #d946ef);
+  --lopest-login-bg: radial-gradient(circle at top left, #ede9fe 0%, #faf5ff 38%, #fff7ed 100%);
+  --lopest-avatar-gradient: linear-gradient(145deg, #7c3aed, #d946ef);
+  --lopest-card-gradient: linear-gradient(135deg, #ffffff 0%, #f5f3ff 60%, #fff7ed 100%);
+  --lopest-initials-bg: radial-gradient(circle at top left, #ddd6fe 0%, #f5d0fe 45%, #ffedd5 100%);
 }

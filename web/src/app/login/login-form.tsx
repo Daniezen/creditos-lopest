@@ -77,18 +77,18 @@ export function LoginForm({ profiles }: LoginFormProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl rounded-[2rem] border border-violet-100 bg-white/90 p-6 shadow-[0_18px_45px_rgba(109,40,217,0.12)] backdrop-blur">
+    <section className="mx-auto w-full max-w-5xl rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-primary)]/90 p-6 shadow-[var(--ds-shadow-overlay)] backdrop-blur">
       <div className="mb-8 flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-violet-600 text-white shadow-lg shadow-violet-200">
-          <Landmark className="h-7 w-7" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)] shadow-[var(--ds-shadow-surface)]">
+          <Landmark className="h-6 w-6" />
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-violet-700">
+          <p className="text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)]">
             Créditos Lopest
           </p>
 
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+          <h1 className="mt-1 text-2xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
             Selecciona tu acceso
           </h1>
         </div>
@@ -104,10 +104,10 @@ export function LoginForm({ profiles }: LoginFormProps) {
               type="button"
               onClick={() => handleLogin(profile)}
               disabled={loadingKey !== null}
-              className="group block w-full overflow-hidden rounded-[2rem] border border-violet-100 bg-gradient-to-br from-white via-violet-50/60 to-orange-50/40 p-4 text-left shadow-sm shadow-violet-100/40 transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100 disabled:cursor-wait disabled:opacity-70"
+              className="group block w-full overflow-hidden rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--gradient-card)] p-4 text-left shadow-[var(--ds-shadow-surface)] transition hover:-translate-y-0.5 hover:border-[var(--color-border-default)] hover:shadow-[var(--ds-shadow-panel)] disabled:cursor-wait disabled:opacity-70"
               aria-label={`Iniciar sesión como ${profile.label}`}
             >
-              <div className="relative aspect-square overflow-hidden rounded-[1.6rem] border border-white bg-white shadow-inner">
+              <div className="relative aspect-square overflow-hidden rounded-xl border border-[var(--color-surface-primary)] bg-[var(--color-surface-primary)]">
                 {profile.imageSrc ? (
                   <Image
                     src={profile.imageSrc}
@@ -118,18 +118,18 @@ export function LoginForm({ profiles }: LoginFormProps) {
                     priority={profile.key === "daniel"}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,#ddd6fe_0%,#f5d0fe_45%,#ffedd5_100%)] text-5xl font-black text-violet-700">
+                  <div className="flex h-full w-full items-center justify-center bg-[var(--gradient-initials)] text-5xl font-[var(--font-weight-heading)] text-[var(--color-selection-strong)]">
                     {profile.initials}
                   </div>
                 )}
               </div>
 
               <div className="mt-4">
-                <p className="text-xl font-black tracking-tight text-slate-950">
+                <p className="text-xl font-[var(--font-weight-heading)] tracking-tight text-[var(--color-text-primary)]">
                   {profile.label}
                 </p>
 
-                <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-violet-700 opacity-80 transition group-hover:text-fuchsia-700">
+                <p className="mt-2 text-xs font-[var(--font-weight-label)] text-[var(--color-selection-strong)] opacity-80 transition group-hover:opacity-100">
                   {isLoading ? "Abriendo Google..." : "Cuenta Google"}
                 </p>
               </div>
