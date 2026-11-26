@@ -77,7 +77,7 @@ function ensureTheme(palette: ChartPalette = "lopest"): ChartTheme {
   return resolvedTheme;
 }
 
-const HEIGHT = { regular: dataVizRecipes.heightRegular } as const;
+const HEIGHT = { regular: dataVizRecipes.heightRegular, compact: dataVizRecipes.heightCompact } as const;
 
 export type ChartHeight = keyof typeof HEIGHT;
 

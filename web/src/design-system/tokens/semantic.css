@@ -150,4 +150,17 @@
   --dataviz-cn-text: var(--lopest-cn-ink);
   --dataviz-cn-tooltip-surface: var(--lopest-cn-ink);
   --dataviz-cn-tooltip-text: var(--lopest-cn-on-ink);
+
+  /* Ahorro and Arqueo tabs. */
+  --cn-color-ahorro-soft: var(--lopest-cn-ahorro-soft);
+  --cn-color-ahorro-on-ink: var(--lopest-cn-ahorro-on-ink);
+  --cn-color-ok-ring: var(--lopest-cn-ok-ring);
+  --cn-ring-ok: inset 0 0 0 2px var(--cn-color-ok-ring);
+  --cn-ring-neutral: inset 0 0 0 2px var(--cn-color-border-soft);
+  --cn-ring-uncounted: inset 0 0 0 2px var(--cn-color-border-dashed);
+  --cn-ring-problem-strong: inset 0 0 0 2px var(--cn-color-problem);
+  --cn-ring-ok-strong: inset 0 0 0 2px var(--cn-color-ok);
+  --cn-ring-ahorro: inset 0 0 0 2px var(--cn-color-ahorro);
+  --dataviz-cn-ahorro-soft: var(--lopest-cn-ahorro-soft);
+  --dataviz-cn-empty: var(--lopest-cn-flap);
 }
