@@ -87,7 +87,7 @@ describe.skipIf(!URL_PRUEBA)("Resumen contra Reportes en PostgreSQL", () => {
     const borrado = await credito(OPERADOR.id, true);
 
     let k = 0;
-    const evento = (creditoId: string, data: Record<string, unknown>) =>
+    const evento = (creditoId: string, data: { fechaProgramada: Date } & Record<string, unknown>) =>
       prisma.eventoFinanciero.create({
         data: {
           codigo: `EVR-${run}-${(k += 1)}`,
