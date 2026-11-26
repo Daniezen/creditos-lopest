@@ -24,6 +24,8 @@ import {
   rowVersion,
 } from "@/server/validation/input";
 
+import { bogotaMidnight } from "./mes";
+
 // ---------------------------------------------------------------------------
 // Enum values (mirrors of the Prisma enums, kept as literals so this module
 // does not import @prisma/client into client bundles)
@@ -69,6 +71,29 @@ export const AVISOS_CON_UMBRAL: ReadonlySet<(typeof CODIGOS_AVISO)[number]> = ne
 // ---------------------------------------------------------------------------
 
 const FUTURE_MESSAGE = "La fecha no puede ser posterior a hoy.";
+
+/**
+ * Re-anchors a parsed calendar day at Bogota midnight (`D 05:00Z`).
+ *
+ * WHY. `dateInput` builds `new Date(y, m, d)`, i.e. midnight in the TZ of the
+ * running process. The production `web` container runs in UTC (TZ unset), so
+ * "2026-12-01" would be stored as `2026-12-01T00:00Z`, which in Bogota is
+ * still 30 November at 19:00: the movement would fall in the previous day and,
+ * on the 1st, in the previous month. The module reads every day column with
+ * the TZ-independent helpers of `./mes` (`[D 05:00Z, D+1 05:00Z)`), so the
+ * write side must produce exactly `bogotaMidnight(D)` whatever the process TZ.
+ * Reading the parts back with the local getters is safe: they invert the same
+ * local constructor `dateInput` used.
+ */
+function enBogota(date: Date): Date {
+  return bogotaMidnight(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+/** A typed day (`YYYY-MM-DD`) stored as Bogota midnight. */
+const diaInput = (label: string) => dateInput(label).transform(enBogota);
+
+/** Same, refusing days after today in Bogota (the check runs before re-anchoring). */
+const diaPasadoInput = (label: string) => pastOrTodayDateInput(label, FUTURE_MESSAGE).transform(enBogota);
 
 /** Optional free text: blank becomes null so the column stays NULL, not "". */
 function optionalText(max: number, label: string) {
@@ -164,7 +189,7 @@ function capitalize(text: string): string {
 
 const movimientoFields = {
   tipo: z.enum(TIPOS_MOVIMIENTO, { error: "El tipo de movimiento no es válido." }),
-  fecha: pastOrTodayDateInput("la fecha", FUTURE_MESSAGE),
+  fecha: diaPasadoInput("la fecha"),
   monto: moneyInput({ required: "Falta el monto.", invalid: "El monto debe ser mayor que cero." }),
   cuentaOrigenId: optionalId,
   cuentaDestinoId: optionalId,
@@ -197,7 +222,7 @@ export const pasarAlAhorroSchema = z.object({
   operationKey,
   cuentaOrigenId: entityId("la cuenta de origen"),
   monto: moneyInput({ required: "Falta el monto.", invalid: "El monto debe ser mayor que cero." }),
-  fecha: pastOrTodayDateInput("la fecha", FUTURE_MESSAGE),
+  fecha: diaPasadoInput("la fecha"),
   nota: optionalText(500, "La nota"),
 });
 export type PasarAlAhorroInput = z.input<typeof pasarAlAhorroSchema>;
@@ -232,7 +257,7 @@ export type AsignarCuentaInput = z.input<typeof asignarCuentaSchema>;
 const cuentaFields = {
   nombre: requiredText(60, "el nombre"),
   saldoInicial: nonNegativeMoney("el saldo inicial"),
-  fechaSaldoInicial: dateInput("la fecha del saldo inicial"),
+  fechaSaldoInicial: diaInput("la fecha del saldo inicial"),
   orden: optionalInt("el orden", 0, 999).transform((value) => value ?? 0),
 };
 
@@ -367,7 +392,7 @@ export type DefinirCapacidadesInput = z.input<typeof definirCapacidadesSchema>;
 export const registrarCastigoSchema = z.object({
   creditoId: entityId("el crédito"),
   monto: moneyInput({ required: "Falta el monto castigado.", invalid: "El monto debe ser mayor que cero." }),
-  fecha: pastOrTodayDateInput("la fecha", FUTURE_MESSAGE),
+  fecha: diaPasadoInput("la fecha"),
   motivo: requiredText(500, "el motivo"),
 });
 export type RegistrarCastigoInput = z.input<typeof registrarCastigoSchema>;
